@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
+
 import { useAuth, UserButton } from "@clerk/nextjs";
 const Header = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
