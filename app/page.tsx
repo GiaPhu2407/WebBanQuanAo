@@ -1,4 +1,4 @@
-import Image from "next/image";
+
 import Header from "./Profile/(Home)/Header";
 import Carousel from "./Profile/(Home)/Carousel";
 import Content from "./Profile/(Home)/Content";
