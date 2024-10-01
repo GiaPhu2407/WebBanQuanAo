@@ -1,10 +1,7 @@
 import { SignUp } from "@clerk/nextjs";
+
 export async function generateStaticParams() {
-  // Nếu bạn có tham số động, hãy tạo chúng ở đây
-  return [
-    { signUpParam: "param1" }, // Ví dụ tham số
-    { signUpParam: "param2" }, // Ví dụ tham số
-  ];
+  return []; // Trả về mảng rỗng nếu không có tham số động
 }
 export default function Page() {
   return (
