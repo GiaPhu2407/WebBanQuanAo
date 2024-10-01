@@ -1,0 +1,246 @@
+// Schema definition
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Role {
+  idrole     Int      @id @default(autoincrement())
+  Tennguoidung String?
+  Khachhang   Khachhang[]
+  Nhanvien    Nhanvien[]
+}
+
+model Khachhang {
+  idkhachhang     Int      @id @default(autoincrement())
+  hoten           String?
+  sodienthoai     String?
+  email           String?
+  gioitinh        Boolean?
+  diachi          String?
+  ngaysinh        DateTime?
+  tendangnhap     String?
+  matkhau         String?
+  idrolekhachhang Int?
+  donhang         Donhang[]
+  danhgia         Danhgia[]
+  giohang         Giohang[]
+  tuvanhotro      TuvanHotro[]
+  role            Role?     @relation(fields: [idrolekhachhang], references: [idrole])
+
+}
+
+model Donhang {
+  iddonhang   Int      @id @default(autoincrement())
+  tongsoluong Int?
+  trangthai   String?
+  tongsotien  Int?
+  ngaydat     String?
+  idkhachhang Int?
+  Khachhang   Khachhang? @relation(fields: [idkhachhang], references: [idkhachhang])
+  chitietdonhang ChitietDonhang[]
+  thanhtoan   Thanhtoan[]
+}
+
+model Loaisanpham {
+  idloaisanpham Int       @id @default(autoincrement())
+  tenloai       String?
+  mota          String?
+  sanpham       Sanpham[]
+}
+
+model Sanpham {
+  idsanpham    Int           @id @default(autoincrement())
+  tensanpham   String?
+  mota         String?
+  gia          String?
+  hinhanh      String?
+  idloaisanpham Int?
+  giamgia      Float?
+  loaisanpham  Loaisanpham?  @relation(fields: [idloaisanpham], references: [idloaisanpham])
+  chitietnhap  ChitietNhap[]
+  chitietdonhang ChitietDonhang[]
+  giohang      Giohang[]
+  danhgia      Danhgia[]
+  kho          Kho[]
+}
+
+model Nhacungcap {
+  idnhacungcap  Int      @id @default(autoincrement())
+  tennhacungcap String?
+  sodienthoai   String?
+  diachi        String?
+  email         String?
+  trangthai     Boolean?
+  nhaphang      Nhaphang[]
+}
+
+model Nhaphang {
+  idnhaphang    Int           @id @default(autoincrement())
+  ngaynhap      String?
+  tongtien      String?
+  tongsoluong   Int?
+  idnhacungcap  Int?
+  Nhacungcap    Nhacungcap?   @relation(fields: [idnhacungcap], references: [idnhacungcap])
+  chitietnhap   ChitietNhap[]
+}
+
+model ChitietNhap {
+  idchitietnhap Int     @id @default(autoincrement())
+  idnhaphang    Int?
+  idsanpham     Int?
+  soluong       String?
+  dongia        String?
+  Nhaphang      Nhaphang? @relation(fields: [idnhaphang], references: [idnhaphang])
+  Sanpham       Sanpham?  @relation(fields: [idsanpham], references: [idsanpham])
+}
+
+model ChitietDonhang {
+  idchitietdathang Int     @id @default(autoincrement())
+  iddonhang        Int?
+  soluong          Int?
+  dongia           Float?
+  idsanpham        Int?
+  Donhang          Donhang?  @relation(fields: [iddonhang], references: [iddonhang])
+  Sanpham          Sanpham?  @relation(fields: [idsanpham], references: [idsanpham])
+}
+
+model Giohang {
+  idgiohang    Int      @id @default(autoincrement())
+  soluong      Int?
+  idkhachhang  Int?
+  idsanpham    Int?
+  Khachhang    Khachhang? @relation(fields: [idkhachhang], references: [idkhachhang])
+  Sanpham      Sanpham?   @relation(fields: [idsanpham], references: [idsanpham])
+}
+
+model Nhanvien {
+  idNhanvien    Int        @id @default(autoincrement())
+  tennhanvien   String?
+  sodienthoai   String?
+  email         String?
+  gioitinh      Boolean?
+  ngaysinh      DateTime?
+  diachi        String?
+  ngayvaolam    DateTime?
+  idrolenhanvien Int?
+  role          Role?      @relation(fields: [idrolenhanvien], references: [idrole])
+  calamviec     CaLamViec[]
+  luong         Luong[]
+  tuvanhotro    TuvanHotro[]
+}
+
+model CaLamViec {
+  idCaLamViec   Int      @id @default(autoincrement())
+  idnhanvien    Int?
+  ngaylam       DateTime?
+  giobatdau     String?
+  gioketthuc    String?
+  Nhanvien      Nhanvien? @relation(fields: [idnhanvien], references: [idNhanvien])
+}
+
+model Luong {
+  idLuong       Int       @id @default(autoincrement())
+  idnhanvien    Int?
+  luongcoban    Float?
+  thuong        Float?
+  ngaytinhluong DateTime?
+  tongluong     Float?
+  Nhanvien      Nhanvien? @relation(fields: [idnhanvien], references: [idNhanvien])
+}
+
+model Thanhtoan {
+  idthanhtoan        Int           @id @default(autoincrement())
+  iddonhang          Int?
+  phuongthucthanhtoan String?
+  sotien             Float?
+  trangthai          String?
+  ngaythanhtoan      DateTime?
+  Donhang            Donhang?      @relation(fields: [iddonhang], references: [iddonhang])
+}
+
+model Danhgia {
+  iddanhgia   Int      @id @default(autoincrement())
+  idsanpham   Int?
+  idkhachang  Int?
+  sao         Int?
+  noidung     String?
+  ngaydanhgia DateTime?
+  Sanpham     Sanpham?  @relation(fields: [idsanpham], references: [idsanpham])
+  Khachhang   Khachhang? @relation(fields: [idkhachang], references: [idkhachhang])
+}
+
+model Kho {
+  idKho      Int       @id @default(autoincrement())
+  idsanpham  Int?
+  soluong    Int?
+  Sanpham    Sanpham?  @relation(fields: [idsanpham], references: [idsanpham])
+  vung       Vung[]
+}
+
+model Vung {
+  idVung    Int     @id @default(autoincrement())
+  idkho     Int?
+  tenvung   String?
+  Kho       Kho?    @relation(fields: [idkho], references: [idKho])
+  ke        Ke[]
+}
+
+model Ke {
+  idke      Int      @id @default(autoincrement())
+  idvung    Int?
+  tenke     String?
+  Vung      Vung?    @relation(fields: [idvung], references: [idVung])
+  tang      Tang[]
+}
+
+model Tang {
+  idtang    Int      @id @default(autoincrement())
+  idke      Int?
+  tentang   String?
+  Ke        Ke?      @relation(fields: [idke], references: [idke])
+}
+
+model TuvanHotro {
+  idtuvanhotro Int      @id @default(autoincrement())
+  idkhachang   Int?
+  noidung      String?
+  hinhthuc     Boolean?
+  trangthai    String?
+  idnhanvien   Int?
+  Khachhang    Khachhang? @relation(fields: [idkhachang], references: [idkhachhang])
+  Nhanvien     Nhanvien?  @relation(fields: [idnhanvien], references: [idNhanvien])
+}
+
+
+
+// enum TrangThaiDonhang {
+//   DaDat
+//   DangXuLy
+//   DaGiao
+//   DaHuy
+// }
+
+
+
+// enum PhuongThucThanhtoan {
+//   ChuyenKhoan
+//   ViDienTu
+// }
+
+
+
+// enum HinhThucTuVan {
+//   TinNhan
+//   GoiDien
+// }
+
+// enum TrangThaiTuVan {
+//   ChuaXuLy
+//   DangXuLy
+//   DaXuLy
+// }
