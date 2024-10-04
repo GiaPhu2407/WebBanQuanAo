@@ -31,7 +31,7 @@ const Categories = () => {
           id: 1,
           name: "Men's Running Shoes",
           description: "Comfortable running shoes for men.",
-          price: 59.99,
+          price: 200000,
           imageUrl:
             "https://i.pinimg.com/736x/94/64/2e/94642e934045cbf7064d6a88e6964f8d.jpg",
         },
@@ -39,7 +39,7 @@ const Categories = () => {
           id: 2,
           name: "Men's Sports T-Shirt",
           description: "Breathable sports t-shirt for workouts.",
-          price: 29.99,
+          price: 400000,
           imageUrl:
             "https://i.pinimg.com/736x/a9/3d/b0/a93db05ee62cadb090a8853276987df3.jpg",
         },
@@ -47,7 +47,7 @@ const Categories = () => {
           id: 3,
           name: "Men's Sports T-Shirt",
           description: "Breathable sports t-shirt for workouts.",
-          price: 29.99,
+          price: 1000000,
           imageUrl:
             "https://i.pinimg.com/736x/a9/3d/b0/a93db05ee62cadb090a8853276987df3.jpg",
         },
@@ -55,7 +55,7 @@ const Categories = () => {
           id: 4,
           name: "Men's Sports T-Shirt",
           description: "Breathable sports t-shirt for workouts.",
-          price: 29.99,
+          price: 2000000,
           imageUrl:
             "https://i.pinimg.com/736x/c6/ea/d4/c6ead4e2eb5c66316e8b712f6f1ccc8a.jpg",
         },
@@ -63,7 +63,7 @@ const Categories = () => {
           id: 5,
           name: "Men's Sports T-Shirt",
           description: "Breathable sports t-shirt for workouts.",
-          price: 29.99,
+          price: 4000000,
           imageUrl:
             "https://i.pinimg.com/736x/e8/4d/ca/e84dca1997af0e1c06255954ea033399.jpg",
         },
@@ -71,7 +71,7 @@ const Categories = () => {
           id: 6,
           name: "Men's Sports T-Shirt",
           description: "Breathable sports t-shirt for workouts.",
-          price: 29.99,
+          price: 5000000,
           imageUrl:
             "https://i.pinimg.com/736x/e8/4d/ca/e84dca1997af0e1c06255954ea033399.jpg",
         },
@@ -180,7 +180,7 @@ const Categories = () => {
   ];
 
   return (
-    <div className="container mx-auto p-4 mt-[950px]">
+    <div className="container mx-auto p-4 ">
       <h1 className="text-2xl font-sans font-bold mb-4 text-center">
         MỘT SỐ MẪU QUẦN ÁO{" "}
       </h1>
@@ -219,12 +219,14 @@ const Categories = () => {
                     <p className="text-sm text-gray-600 ml-2 mt-2">
                       {item.description}
                     </p>
-                    <p className="font-bold ml-4 mt-2">
-                      ${item.price.toFixed(2)}
-                    </p>
-                    <button className="mt-4 bg-blue-500 text-white px-4 py-2 rounded transform transition-transform duration-400 hover:scale-105">
-                      Buy Now
-                    </button>
+                    <div className="flex gap-4">
+                      <a className="mt-4 cursor-pointer  bg-blue-500 text-white px-4 py-2 rounded-xl transform transition-transform duration-400 hover:scale-105">
+                        Buy Now
+                      </a>
+                      <p className="font-bold ml-4 mt-4 pt-2 inline-block  px-5 rounded-xl relative border-none outline-none z-10 before:rounded-xl before:absolute before:top-0 before:left-0 before:h-full before:w-0 before:shadow-2xl before:bg-gradient-to-r from-red-500 to-pink-500  before:-z-10 before:transition-all before:duration-500 before:ease-in hover:before:w-full hover:scale-125">
+                        {item.price.toLocaleString("vi-VN")} VND
+                      </p>
+                    </div>
                   </div>
                 </div>
               </li>

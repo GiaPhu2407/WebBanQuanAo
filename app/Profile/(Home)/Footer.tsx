@@ -4,7 +4,7 @@ import { IoLogoInstagram } from "react-icons/io5";
 const Footer = () => {
   return (
     <div>
-      <footer className="footer bg-base-200 text-base-content p-10 mt-60">
+      <footer className="footer bg-base-200 text-base-content p-10 mt-20 ">
         <nav>
           <h6 className="footer-title">VỀ PNJ</h6>
           <a className="link link-hover">Thông tin về PNJ</a>
