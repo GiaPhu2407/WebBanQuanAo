@@ -87,7 +87,7 @@ const Categories = () => {
           description: "Flexible yoga pants for ultimate comfort.",
           price: 39.99,
           imageUrl:
-            "https://i.pinimg.com/564x/c7/ab/90/c7ab900887398396d822d88b0a7b9b97.jpg",
+            "https://i.pinimg.com/564x/79/0d/35/790d359d0f6ba16bd24fd74bef3e93da.jpg",
         },
         {
           id: 8,
@@ -95,7 +95,7 @@ const Categories = () => {
           description: "Supportive sports bra for all activities.",
           price: 24.99,
           imageUrl:
-            "https://i.pinimg.com/564x/9d/dd/07/9ddd0720fceef5bae31e2559800e581b.jpg",
+            "https://i.pinimg.com/564x/b1/f1/b5/b1f1b541720235808e8643a7c2cd656d.jpg",
         },
         {
           id: 9,
@@ -103,7 +103,7 @@ const Categories = () => {
           description: "Supportive sports bra for all activities.",
           price: 24.99,
           imageUrl:
-            "https://i.pinimg.com/564x/9d/dd/07/9ddd0720fceef5bae31e2559800e581b.jpg",
+            "https://i.pinimg.com/564x/fc/64/13/fc64131c58a806b21c46c09d16328cf8.jpg",
         },
         {
           id: 10,
@@ -111,7 +111,7 @@ const Categories = () => {
           description: "Supportive sports bra for all activities.",
           price: 24.99,
           imageUrl:
-            "https://i.pinimg.com/564x/9d/dd/07/9ddd0720fceef5bae31e2559800e581b.jpg",
+            "https://i.pinimg.com/564x/ef/22/73/ef22731a82b1d02d52887e12435be513.jpg",
         },
         {
           id: 11,
@@ -119,7 +119,7 @@ const Categories = () => {
           description: "Supportive sports bra for all activities.",
           price: 24.99,
           imageUrl:
-            "https://i.pinimg.com/564x/9d/dd/07/9ddd0720fceef5bae31e2559800e581b.jpg",
+            "https://i.pinimg.com/564x/f0/57/db/f057db11b27c82a8fc2bb0767b3e0f9b.jpg",
         },
         {
           id: 12,
@@ -127,7 +127,7 @@ const Categories = () => {
           description: "Supportive sports bra for all activities.",
           price: 24.99,
           imageUrl:
-            "https://i.pinimg.com/564x/9d/dd/07/9ddd0720fceef5bae31e2559800e581b.jpg",
+            "https://i.pinimg.com/736x/22/b3/cd/22b3cde45f47b614ee7593866d89c3d5.jpg",
         },
       ],
     },
