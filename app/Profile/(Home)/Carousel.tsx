@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import "swiper/css/pagination";
@@ -8,9 +8,17 @@ import "swiper/css/navigation";
 import { Autoplay, Pagination, Navigation } from "swiper/modules";
 import { PiBuildingApartment } from "react-icons/pi";
 
+import AOS from "aos";
+import "aos/dist/aos.css";
 export default function Carousel() {
+  useEffect(() => {
+    AOS.init({ duration: 2500 });
+  }, []);
   return (
-    <div className="w-full h-[300px] md:h-[400px] mb-10 -mt-36">
+    <div
+      className="w-full h-[300px] md:h-[400px] mb-10 -mt-36"
+      data-aos="fade-down"
+    >
       {" "}
       {/* Adjusted height */}
       <Swiper
@@ -93,7 +101,6 @@ export default function Carousel() {
           </div>
         </SwiperSlide>
       </Swiper>
-      
     </div>
   );
 }

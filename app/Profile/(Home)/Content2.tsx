@@ -1,9 +1,13 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { PiBuildingApartment } from "react-icons/pi";
 import { MdOutlineLocalShipping } from "react-icons/md";
 import { MdCurrencyExchange } from "react-icons/md";
-
+import AOS from "aos";
+import "aos/dist/aos.css";
 const Content2 = () => {
+  useEffect(() => {
+    AOS.init({ duration: 2500 });
+  }, []);
   return (
     <div>
       <div className="bg-black w-full h-auto">
@@ -144,38 +148,38 @@ const Content2 = () => {
         </div>
       </div>
       <div className="border mt-10 shadow">
-      <div className="flex items-center justify-center my-8">
-        <div className="border-t border-gray-300 flex-grow mx-4"></div>
-        <p className="text-lg font-semibold">ĐỐI TÁC</p>
-        <div className="border-t border-gray-300 flex-grow mx-4"></div>
-      </div>
-      <div className="flex  justify-center items-center gap-20">
-        <img
-          src="https://i.pinimg.com/564x/92/de/46/92de46f55a67ad97a1f1facdafa3c967.jpg"
-          alt=""
-          className=" w-24 h-20"
-        />
-        <img
-          src="https://i.pinimg.com/564x/e3/39/85/e33985c4790fb765b50a6ffcb660b26d.jpg"
-          alt=""
-          className=" w-24 h-32"
-        />
-        <img
-          src="https://i.pinimg.com/564x/78/1b/bb/781bbb32f978308bda9e56b82e2b87cf.jpg"
-          alt=""
-          className=" w-24 h-20"
-        />
-        <img
-          src="https://i.pinimg.com/564x/2c/1b/41/2c1b41a1e41db494a8d6062778b85098.jpg"
-          alt=""
-          className=" w-24 h-20"
-        />
-        <img
-          src="https://i.pinimg.com/564x/96/ef/8b/96ef8b2a0d8164ab1937c5942fe4065d.jpg"
-          alt=""
-          className=" w-24 h-20"
-        />
-      </div>
+        <div className="flex items-center justify-center my-8">
+          <div className="border-t border-gray-300 flex-grow mx-4"></div>
+          <p className="text-lg font-semibold">ĐỐI TÁC</p>
+          <div className="border-t border-gray-300 flex-grow mx-4"></div>
+        </div>
+        <div className="flex  justify-center items-center gap-20">
+          <img
+            src="https://i.pinimg.com/564x/92/de/46/92de46f55a67ad97a1f1facdafa3c967.jpg"
+            alt=""
+            className=" w-24 h-20"
+          />
+          <img
+            src="https://i.pinimg.com/564x/e3/39/85/e33985c4790fb765b50a6ffcb660b26d.jpg"
+            alt=""
+            className=" w-24 h-32"
+          />
+          <img
+            src="https://i.pinimg.com/564x/78/1b/bb/781bbb32f978308bda9e56b82e2b87cf.jpg"
+            alt=""
+            className=" w-24 h-20"
+          />
+          <img
+            src="https://i.pinimg.com/564x/2c/1b/41/2c1b41a1e41db494a8d6062778b85098.jpg"
+            alt=""
+            className=" w-24 h-20"
+          />
+          <img
+            src="https://i.pinimg.com/564x/96/ef/8b/96ef8b2a0d8164ab1937c5942fe4065d.jpg"
+            alt=""
+            className=" w-24 h-20"
+          />
+        </div>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 "use client";
-import React, { useState } from "react";
-
+import React, { useEffect, useState } from "react";
+import AOS from "aos";
+import "aos/dist/aos.css";
 // Define the Product interface for TypeScript
 interface Product {
   id: number;
@@ -17,6 +18,9 @@ interface Category {
 }
 
 const Categories = () => {
+  useEffect(() => {
+    AOS.init({ duration: 2500 });
+  }, []);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(
     null
   );
@@ -149,7 +153,7 @@ const Categories = () => {
           description: "Fun t-shirt for playful adventures.",
           price: 14.99,
           imageUrl:
-            "https://i.pinimg.com/236x/f3/8e/fb/f38efba8f13c091acd3c002d1eb27924.jpg",
+            "https://i.pinimg.com/564x/aa/ad/b5/aaadb5883365433912a3abcd1b9c862d.jpg",
         },
         {
           id: 15,
@@ -157,7 +161,7 @@ const Categories = () => {
           description: "Fun t-shirt for playful adventures.",
           price: 14.99,
           imageUrl:
-            "https://i.pinimg.com/236x/f3/8e/fb/f38efba8f13c091acd3c002d1eb27924.jpg",
+            "https://i.pinimg.com/564x/82/ff/34/82ff34c6e472b12bfa4d2f9308a00701.jpg",
         },
         {
           id: 16,
@@ -181,10 +185,10 @@ const Categories = () => {
 
   return (
     <div className="container mx-auto p-4 ">
-      <h1 className="text-2xl font-sans font-bold mb-4 text-center">
+      <h1 className="text-2xl font-sans font-bold mb-4 text-center" data-aos ="fade-down">
         MỘT SỐ MẪU QUẦN ÁO{" "}
       </h1>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6" data-aos ="fade-down">
         {categories.map((category) => (
           <button
             key={category.id}
