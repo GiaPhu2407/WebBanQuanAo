@@ -1,10 +1,19 @@
-import React from "react";
+"use client";
+import React, { useEffect } from "react";
 import { FaFacebook } from "react-icons/fa";
 import { IoLogoInstagram } from "react-icons/io5";
+import AOS from "aos";
+import "aos/dist/aos.css";
 const Footer = () => {
+  useEffect(() => {
+    AOS.init({ duration: 2500 });
+  }, []);
   return (
     <div>
-      <footer className="footer bg-base-200 text-base-content p-10 mt-20 ">
+      <footer
+        className="footer bg-base-200 text-base-content p-10 mt-20 "
+        data-aos="fade-up"
+      >
         <nav>
           <h6 className="footer-title">VỀ PNJ</h6>
           <a className="link link-hover">Thông tin về PNJ</a>
@@ -48,7 +57,7 @@ const Footer = () => {
         </nav>
       </footer>
       {/* Footer2 */}
-      <footer className="footer bg-base-200 text-base-content p-10">
+      <footer className="footer bg-base-200 text-base-content p-10" data-aos="fade-down">
         <aside>
           <svg
             width="50"

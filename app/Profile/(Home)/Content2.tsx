@@ -1,3 +1,4 @@
+"use client";
 import React, { useEffect } from "react";
 import { PiBuildingApartment } from "react-icons/pi";
 import { MdOutlineLocalShipping } from "react-icons/md";
@@ -16,32 +17,42 @@ const Content2 = () => {
             <img
               src="https://i.pinimg.com/564x/73/33/ff/7333ffa880d883f18bea55922be2eb33.jpg"
               alt=""
-              className="w-full sm:w-[440px] h-auto max-h-96"
+              className="w-full sm:w-[440px] h-auto max-h-96 "
+              data-aos="fade-right"
             />
             <img
               src="https://i.pinimg.com/564x/6e/ff/5e/6eff5eb5c14b464fdf851e4eb2fc5c7a.jpg"
               alt=""
               className="w-full sm:w-[440px] h-auto max-h-96"
+              data-aos="fade-left"
             />
             <img
               src="https://i.pinimg.com/564x/a8/db/20/a8db208c17d908992f7d450623f8f5be.jpg"
               alt=""
               className="w-full sm:w-[440px] h-auto max-h-96"
+              data-aos="fade-right"
             />
             <img
               src="https://i.pinimg.com/564x/43/c5/e8/43c5e82a7cd6f6ea1ab5f7031a0e9a6c.jpg"
               alt=""
-              className="w-full sm:w-[440px] h-auto max-h-96"
+              className="w-full sm:w-[440px] h-auto max-h-96 "
+              data-aos="fade-left"
             />
           </div>
-          <div className="absolute inset-0 flex justify-center items-center">
+          <div
+            className="absolute inset-0 flex justify-center items-center"
+            data-aos="fade-down"
+          >
             <div className="text-white text-3xl text-center">
               Xem địa chỉ hệ thống hơn 340 Cửa Hàng Gipudihi trên toàn quốc
             </div>
           </div>
         </div>
 
-        <div className="mt-10 flex justify-center items-center">
+        <div
+          className="mt-10 flex justify-center items-center"
+          data-aos="fade-down"
+        >
           <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
             <iframe
               src="https://www.youtube.com/embed/pxt5O0Zfu9A"
@@ -109,7 +120,10 @@ const Content2 = () => {
         </div> */}
       </div>
       <div className="flex flex-col ml-1 md:flex-row justify-center items-center gap-8 sm:gap-10  mt-10">
-        <div className="flex border px-2 py-2 rounded-xl shadow">
+        <div
+          className="flex border px-2 py-2 rounded-xl shadow"
+          data-aos="fade-right"
+        >
           <PiBuildingApartment className="w-24 h-16" />
           <div className="ml-1">
             <p className="text-red-500 font-semibold mb-2">
@@ -123,7 +137,10 @@ const Content2 = () => {
             </p>
           </div>
         </div>
-        <div className="flex border px-2 py-2 rounded-xl shadow">
+        <div
+          className="flex border px-2 py-2 rounded-xl shadow"
+          data-aos="fade-down"
+        >
           <MdOutlineLocalShipping className="w-24 h-16" />
           <div className="ml-1">
             <p className="text-red-500 font-semibold mb-2">
@@ -135,7 +152,10 @@ const Content2 = () => {
             </p>
           </div>
         </div>
-        <div className="flex border px-2 py-2 rounded-xl shadow">
+        <div
+          className="flex border px-2 py-2 rounded-xl shadow"
+          data-aos="fade-left"
+        >
           <MdCurrencyExchange className="w-24 h-16 mt-1" />
 
           <div className="ml-1">
@@ -149,35 +169,48 @@ const Content2 = () => {
       </div>
       <div className="border mt-10 shadow">
         <div className="flex items-center justify-center my-8">
-          <div className="border-t border-gray-300 flex-grow mx-4"></div>
-          <p className="text-lg font-semibold">ĐỐI TÁC</p>
-          <div className="border-t border-gray-300 flex-grow mx-4"></div>
+          <div
+            className="border-t border-gray-300 flex-grow mx-4"
+            data-aos="fade-right"
+          ></div>
+          <p className="text-lg font-semibold" data-aos="fade-down">
+            ĐỐI TÁC
+          </p>
+          <div
+            className="border-t border-gray-300 flex-grow mx-4"
+            data-aos="fade-left"
+          ></div>
         </div>
-        <div className="flex  justify-center items-center gap-20">
+        <div className="flex justify-center items-center gap-20">
           <img
             src="https://i.pinimg.com/564x/92/de/46/92de46f55a67ad97a1f1facdafa3c967.jpg"
             alt=""
-            className=" w-24 h-20"
+            className=" w-24 h-20  "
+            data-aos="fade-right"
           />
           <img
             src="https://i.pinimg.com/564x/e3/39/85/e33985c4790fb765b50a6ffcb660b26d.jpg"
             alt=""
-            className=" w-24 h-32"
+            className=" w-24 h-20"
+            data-aos="fade-up"
           />
           <img
             src="https://i.pinimg.com/564x/78/1b/bb/781bbb32f978308bda9e56b82e2b87cf.jpg"
             alt=""
             className=" w-24 h-20"
+            data-aos="fade-down"
           />
           <img
             src="https://i.pinimg.com/564x/2c/1b/41/2c1b41a1e41db494a8d6062778b85098.jpg"
             alt=""
             className=" w-24 h-20"
+            data-aos="fade-up"
           />
           <img
             src="https://i.pinimg.com/564x/96/ef/8b/96ef8b2a0d8164ab1937c5942fe4065d.jpg"
             alt=""
             className=" w-24 h-20"
+            data-aos="fade-left"
           />
         </div>
       </div>
