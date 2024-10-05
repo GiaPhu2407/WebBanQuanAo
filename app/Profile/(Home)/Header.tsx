@@ -105,14 +105,14 @@ const Header = () => {
                 </li>
                 <li>
                   <Link
-                    href={"/ShowHotel"}
+                    href={"/ShowIntro"}
                     className="block py-2 px-3 text-black border-b border-gray-100 hover:bg-gray-50 md:hover:bg-transparent md:border-0 md:hover:text-blue-600 md:p-0 dark:text-blue-500 md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-blue-500 md:dark:hover:bg-transparent dark:border-gray-700"
                     aria-current="page"
                   >
                     GIỚI THIỆU
                   </Link>
                 </li>
-               
+
                 <li>
                   <a
                     href="#"
@@ -129,7 +129,7 @@ const Header = () => {
                     LIÊN HỆ
                   </a>
                 </li>
-                  {/* <li>
+                {/* <li>
                     <Link
                       href={"/ShowMeeting"}
                       className="block py-2 px-3 text-black border-b border-gray-100 hover:bg-gray-50 md:hover:bg-transparent md:border-0 md:hover:text-blue-600 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-blue-500 md:dark:hover:bg-transparent dark:border-gray-700"
@@ -159,7 +159,8 @@ const Header = () => {
 };
 
 export default Header;
-{/* <li className="relative inline  text-left">
+{
+  /* <li className="relative inline  text-left">
 <button
   id="mega-menu-icons-dropdown-button"
   data-dropdown-toggle="mega-menu-icons-dropdown"
@@ -332,7 +333,8 @@ export default Header;
         <a
           href="#"
           className="flex items-center text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-500 group"
-        > */}
+        > */
+}
 //           <span className="sr-only">License</span>
 //             <span className="sr-only">Terms</span>
 //           <svg
@@ -407,4 +409,3 @@ export default Header;
 //           href="#"
 //           className="flex items-center text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-500 group"
 //         >
-      
