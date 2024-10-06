@@ -2,7 +2,7 @@ import React from "react";
 
 const Intro = () => {
   return (
-    <div>
+    <div className="-mt-20">
       <section
         className="bg-cover bg-center py-16"
         style={{
@@ -11,7 +11,7 @@ const Intro = () => {
       >
         <div className="container mx-auto px-6 text-center text-white">
           <h1 className="text-5xl font-bold mb-4 fade-in">
-            <span className="inline-block whitespace-nowrap animat animate-slideColorText">
+            <span className="inline-block whitespace-nowrap  colorful-text">
               Chào mừng đến với GiPuDiHi
             </span>
           </h1>

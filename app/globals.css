@@ -76,16 +76,16 @@ body {
     @apply bg-background text-foreground;
   }
 }
-@keyframes slideText {
+/* @keyframes slideText {
   0% {
     transform: translateX(100%);
   }
   100% {
     transform: translateX(-100%);
   }
-}
+} */
 
-@keyframes colorFlash {
+/* @keyframes colorFlash {
   0% {
     color: red;
   }
@@ -101,7 +101,39 @@ body {
   100% {
     color: red;
   }
+} */
+/* .animate-slideColorText {
+  animation: slideText 8s linear infinite;
+} */
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
-.animate-slideColorText {
-  animation: slideText 8s linear infinite, colorFlash 1s linear infinite;
+
+@keyframes zigzagText {
+  0% {
+    transform: translateX(100%);
+  }
+
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.colorful-text {
+  background: linear-gradient(270deg, #ff6b6b, #f7d794, #4ecdc4, #556270);
+  background-size: 600% 600%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradientShift 10s ease-in-out infinite,
+    zigzagText 8s linear infinite; /* Chạy liên tục */
+  will-change: transform; /* Tối ưu hóa cho trình duyệt */
+  /* text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); Đổ bóng chữ */
 }
