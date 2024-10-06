@@ -1,4 +1,3 @@
-// Schema definition
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
@@ -9,238 +8,239 @@ generator client {
 }
 
 model Role {
-  idrole     Int      @id @default(autoincrement())
-  Tennguoidung String?
-  Khachhang   Khachhang[]
-  Nhanvien    Nhanvien[]
+  idrole        Int      @id 
+  Tennguoidung  String?  @db.VarChar(255)
+  Khachhang     Khachhang[]
+  Nhanvien      Nhanvien[]
+  Admin         Admin[]
+  RolePermission RolePermission[]
 }
 
 model Khachhang {
-  idkhachhang     Int      @id @default(autoincrement())
-  hoten           String?
-  sodienthoai     String?
-  email           String?
-  gioitinh        Boolean?
-  diachi          String?
+  idkhachhang     Int       @id @default(autoincrement())  @unique
+  hoten           String?   @db.VarChar(255)
+  sodienthoai     String?   @db.VarChar(45)
+  email           String?   @db.VarChar(255)  @unique
+  gioitinh        Boolean?  @db.TinyInt
+  diachi          String?   @db.VarChar(45)
   ngaysinh        DateTime?
-  tendangnhap     String?
-  matkhau         String?
-  idrolekhachhang Int?
-  donhang         Donhang[]
-  danhgia         Danhgia[]
-  giohang         Giohang[]
-  tuvanhotro      TuvanHotro[]
+  tendangnhap     String?   @db.VarChar(45)
+  matkhau         String?   @db.VarChar(45)
+  idrolekhachhang Int? @unique
   role            Role?     @relation(fields: [idrolekhachhang], references: [idrole])
-
+  donhang         Donhang[]
+  giohang         Giohang[]
+  danhgia         Danhgia[]
+  Admin           Admin[]
+  tuvanhotro      Tuvanhotro[]
 }
 
 model Donhang {
-  iddonhang   Int      @id @default(autoincrement())
-  tongsoluong Int?
-  trangthai   String?
-  tongsotien  Int?
-  ngaydat     String?
-  idkhachhang Int?
-  Khachhang   Khachhang? @relation(fields: [idkhachhang], references: [idkhachhang])
+  iddonhang    Int       @id @default(autoincrement())
+  tongsoluong  Int?
+  trangthai    String?  @db.VarChar(45)
+  tongsotien   Int?
+  ngaydat      String?   @db.VarChar(45)
+  idkhachhang  Int?    @unique
+  khachhang    Khachhang? @relation(fields: [idkhachhang], references: [idkhachhang])
   chitietdonhang ChitietDonhang[]
-  thanhtoan   Thanhtoan[]
+  thanhtoan    Thanhtoan[]
 }
+
 
 model Loaisanpham {
   idloaisanpham Int       @id @default(autoincrement())
-  tenloai       String?
-  mota          String?
+  tenloai       String?   @db.VarChar(255)
+  mota          String?   @db.VarChar(255)
   sanpham       Sanpham[]
 }
 
 model Sanpham {
-  idsanpham    Int           @id @default(autoincrement())
-  tensanpham   String?
-  mota         String?
-  gia          String?
-  hinhanh      String?
-  idloaisanpham Int?
-  giamgia      Float?
-  loaisanpham  Loaisanpham?  @relation(fields: [idloaisanpham], references: [idloaisanpham])
-  chitietnhap  ChitietNhap[]
+  idsanpham     Int       @id @default(autoincrement())
+  tensanpham    String?   @db.VarChar(255)
+  mota          String?   @db.VarChar(255)
+  gia           String?   @db.VarChar(255)
+  hinhanh       String?   @db.VarChar(255)
+  idloaisanpham Int?      @unique
+  giamgia       Decimal?  @db.Decimal(5,2)
+  loaisanpham   Loaisanpham? @relation(fields: [idloaisanpham], references: [idloaisanpham])
+  chitietnhap   Chitietnhap[]
   chitietdonhang ChitietDonhang[]
-  giohang      Giohang[]
-  danhgia      Danhgia[]
-  kho          Kho[]
+  giohang       Giohang[]
+  danhgia       Danhgia[]
+  kho           Kho[]
 }
 
 model Nhacungcap {
-  idnhacungcap  Int      @id @default(autoincrement())
-  tennhacungcap String?
-  sodienthoai   String?
-  diachi        String?
-  email         String?
-  trangthai     Boolean?
+  idnhacungcap  Int       @id @default(autoincrement())
+  tennhacungcap String?   @db.VarChar(255)
+  sodienthoai   String?   @db.VarChar(10)
+  diachi        String?   @db.VarChar(45)
+  email         String?   @db.VarChar(45)
+  trangthai     Boolean?  @db.TinyInt
   nhaphang      Nhaphang[]
 }
 
 model Nhaphang {
-  idnhaphang    Int           @id @default(autoincrement())
-  ngaynhap      String?
-  tongtien      String?
-  tongsoluong   Int?
-  idnhacungcap  Int?
-  Nhacungcap    Nhacungcap?   @relation(fields: [idnhacungcap], references: [idnhacungcap])
-  chitietnhap   ChitietNhap[]
+  idnhaphang   Int       @id @default(autoincrement())
+  ngaynhap     String?   @db.VarChar(45)
+  tongtien     String?   @db.VarChar(255)
+  tongsoluong  Int?
+  idnhacungcap Int?      @unique
+  nhacungcap   Nhacungcap? @relation(fields: [idnhacungcap], references: [idnhacungcap])
+  chitietnhap  Chitietnhap[]
 }
 
-model ChitietNhap {
-  idchitietnhap Int     @id @default(autoincrement())
-  idnhaphang    Int?
-  idsanpham     Int?
-  soluong       String?
-  dongia        String?
-  Nhaphang      Nhaphang? @relation(fields: [idnhaphang], references: [idnhaphang])
-  Sanpham       Sanpham?  @relation(fields: [idsanpham], references: [idsanpham])
+model Chitietnhap {
+  idchitietnhap Int       @id @default(autoincrement())
+  idnhaphang    Int?      @unique
+  idsanpham     Int?      @unique
+  soluong       String?   @db.VarChar(255)
+  dongia        String?   @db.VarChar(255)
+  nhaphang      Nhaphang? @relation(fields: [idnhaphang], references: [idnhaphang])
+  sanpham       Sanpham?  @relation(fields: [idsanpham], references: [idsanpham])
 }
 
 model ChitietDonhang {
-  idchitietdathang Int     @id @default(autoincrement())
-  iddonhang        Int?
+  idchitietdathang Int       @id @default(autoincrement())
+  iddonhang        Int?      @unique
   soluong          Int?
-  dongia           Float?
+  dongia           Decimal?  @db.Decimal(5,2)
   idsanpham        Int?
-  Donhang          Donhang?  @relation(fields: [iddonhang], references: [iddonhang])
-  Sanpham          Sanpham?  @relation(fields: [idsanpham], references: [idsanpham])
+  donhang          Donhang?  @relation(fields: [iddonhang], references: [iddonhang])
+  sanpham          Sanpham?  @relation(fields: [idsanpham], references: [idsanpham])
 }
 
 model Giohang {
-  idgiohang    Int      @id @default(autoincrement())
-  soluong      Int?
-  idkhachhang  Int?
-  idsanpham    Int?
-  Khachhang    Khachhang? @relation(fields: [idkhachhang], references: [idkhachhang])
-  Sanpham      Sanpham?   @relation(fields: [idsanpham], references: [idsanpham])
+  idgiohang   Int       @id @default(autoincrement())
+  soluong     Int?
+  idkhachhang Int?      @unique
+  idsanpham   Int?      @unique
+  khachhang   Khachhang? @relation(fields: [idkhachhang], references: [idkhachhang])
+  sanpham     Sanpham?  @relation(fields: [idsanpham], references: [idsanpham])
 }
 
 model Nhanvien {
-  idNhanvien    Int        @id @default(autoincrement())
-  tennhanvien   String?
-  sodienthoai   String?
-  email         String?
-  gioitinh      Boolean?
-  ngaysinh      DateTime?
-  diachi        String?
-  ngayvaolam    DateTime?
+  idNhanvien     Int       @id @default(autoincrement())
+  tennhanvien    String?   @db.VarChar(45)
+  sodienthoai    String?   @db.VarChar(45)
+  email          String?   @db.VarChar(45)
+  gioitinh       Boolean?  @db.TinyInt
+  ngaysinh       DateTime?
+  diachi         String?   @db.VarChar(45)
+  ngayvaolam     DateTime? @db.Date
   idrolenhanvien Int?
-  role          Role?      @relation(fields: [idrolenhanvien], references: [idrole])
-  calamviec     CaLamViec[]
-  luong         Luong[]
-  tuvanhotro    TuvanHotro[]
+  role           Role?     @relation(fields: [idrolenhanvien], references: [idrole])
+  calamviec      CaLamViec[]
+  luong          Luong[]
+  Admin          Admin[]
+  tuvanhotro     Tuvanhotro[]
 }
 
 model CaLamViec {
-  idCaLamViec   Int      @id @default(autoincrement())
-  idnhanvien    Int?
-  ngaylam       DateTime?
-  giobatdau     String?
-  gioketthuc    String?
-  Nhanvien      Nhanvien? @relation(fields: [idnhanvien], references: [idNhanvien])
+  idCaLamViec Int       @id @default(autoincrement())
+  idnhanvien  Int?      @unique
+  ngaylam     DateTime? @db.Date
+  giobatdau   String?   @db.VarChar(45)
+  gioketthuc  String?   @db.VarChar(45)
+  nhanvien    Nhanvien? @relation(fields: [idnhanvien], references: [idNhanvien])
 }
 
 model Luong {
-  idLuong       Int       @id @default(autoincrement())
-  idnhanvien    Int?
-  luongcoban    Float?
-  thuong        Float?
-  ngaytinhluong DateTime?
-  tongluong     Float?
-  Nhanvien      Nhanvien? @relation(fields: [idnhanvien], references: [idNhanvien])
+  idLuong        Int       @id @default(autoincrement())
+  idnhanvien     Int?      @unique
+  luongcoban     Decimal?  @db.Decimal(10,2)
+  thuong         Decimal?  @db.Decimal(6,2)
+  ngaytinhluong  DateTime? @db.Date
+  tongluong      Decimal?  @db.Decimal(10,2)
+  nhanvien       Nhanvien? @relation(fields: [idnhanvien], references: [idNhanvien])
 }
 
 model Thanhtoan {
-  idthanhtoan        Int           @id @default(autoincrement())
-  iddonhang          Int?
-  phuongthucthanhtoan String?
-  sotien             Float?
-  trangthai          String?
-  ngaythanhtoan      DateTime?
-  Donhang            Donhang?      @relation(fields: [iddonhang], references: [iddonhang])
+  idthanhtoan          Int       @id @default(autoincrement())
+  iddonhang            Int?      @unique
+  phuongthucthanhtoan  String?   @db.VarChar(45)
+  sotien               Decimal?  @db.Decimal(10,2)
+  trangthai            String?   @db.VarChar(255)
+  ngaythanhtoan        DateTime? @db.Date
+  donhang              Donhang?  @relation(fields: [iddonhang], references: [iddonhang])
 }
 
 model Danhgia {
-  iddanhgia   Int      @id @default(autoincrement())
-  idsanpham   Int?
-  idkhachang  Int?
-  sao         Int?
-  noidung     String?
-  ngaydanhgia DateTime?
-  Sanpham     Sanpham?  @relation(fields: [idsanpham], references: [idsanpham])
-  Khachhang   Khachhang? @relation(fields: [idkhachang], references: [idkhachhang])
+  iddanhgia    Int       @id @default(autoincrement())
+  idsanpham    Int?      @unique
+  idkhachang   Int?      @unique
+  sao          Int?
+  noidung      String?   @db.VarChar(45)
+  ngaydanhgia  DateTime? @db.Date
+  sanpham      Sanpham?  @relation(fields: [idsanpham], references: [idsanpham])
+  khachhang    Khachhang? @relation(fields: [idkhachang], references: [idkhachhang])
 }
 
 model Kho {
   idKho      Int       @id @default(autoincrement())
-  idsanpham  Int?
+  idsanpham  Int?      @unique
   soluong    Int?
-  Sanpham    Sanpham?  @relation(fields: [idsanpham], references: [idsanpham])
+  sanpham    Sanpham?  @relation(fields: [idsanpham], references: [idsanpham])
   vung       Vung[]
 }
 
 model Vung {
-  idVung    Int     @id @default(autoincrement())
-  idkho     Int?
-  tenvung   String?
-  Kho       Kho?    @relation(fields: [idkho], references: [idKho])
-  ke        Ke[]
+  idVung   Int       @id @default(autoincrement())
+  idkho    Int?      @unique
+  tenvung  String?   @db.VarChar(45)
+  kho      Kho?      @relation(fields: [idkho], references: [idKho])
+  ke       Ke[]
 }
 
 model Ke {
-  idke      Int      @id @default(autoincrement())
-  idvung    Int?
-  tenke     String?
-  Vung      Vung?    @relation(fields: [idvung], references: [idVung])
-  tang      Tang[]
+  idke    Int       @id @default(autoincrement())
+  idvung  Int?      @unique
+  tenke   String?   @db.VarChar(45)
+  vung    Vung?     @relation(fields: [idvung], references: [idVung])
+  tang    Tang[]
 }
 
 model Tang {
-  idtang    Int      @id @default(autoincrement())
-  idke      Int?
-  tentang   String?
-  Ke        Ke?      @relation(fields: [idke], references: [idke])
+  idtang   Int     @id
+  idke     Int?
+  tentang  String? @db.VarChar(255)
+  ke       Ke?     @relation(fields: [idke], references: [idke])
 }
 
-model TuvanHotro {
-  idtuvanhotro Int      @id @default(autoincrement())
-  idkhachang   Int?
-  noidung      String?
-  hinhthuc     Boolean?
-  trangthai    String?
+model Tuvanhotro {
+  idtuvanhotro Int       @id @default(autoincrement())
+  idkhachang   Int?      @unique
+  noidung      String?   @db.VarChar(255)
+  hinhthuc     String?   @db.VarChar(45)
+  trangthai    String?   @db.VarChar(45)
   idnhanvien   Int?
-  Khachhang    Khachhang? @relation(fields: [idkhachang], references: [idkhachhang])
-  Nhanvien     Nhanvien?  @relation(fields: [idnhanvien], references: [idNhanvien])
+  khachhang    Khachhang? @relation(fields: [idkhachang], references: [idkhachhang])
+  nhanvien     Nhanvien? @relation(fields: [idnhanvien], references: [idNhanvien])
 }
 
+model Admin {
+  idadmin      Int       @id @default(autoincrement())
+  idnhanvien   Int?      @unique
+  idkhachhang  Int?      @unique
+  username     String?   @db.VarChar(45)
+  pasword      String?   @db.VarChar(45)
+  idroleAdmin  Int?
+  nhanvien     Nhanvien? @relation(fields: [idnhanvien], references: [idNhanvien])
+  khachhang    Khachhang? @relation(fields: [idkhachhang], references: [idkhachhang])
+  role         Role?     @relation(fields: [idroleAdmin], references: [idrole])
+}
 
+model Permission {
+  idPermission Int       @id
+  TenQuyen     String?   @db.VarChar(45)
+  RolePermission RolePermission[]
+}
 
-// enum TrangThaiDonhang {
-//   DaDat
-//   DangXuLy
-//   DaGiao
-//   DaHuy
-// }
-
-
-
-// enum PhuongThucThanhtoan {
-//   ChuyenKhoan
-//   ViDienTu
-// }
-
-
-
-// enum HinhThucTuVan {
-//   TinNhan
-//   GoiDien
-// }
-
-// enum TrangThaiTuVan {
-//   ChuaXuLy
-//   DangXuLy
-//   DaXuLy
-// }
+model RolePermission {
+  idPermission Int
+  IdRole       Int
+  Id           Int       @id
+  role         Role      @relation(fields: [IdRole], references: [idrole])
+  permission   Permission @relation(fields: [idPermission], references: [idPermission])
+}

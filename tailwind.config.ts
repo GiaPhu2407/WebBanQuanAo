@@ -9,6 +9,23 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      // animation: {
+      //   slideTextColor:
+      //     "slideText 8s linear infinite, colorFlash 1s linear infinite", // Kết hợp cả hai animation
+      // },
+      // keyframes: {
+      //   slideText: {
+      //     "0%": { transform: "translateX(100%)" },
+      //     "100%": { transform: "translateX(-100%)" },
+      //   },
+      //   colorFlash: {
+      //     "0%": { color: "red" },
+      //     "25%": { color: "blue" },
+      //     "50%": { color: "green" },
+      //     "75%": { color: "purple" },
+      //     "100%": { color: "red" },
+      //   },
+      // },
       colors: {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",

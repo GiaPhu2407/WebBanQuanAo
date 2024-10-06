@@ -76,3 +76,32 @@ body {
     @apply bg-background text-foreground;
   }
 }
+@keyframes slideText {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes colorFlash {
+  0% {
+    color: red;
+  }
+  25% {
+    color: blue;
+  }
+  50% {
+    color: green;
+  }
+  75% {
+    color: purple;
+  }
+  100% {
+    color: red;
+  }
+}
+.animate-slideColorText {
+  animation: slideText 8s linear infinite, colorFlash 1s linear infinite;
+}
