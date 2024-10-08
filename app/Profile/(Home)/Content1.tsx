@@ -184,11 +184,17 @@ const Categories = () => {
   ];
 
   return (
-    <div className="container mx-auto p-4 ">
-      <h1 className="text-2xl font-sans font-bold mb-4 text-center" data-aos ="fade-down">
+    <div className="container mx-auto p-4 mb-5 ">
+      <h1
+        className="text-2xl font-sans font-bold mb-4 text-center"
+        data-aos="fade-down"
+      >
         MỘT SỐ MẪU QUẦN ÁO{" "}
       </h1>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6" data-aos ="fade-down">
+      <div
+        className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"
+        data-aos="fade-down"
+      >
         {categories.map((category) => (
           <button
             key={category.id}
@@ -201,22 +207,25 @@ const Categories = () => {
       </div>
 
       {selectedCategory && (
-        <div>
+        <div className="">
           <h2 className="text-xl font-semibold mb-2">
             {selectedCategory.name}
           </h2>
-          <ul className=" list-inside flex flex-wrap justify-center items-center gap-10 list-none ">
+          <ul className=" list-inside flex flex-wrap justify-center items-center gap-10 list-none  ">
             {selectedCategory.items.map((item) => (
-              <li key={item.id} className="card bg-base-100 w-96 shadow-xl">
+              <li
+                key={item.id}
+                className="card bg-base-100 inset-5  border w-96 shadow-xl transform transition-transform hover:scale-110 "
+              >
                 <div className="w-full flex flex-col items-center">
-                  <div className="w-full h-52 overflow-hidden rounded-t-lg">
+                  <div className="w-full h-52 overflow-hidden rounded-t-lg z-10 ">
                     <img
                       src={item.imageUrl}
                       alt={item.name}
-                      className="w-full h-full object-cover"
+                      className="w-96 mt-[5px] ml-[1px] px-1 h-full rounded-xl object-cover"
                     />
                   </div>
-                  <div className="p-4">
+                  <div className="p-4 z-10">
                     <h3 className="text-lg font-semibold mt-3 ml-2">
                       {item.name}
                     </h3>
