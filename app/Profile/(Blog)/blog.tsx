@@ -5,9 +5,10 @@ export default function Blog() {
   return (
     <>
       <section
-        className="bg-cover bg-center py-16"
+        className="bg-cover bg-center py-40"
         style={{
-          backgroundImage: "url('https://via.placeholder.com/1200x400')",
+          backgroundImage:
+            "url('https://i.pinimg.com/564x/8d/43/70/8d4370338da2ba878a1ea8057e68186b.jpg')",
         }}
       >
         <div className="container mx-auto text-center text-white">
