@@ -215,7 +215,7 @@ const Categories = () => {
             {selectedCategory.items.map((item) => (
               <li
                 key={item.id}
-                className="card bg-base-100 inset-5  border w-96 shadow-xl transform transition-transform hover:scale-110 "
+                className="card bg-base-100 inset-5  border w-96 shadow-xl transform transition-transform duration-300 hover:scale-110 "
               >
                 <div className="w-full flex flex-col items-center">
                   <div className="w-full h-52 overflow-hidden rounded-t-lg z-10 ">
@@ -236,7 +236,7 @@ const Categories = () => {
                       <a className="mt-4 cursor-pointer  bg-blue-500 text-white px-4 py-2 rounded-xl transform transition-transform duration-400 hover:scale-105">
                         Buy Now
                       </a>
-                      <p className="font-bold ml-4 mt-4 pt-2 inline-block  px-5 rounded-xl relative border-none outline-none z-10 before:rounded-xl before:absolute before:top-0 before:left-0 before:h-full before:w-0 before:shadow-2xl before:bg-gradient-to-r from-red-500 to-pink-500  before:-z-10 before:transition-all before:duration-500 before:ease-in hover:before:w-full hover:scale-125">
+                      <p className="font-bold ml-4 mt-4 pt-2 inline-block cursor-pointer  px-5 rounded-xl relative border-none outline-none z-10 before:rounded-xl before:absolute before:top-0 before:left-0 before:h-full before:w-0 before:shadow-2xl before:bg-gradient-to-r from-red-500 to-pink-500  before:-z-10 before:transition-all before:duration-500 before:ease-in hover:before:w-full hover:scale-125">
                         {item.price.toLocaleString("vi-VN")} VND
                       </p>
                     </div>
