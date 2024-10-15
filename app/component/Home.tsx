@@ -13,13 +13,23 @@ interface Product {
   size: string;
 }
 
+interface Product {
+  id: number;
+  name: string;
+  image: string;
+  price: number; // Giá nên là kiểu `number`
+  gender: string;
+  color: string;
+  size: string;
+}
+
 const initialProducts: Product[] = [
   {
     id: 1,
     name: "Áo thun Mickey",
     image:
-      "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn6012-dod-qjn60341-xnh-5.jpg  ",
-    price: 249000,
+      "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn6012-dod-qjn60341-xnh-5.jpg",
+    price: 249000, // Sử dụng số nguyên thay vì dấu chấm
     gender: "female",
     color: "red",
     size: "M",
@@ -29,12 +39,12 @@ const initialProducts: Product[] = [
     name: "Áo hoodie xanh",
     image:
       "https://m.yodycdn.com/fit-in/filters:format(webp)/products/ao-khoac-nam-akm6017-nau-4.jpg",
-    price: 499000,
+    price: 499000, // Sử dụng số nguyên
     gender: "male",
     color: "blue",
     size: "L",
   },
-  // Add more products...
+  // Thêm nhiều sản phẩm khác...
 ];
 
 const Home: React.FC = () => {

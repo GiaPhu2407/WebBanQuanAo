@@ -3,6 +3,10 @@ import React, { useState } from "react";
 import Header from "../Header";
 import { useRouter } from "next/router";
 import Link from "next/link";
+import { MdOutlineLocalShipping } from "react-icons/md";
+import { CgArrowsExchange } from "react-icons/cg";
+import { FiClock } from "react-icons/fi";
+import { MdSecurity } from "react-icons/md";
 
 const header = () => {
   const breadcrumbItems = [
@@ -35,12 +39,16 @@ const header = () => {
     <div>
       <Header />
 
-      <div className="ml-5 mt-1">
+      <div className="ml-5 mt-1 text-gray-500">
         {breadcrumbItems.map((item, index) => (
-          <Link key={index} href={""}>
-            {item}
-            {index < breadcrumbItems.length - 1 && " > "}
-          </Link>
+          <span key={index}>
+            <Link href={""} className="hover:text-blue-400">
+              {item}
+            </Link>
+            {index < breadcrumbItems.length - 1 && (
+              <span className="mx-1">{">"}</span>
+            )}
+          </span>
         ))}
       </div>
 
@@ -117,6 +125,40 @@ const header = () => {
             <button className="bg-[#FCAF17] shadow w-[600px] text-white py-2 px-4 rounded hover:bg-blue-600">
               Mua ngay
             </button>
+          </div>
+          <div>
+            <div className="flex mt-5">
+              <MdOutlineLocalShipping className="w-12 mt-1" />
+              <p className="text-[15px]">
+                <span className="font-semibold">Miễn phí vận chuyển:</span>Đơn
+                hàng từ 498k
+              </p>
+            </div>
+
+            <div className="flex mt-5">
+              <FiClock className="w-12 mt-1" />
+              <p className="text-[15px]">
+                <span className="font-semibold">Giao hàng:</span>Từ 3 - 5 ngày
+                trên cả nước
+              </p>
+            </div>
+            <div className="flex mt-5">
+              <CgArrowsExchange className="w-12 mt-1" />
+              <p className="text-[15px]">
+                <span className="font-semibold">Miễn phí đổi trả:</span>Tại 267+
+                cửa hàng trong 15 ngày
+              </p>
+            </div>
+            <div className="flex mt-5">
+              <CgArrowsExchange className="w-12 mt-1" />
+              <p className="text-[15px]">
+                Sử dụng mã giảm giá ở bước thanh toán
+              </p>
+            </div>
+            <div className="flex mt-5">
+              <MdSecurity className="w-12 mt-1" />
+              <p className="text-[15px]">Thông tin bảo mật và mã hoá</p>
+            </div>
           </div>
         </div>
       </div>
