@@ -1,12 +1,11 @@
-import React from "react";
+import ProductList from "../../app/component/ProductList";
+import sampleProducts from "../src/data/sampleProducts";
 
-import Header from "../component/Category/header";
-const page = () => {
+export default function Home() {
   return (
-    <div>
-      <Header />
-    </div>
+    <main>
+      <h1>Our Products</h1>
+      <ProductList products={sampleProducts} />
+    </main>
   );
-};
-
-export default page;
+}
