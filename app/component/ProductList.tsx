@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 interface Product {
   id: number;
   name: string;
@@ -14,15 +16,17 @@ interface ProductListProps {
 
 const ProductList: React.FC<ProductListProps> = ({ products }) => {
   return (
-    <div className="w-3/4 p-4 mt-20">
+    <div className="w-3/4 p-4 ">
       <div className="grid grid-cols-3 gap-4">
         {products.map((product) => (
-          <div key={product.id} className="border rounded-lg p-4">
+          <div key={product.id} className="border rounded-lg ">
+            <Link href={""}>
             <img
               src={product.image}
               alt={product.name}
-              className="w-full h-48 object-cover mb-2"
-            />
+              className="w-full h-full object-cover mb-2"
+            /></Link>
+           
             <h3 className="font-semibold">{product.name}</h3>
             <p className="text-gray-600">
               Price: {product.price.toLocaleString()}đ

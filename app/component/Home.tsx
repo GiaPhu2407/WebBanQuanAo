@@ -17,18 +17,20 @@ const initialProducts: Product[] = [
   {
     id: 1,
     name: "Áo thun Mickey",
-    image: "/mickey.jpg",
+    image:
+      "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn6012-dod-qjn60341-xnh-5.jpg  ",
     price: 249000,
-    gender: "male",
+    gender: "female",
     color: "red",
     size: "M",
   },
   {
-    id: 2,
+    id: 3,
     name: "Áo hoodie xanh",
-    image: "/hoodie.jpg",
+    image:
+      "https://m.yodycdn.com/fit-in/filters:format(webp)/products/ao-khoac-nam-akm6017-nau-4.jpg",
     price: 499000,
-    gender: "female",
+    gender: "male",
     color: "blue",
     size: "L",
   },

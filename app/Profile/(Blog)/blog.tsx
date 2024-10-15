@@ -1,9 +1,11 @@
 import Head from "next/head";
 import Footer from "../(Home)/Footer";
+import Header from "../(Home)/Header";
 
 export default function Blog() {
   return (
     <>
+      <Header />
       <section
         className="bg-cover bg-center py-40"
         style={{
@@ -29,7 +31,7 @@ export default function Blog() {
           {/* Blog Post 1 */}
           <div className="bg-white rounded-lg shadow-lg overflow-hidden">
             <img
-              src="https://via.placeholder.com/400x300"
+              src="https://images.pexels.com/photos/6461325/pexels-photo-6461325.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
               alt="Post 1"
               className="w-full h-48 object-cover"
             />
@@ -49,7 +51,7 @@ export default function Blog() {
           {/* Blog Post 2 */}
           <div className="bg-white rounded-lg shadow-lg overflow-hidden">
             <img
-              src="https://via.placeholder.com/400x300"
+              src="https://images.pexels.com/photos/4947543/pexels-photo-4947543.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
               alt="Post 2"
               className="w-full h-48 object-cover"
             />
@@ -70,7 +72,7 @@ export default function Blog() {
           {/* Blog Post 3 */}
           <div className="bg-white rounded-lg shadow-lg overflow-hidden">
             <img
-              src="https://via.placeholder.com/400x300"
+              src="https://images.pexels.com/photos/10084285/pexels-photo-10084285.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
               alt="Post 3"
               className="w-full h-48 object-cover"
             />
