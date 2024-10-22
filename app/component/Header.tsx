@@ -11,10 +11,10 @@ const Menu = () => {
 
   return (
     <div>
-      <div className="bg-white w-full h-20 shadow fixed z-10">
+      <div className="bg-white w-full h-20 shadow fixed z-[99]">
         <div className="flex items-center justify-center h-full">
           <div className="flex gap-10 content-center">
-            <ul className="flex gap-10 content-center">
+            <ul className="flex gap-10 content-center ">
               <li>
                 <Link href={""}>Sale</Link>
               </li>
@@ -98,7 +98,7 @@ const Menu = () => {
           showMaleDropdown
             ? "opacity-100 translate-y-0"
             : "opacity-0 -translate-y-full"
-        } bg-white w-full h-[300px] shadow fixed top-20 transition-all duration-300 ease-in-out transform`}
+        } bg-white w-full h-[300px] shadow fixed top-20 transition-all duration-300 ease-in-out transform z-20`}
       >
         <div className="flex gap-11 justify-center items-start mt-4">
           <div className="flex flex-col items-center border-r h-48 pr-4">
@@ -160,7 +160,7 @@ const Menu = () => {
           showFemaleDropdown
             ? "opacity-100 translate-y-0 "
             : "opacity-0 -translate-y-full"
-        } bg-white w-full h-[300px] shadow fixed top-20 transition-all duration-300 ease-in-out transform`}
+        } bg-white w-full h-[300px] shadow fixed top-20 transition-all duration-300 ease-in-out transform z-20`}
       >
         <div className="flex gap-11 justify-center items-start mt-4">
           <div className="flex flex-col items-center border-r h-48 pr-4">

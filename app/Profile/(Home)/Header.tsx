@@ -11,11 +11,11 @@ const Header = () => {
   const { userId } = useAuth();
   return (
     <div
-      className={`bg-white dark:bg-gray-400 -mt-24 flex flex-col items-center p-[30px_152px_125px_152px] w-full box-sizing-border ${
-        userId ? "hidden" : "block"
-      }`}
+      //className={`bg-white dark:bg-gray-400 -mt-24 flex flex-col items-center p-[30px_152px_125px_152px] w-full box-sizing-border ${
+        //userId ? "hidden" : "block"
+      //}`}
     >
-      <div className="m-[0_0_98px_0] flex flex-row justify-between items-center gap-10 w-[1286px] max-w-full box-sizing-border">
+      <div className="m-[0_0_98px_0] flex flex-row justify-between items-center gap-10 w-[1286px] max-w-full box-sizing-border mb-96">
         <div className="flex flex-row items-center gap-2">
           {/* <img className="w-[37px] h-[36.8px]" alt="" />
           <img className="w-[14.9px] h-[16.6px]" alt="" />
@@ -42,28 +42,28 @@ const Header = () => {
             </a>
             <div className="flex justify-center items-center md:order-2 space-x-1 md:space-x-2 rtl:space-x-reverse">
               <div>
-                {userId ? (
+                {/* {userId ? (
                   <div>
                     <UserButton />
-                  </div>
-                ) : (
-                  <div className="flex gap-5">
-                    <Link
-                      href="/sign-in"
-                      className="btn transition-all duration-500 bg-green-400 hover:text-red-500 px-4 w-20 sm:w-28 "
-                    >
-                      Login
-                    </Link>
-                    <Link
-                      href="/sign-up"
-                      className="btn transition-all duration-500 hover:text-red-500 bg-blue-400 px-5 w-20 sm:w-28"
-                    >
-                      Register
-                    </Link>
-                  </div>
-                )}
+                  </div>  
+                ) : ( */}
+                <div className="flex gap-5">
+                  <Link
+                    href="/sign-in"
+                    className="btn transition-all duration-500 bg-green-400 hover:text-red-500 px-4 w-20 sm:w-28 "
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/sign-up"
+                    className="btn transition-all duration-500 hover:text-red-500 bg-blue-400 px-5 w-20 sm:w-28"
+                  >
+                    Register
+                  </Link>
+                </div>
+                {/* )}
+              </div> */}
               </div>
-
               <button
                 data-collapse-toggle="mega-menu-icons"
                 type="button"

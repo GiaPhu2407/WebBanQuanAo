@@ -43,7 +43,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <ClerkProvider>
-          <Header />
+          {/* <Header /> */}
           {children}
         </ClerkProvider>
       </body>

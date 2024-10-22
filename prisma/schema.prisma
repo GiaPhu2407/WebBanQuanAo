@@ -58,11 +58,11 @@ model Loaisanpham {
 model Sanpham {
   idsanpham     Int       @id @default(autoincrement())
   tensanpham    String?   @db.VarChar(255)
-  mota          String?   @db.VarChar(255)
-  gia           String?   @db.VarChar(255)
-  hinhanh       String?   @db.VarChar(255)
-  idloaisanpham Int?      @unique
-  giamgia       Decimal?  @db.Decimal(5,2)
+   mota          String?   @db.VarChar(255)
+    gia           String?   @db.VarChar(255)
+    hinhanh       String?   @db.VarChar(255)
+    idloaisanpham Int?      @unique
+    giamgia       Decimal?  @db.Decimal(5,2)   
   loaisanpham   Loaisanpham? @relation(fields: [idloaisanpham], references: [idloaisanpham])
   chitietnhap   Chitietnhap[]
   chitietdonhang ChitietDonhang[]

@@ -1,92 +1,124 @@
 "use client";
-import { useState } from "react";
-import Filter from "../component/Filter";
-import ProductList from "../component/ProductList";
+import Link from "next/link";
+import React, { useState, useEffect } from "react";
 
 interface Product {
-  id: number;
-  name: string;
-  image: string;
-  price: number;
-  gender: string;
-  color: string;
-  size: string;
+  idsanpham: number;
+  tensanpham: string;
+  hinhanh: string;
+  gia: number;
+  mota: string;
+  idloaisanpham: number;
+  giamgia: number;
+  loaisanpham: {
+    tenloai: string;
+    mota: string;
+  };
 }
-
-interface Product {
-  id: number;
-  name: string;
-  image: string;
-  price: number; // Giá nên là kiểu `number`
-  gender: string;
-  color: string;
-  size: string;
-}
-
-const initialProducts: Product[] = [
-  {
-    id: 1,
-    name: "Áo thun Mickey",
-    image:
-      "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn6012-dod-qjn60341-xnh-5.jpg",
-    price: 249000, // Sử dụng số nguyên thay vì dấu chấm
-    gender: "female",
-    color: "red",
-    size: "M",
-  },
-  {
-    id: 3,
-    name: "Áo hoodie xanh",
-    image:
-      "https://m.yodycdn.com/fit-in/filters:format(webp)/products/ao-khoac-nam-akm6017-nau-4.jpg",
-    price: 499000, // Sử dụng số nguyên
-    gender: "male",
-    color: "blue",
-    size: "L",
-  },
-  // Thêm nhiều sản phẩm khác...
-];
 
 const Home: React.FC = () => {
-  const [filteredProducts, setFilteredProducts] =
-    useState<Product[]>(initialProducts);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [hoveredId, setHoveredId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleFilterChange = (filters: {
-    gender: string[];
-    color: string; // Update color to a single string
-    size: string[];
-    priceRange: string;
-  }) => {
-    let filtered = initialProducts;
+  useEffect(() => {
+    fetch("/api/sanpham")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        setProducts(data);
+        setLoading(false);
+      })
+      .catch((e) => {
+        console.error("Có lỗi khi tải dữ liệu sản phẩm:", e);
+        setError("Không thể tải dữ liệu sản phẩm. Vui lòng thử lại sau.");
+        setLoading(false);
+      });
+  }, []);
 
-    // Filter by gender
-    if (filters.gender.length) {
-      filtered = filtered.filter((p) => filters.gender.includes(p.gender));
-    }
+  if (loading) {
+    return (
+      <div
+        className="flex justify-center items-center h-screen"
+        data-theme="light"
+      >
+        <div className="loading loading-spinner text-blue-600 loading-lg"></div>
+      </div>
+    );
+  }
 
-    // Filter by color (single color string now)
-    if (filters.color) {
-      filtered = filtered.filter((p) => p.color === filters.color);
-    }
-
-    // Filter by size
-    if (filters.size.length) {
-      filtered = filtered.filter((p) => filters.size.includes(p.size));
-    }
-
-    // Filter by price range
-    if (filters.priceRange) {
-      const [min, max] = filters.priceRange.split("-").map(Number);
-      filtered = filtered.filter((p) => p.price >= min && p.price <= max);
-    }
-
-    setFilteredProducts(filtered);
-  };
+  if (error) {
+    return (
+      <div
+        className="flex justify-center items-center h-screen"
+        data-theme="light"
+      >
+        <div className="text-2xl font-bold text-red-600">{error}</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex min-h-screen p-8 bg-gray-50 mt-10">
-      <Filter onFilterChange={handleFilterChange} />
-      <ProductList products={filteredProducts} />
+    <div className="flex flex-wrap gap-6 min-h-screen p-8 bg-gray-50 mt-10">
+      {products && products.length > 0 ? (
+        products.map((product) => (
+          <div
+            key={product.idsanpham}
+            className="card bg-base-100 w-72 h-96 shadow-xl relative transition-all duration-300"
+            onMouseEnter={() => setHoveredId(product.idsanpham)}
+            onMouseLeave={() => setHoveredId(null)}
+          >
+            <div
+              className={`absolute bg-gradient-to-bl from-blue-600 to-blue-400 w-[303px] h-[303px] z-[-1] -top-2 -left-2 rounded-2xl transition-opacity duration-300 ${
+                hoveredId === product.idsanpham ? "opacity-100" : "opacity-0"
+              }`}
+            ></div>
+            <div className="w-full h-full flex flex-col z-10">
+              <figure className="px-4 pt-4">
+                <img
+                  src={product.hinhanh || "/placeholder-image.jpg"}
+                  alt={product.tensanpham}
+                  className="rounded-xl w-full h-40 object-cover"
+                />
+              </figure>
+              <div className="card-body flex flex-col justify-between">
+                <div className="text-center">
+                  <h2 className="text-lg font-semibold mb-2 line-clamp-2">
+                    {product.tensanpham}
+                  </h2>
+                  <p className="text-sm mb-4 line-clamp-2">{product.mota}</p>
+                  <p className="text-lg font-bold text-blue-600 mb-4">
+                    {new Intl.NumberFormat("vi-VN", {
+                      style: "currency",
+                      currency: "VND",
+                    }).format(product.gia)}
+                  </p>
+                </div>
+                <div className="flex justify-center gap-2">
+                  <button className="btn btn-sm bg-blue-600 text-white hover:bg-blue-700">
+                    Đặt Cọc
+                  </button>
+                  <Link
+                    href={`/Category?id=${product.idsanpham}`}
+                    className="btn btn-sm btn-outline hover:bg-gray-100"
+                  >
+                    Xem Chi Tiết
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))
+      ) : (
+        <div className="w-full text-center text-gray-500">
+          Không có sản phẩm nào để hiển thị
+        </div>
+      )}
     </div>
   );
 };
