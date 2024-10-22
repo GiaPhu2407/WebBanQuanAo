@@ -173,14 +173,14 @@ const Category = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
-  const [car, setCar] = useState<Product | null>(null);
+  const [sanpham, setCar] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentImage, setCurrentImage] = useState(
     "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn5042-vag-2.jpg"
   );
 
-  const carImages = [
+  const Images = [
     "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn5042-vag-2.jpg",
     "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn5042-vag-7.jpg",
     "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn5042-vag-1.jpg",
@@ -189,9 +189,28 @@ const Category = () => {
     "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn5042-vag-10.jpg",
     "https://m.yodycdn.com/videos/website/AKN/AKN5042.mp4",
   ];
+
   const handleImageClick = (image: any) => {
     setCurrentImage(image);
   };
+
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [quantity, setQuantity] = useState<number>(1);
+
+  const handleSizeSelect = (size: string) => {
+    setSelectedSize(size);
+  };
+
+  const incrementQuantity = () => {
+    setQuantity((prev) => prev + 1);
+  };
+
+  const decrementQuantity = () => {
+    if (quantity > 1) {
+      setQuantity((prev) => prev - 1);
+    }
+  };
+
   useEffect(() => {
     if (id) {
       fetch(`/api/sanpham/${id}`)
@@ -233,7 +252,7 @@ const Category = () => {
       </div>
     );
 
-  if (!car)
+  if (!sanpham)
     return (
       <div className="flex justify-center items-center h-screen">
         <div className="text-2xl font-bold text-gray-800">
@@ -249,7 +268,7 @@ const Category = () => {
         <div className="w-full h-full flex flex-col">
           <div className="pb-4">
             <button
-              onClick={() => router.push("/")}
+              onClick={() => router.push("/Show")}
               className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded inline-flex items-center"
             >
               <svg
@@ -271,7 +290,7 @@ const Category = () => {
             <div className="md:flex gap-8">
               {/* Hình ảnh thu nhỏ - Ở bên trái */}
               <div className="flex flex-col gap-2 items-start">
-                {carImages.map((image, index) => (
+                {Images.map((image, index) => (
                   <img
                     key={index}
                     src={image}
@@ -280,38 +299,76 @@ const Category = () => {
                     onClick={() => handleImageClick(image)}
                   />
                 ))}
-              </div>{" "}
-              {/* Thêm gap-8 giữa các phần */}
+              </div>
+
               {/* Hình ảnh chính - Ở giữa */}
               <div className="xl:w-[700px] xl:h-[500px] md:mx-auto">
-                {" "}
-                {/* Căn giữa hình ảnh chính */}
                 <img
                   className="xl:h-[500px] xl:w-full h-96 object-contain"
                   src={currentImage}
-                  alt={car.tensanpham}
+                  alt={sanpham.tensanpham}
                 />
               </div>
+
               {/* Thông tin sản phẩm - Ở bên phải */}
               <div className="px-8 py-4 bg-gray-50">
-                {/* <h3 className="text-xl font-semibold text-gray-800 mb-4">
-                  Thông số kỹ thuật
-                </h3> */}
                 <ul className="mt-2 space-y-2">
                   <li className="flex items-center">
-                    {/* <span className="font-medium text-gray-600 mr-2">
-                      Động cơ:
-                    </span> */}
-                    <span>{car.mota}</span>
+                    <span>{sanpham.mota}</span>
                   </li>
                 </ul>
 
                 <h3 className="text-xl font-semibold text-gray-800 mt-8">
                   Giá bán
                 </h3>
-                <p className="mt-2 text-3xl font-bold text-indigo-600">
-                  {car.gia.toLocaleString()} VNĐ
+                <p className="mt-2 text-3xl font-bold text-black">
+                  {Number(sanpham.gia).toLocaleString("vi-VN", {
+                    style: "currency",
+                    currency: "VND",
+                  })}
                 </p>
+
+                {/* Thêm lựa chọn kích thước */}
+                <div className="mt-6">
+                  <h4 className="text-lg font-medium">
+                    Chọn kích thước:{selectedSize}
+                  </h4>
+                  <div className="flex gap-4 mt-2">
+                    {["S", "M", "L", "XL"].map((size) => (
+                      <button
+                        key={size}
+                        className={`border-2 px-4 py-2 rounded-lg ${
+                          selectedSize === size
+                            ? "border-indigo-600 bg-indigo-100"
+                            : "border-gray-300"
+                        }`}
+                        onClick={() => handleSizeSelect(size)}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Nút tăng/giảm số lượng */}
+                <div className="mt-6">
+                  <h4 className="text-lg font-medium">Số lượng:</h4>
+                  <div className="flex items-center gap-4 mt-2">
+                    <button
+                      className="px-4 py-2 bg-gray-200 rounded-lg"
+                      onClick={decrementQuantity}
+                    >
+                      -
+                    </button>
+                    <span className="text-xl font-bold">{quantity}</span>
+                    <button
+                      className="px-4 py-2 bg-gray-200 rounded-lg"
+                      onClick={incrementQuantity}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
 
                 <div className="flex gap-4 mt-6">
                   <button className="w-48 bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition duration-300">

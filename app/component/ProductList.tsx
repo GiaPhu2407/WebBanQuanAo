@@ -68,17 +68,18 @@ const SortableProductItem: React.FC<SortableProductItemProps> = ({
               isHovered ? "animate-spinrun" : "hidden"
             }`}
         />
-        <div className="w-[303px] h-[303px]">
+        <div className="w-[303px] h-[303px] ">
           <figure className="px-10">
-            {product.hinhanh && (
-              <Image
-                src={hinh}
-                alt={product.tensanpham}
-                width={256}
-                height={128}
-                className="rounded-xl w-64 h-32 object-cover"
-              />
-            )}
+            {/* {product.hinhanh && ( */}
+            <Image
+              src="https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn5042-vag-2.jpg"
+              // alt={product.tensanpham}
+              alt=""
+              width={256}
+              height={128}
+              className="rounded-xl w-64 h-32 object-cover"
+            />
+            {/* )} */}
           </figure>
           <div className="card-body items-center text-center">
             <h2 className="card-title">{product.tensanpham}</h2>

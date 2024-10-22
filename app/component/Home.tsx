@@ -1,6 +1,8 @@
 "use client";
 import Link from "next/link";
 import React, { useState, useEffect } from "react";
+import hinh from "@/app/image/hinh.png";
+import Image from "next/image";
 
 interface Product {
   idsanpham: number;
@@ -21,6 +23,21 @@ const Home: React.FC = () => {
   const [hoveredId, setHoveredId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Mảng các URL hình ảnh, tương ứng với các sản phẩm có idsanpham từ 1 đến n
+  const imageUrls = [
+    "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn5042-vag-2.jpg",  // idsanpham 1
+    "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn6012-hog-qjn6034-xnh-3.jpg",  // idsanpham 2
+    "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn6012-hog-qjn6034-xnh-3.jpg",  // idsanpham 3
+    "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn6012-hog-qjn6034-xnh-3.jpg",  // idsanpham 4
+    "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn5042-vag-2.jpg",  // idsanpham 5
+    "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn6012-hog-qjn6034-xnh-3.jpg",  // idsanpham 6
+    "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn6012-hog-qjn6034-xnh-3.jpg",  // idsanpham 7
+    "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn6012-hog-qjn6034-xnh-3.jpg",  // idsanpham 8
+    
+    
+    // Thêm các URL hình ảnh khác theo idsanpham
+  ];
 
   useEffect(() => {
     fetch("/api/sanpham")
@@ -69,7 +86,7 @@ const Home: React.FC = () => {
         products.map((product) => (
           <div
             key={product.idsanpham}
-            className="card bg-base-100 w-72 h-96 shadow-xl relative transition-all duration-300"
+            className="card bg-base-100 w-72 h-[600px] shadow-xl relative transition-all duration-300"
             onMouseEnter={() => setHoveredId(product.idsanpham)}
             onMouseLeave={() => setHoveredId(null)}
           >
@@ -79,13 +96,16 @@ const Home: React.FC = () => {
               }`}
             ></div>
             <div className="w-full h-full flex flex-col z-10">
-              <figure className="px-4 pt-4">
-                <img
-                  src={product.hinhanh || "/placeholder-image.jpg"}
-                  alt={product.tensanpham}
-                  className="rounded-xl w-full h-40 object-cover"
-                />
-              </figure>
+              <div>
+                <figure className="px-4 pt-4">
+                  {/* Dùng hình ảnh từ mảng imageUrls theo idsanpham, nếu không có thì dùng hình mặc định */}
+                  <img
+                    src={imageUrls[product.idsanpham - 1] || hinh.src}
+                    alt={product.tensanpham}
+                    className="rounded-xl w-full h-full object-cover"
+                  />
+                </figure>
+              </div>
               <div className="card-body flex flex-col justify-between">
                 <div className="text-center">
                   <h2 className="text-lg font-semibold mb-2 line-clamp-2">
