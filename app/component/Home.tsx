@@ -26,16 +26,15 @@ const Home: React.FC = () => {
 
   // Mảng các URL hình ảnh, tương ứng với các sản phẩm có idsanpham từ 1 đến n
   const imageUrls = [
-    "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn5042-vag-2.jpg",  // idsanpham 1
-    "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn6012-hog-qjn6034-xnh-3.jpg",  // idsanpham 2
-    "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn6012-hog-qjn6034-xnh-3.jpg",  // idsanpham 3
-    "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn6012-hog-qjn6034-xnh-3.jpg",  // idsanpham 4
-    "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn5042-vag-2.jpg",  // idsanpham 5
-    "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn6012-hog-qjn6034-xnh-3.jpg",  // idsanpham 6
-    "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn6012-hog-qjn6034-xnh-3.jpg",  // idsanpham 7
-    "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn6012-hog-qjn6034-xnh-3.jpg",  // idsanpham 8
-    
-    
+    "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn5042-vag-2.jpg", // idsanpham 1
+    "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn6012-hog-qjn6034-xnh-3.jpg", // idsanpham 2
+    "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn6012-hog-qjn6034-xnh-3.jpg", // idsanpham 3
+    "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn6012-hog-qjn6034-xnh-3.jpg", // idsanpham 4
+    "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn5042-vag-2.jpg", // idsanpham 5
+    "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn6012-hog-qjn6034-xnh-3.jpg", // idsanpham 6
+    "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn6012-hog-qjn6034-xnh-3.jpg", // idsanpham 7
+    "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn6012-hog-qjn6034-xnh-3.jpg", // idsanpham 8
+
     // Thêm các URL hình ảnh khác theo idsanpham
   ];
 
@@ -100,7 +99,7 @@ const Home: React.FC = () => {
                 <figure className="px-4 pt-4">
                   {/* Dùng hình ảnh từ mảng imageUrls theo idsanpham, nếu không có thì dùng hình mặc định */}
                   <img
-                    src={imageUrls[product.idsanpham - 1] || hinh.src}
+                    src={product.hinhanh || hinh.src}
                     alt={product.tensanpham}
                     className="rounded-xl w-full h-full object-cover"
                   />
@@ -124,7 +123,7 @@ const Home: React.FC = () => {
                     Đặt Cọc
                   </button>
                   <Link
-                    href={`/Category?id=${product.idsanpham}`}
+                    href={`/component/Category?id=${product.idsanpham}`}
                     className="btn btn-sm btn-outline hover:bg-gray-100"
                   >
                     Xem Chi Tiết

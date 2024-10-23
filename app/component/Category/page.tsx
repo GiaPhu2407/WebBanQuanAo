@@ -153,7 +153,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Header from "../component/Header";
+import Header from "../Header";
 
 interface Product {
   idsanpham: number;
@@ -173,7 +173,7 @@ const Category = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
-  const [sanpham, setCar] = useState<Product | null>(null);
+  const [sanpham, setSanpham] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentImage, setCurrentImage] = useState(
@@ -190,7 +190,7 @@ const Category = () => {
     "https://m.yodycdn.com/videos/website/AKN/AKN5042.mp4",
   ];
 
-  const handleImageClick = (image: any) => {
+  const handleImageClick = (image: string) => {
     setCurrentImage(image);
   };
 
@@ -224,11 +224,11 @@ const Category = () => {
           if (data.error) {
             throw new Error(data.error);
           }
-          setCar(data);
+          setSanpham(data);
           setLoading(false);
         })
         .catch((err) => {
-          console.error("Lỗi khi lấy thông tin xe:", err);
+          console.error("Lỗi khi lấy thông tin sản phẩm:", err);
           setError(err.message);
           setLoading(false);
         });
@@ -256,7 +256,7 @@ const Category = () => {
     return (
       <div className="flex justify-center items-center h-screen">
         <div className="text-2xl font-bold text-gray-800">
-          Không tìm thấy thông tin xe
+          Không tìm thấy sản phẩm
         </div>
       </div>
     );
@@ -268,7 +268,7 @@ const Category = () => {
         <div className="w-full h-full flex flex-col">
           <div className="pb-4">
             <button
-              onClick={() => router.push("/Show")}
+              onClick={() => router.push("/")}
               className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded inline-flex items-center"
             >
               <svg
@@ -288,20 +288,18 @@ const Category = () => {
 
           <div className="shadow-xl rounded-lg overflow-hidden w-full">
             <div className="md:flex gap-8">
-              {/* Hình ảnh thu nhỏ - Ở bên trái */}
               <div className="flex flex-col gap-2 items-start">
                 {Images.map((image, index) => (
                   <img
                     key={index}
                     src={image}
-                    alt={`Car image ${index + 1}`}
+                    alt={`Hình ảnh sản phẩm ${index + 1}`}
                     className="w-24 h-24 object-cover cursor-pointer border-2 hover:border-indigo-500"
                     onClick={() => handleImageClick(image)}
                   />
                 ))}
               </div>
 
-              {/* Hình ảnh chính - Ở giữa */}
               <div className="xl:w-[700px] xl:h-[500px] md:mx-auto">
                 <img
                   className="xl:h-[500px] xl:w-full h-96 object-contain"
@@ -310,13 +308,9 @@ const Category = () => {
                 />
               </div>
 
-              {/* Thông tin sản phẩm - Ở bên phải */}
               <div className="px-8 py-4 bg-gray-50">
-                <ul className="mt-2 space-y-2">
-                  <li className="flex items-center">
-                    <span>{sanpham.mota}</span>
-                  </li>
-                </ul>
+                <h2 className="text-xl font-bold mb-4">{sanpham.tensanpham}</h2>
+                <p className="text-gray-700 mb-4">{sanpham.mota}</p>
 
                 <h3 className="text-xl font-semibold text-gray-800 mt-8">
                   Giá bán
@@ -328,10 +322,9 @@ const Category = () => {
                   })}
                 </p>
 
-                {/* Thêm lựa chọn kích thước */}
                 <div className="mt-6">
                   <h4 className="text-lg font-medium">
-                    Chọn kích thước:{selectedSize}
+                    Chọn kích thước: {selectedSize || "Chưa chọn"}
                   </h4>
                   <div className="flex gap-4 mt-2">
                     {["S", "M", "L", "XL"].map((size) => (
@@ -350,7 +343,6 @@ const Category = () => {
                   </div>
                 </div>
 
-                {/* Nút tăng/giảm số lượng */}
                 <div className="mt-6">
                   <h4 className="text-lg font-medium">Số lượng:</h4>
                   <div className="flex items-center gap-4 mt-2">
