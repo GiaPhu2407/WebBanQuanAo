@@ -132,7 +132,7 @@ const Home: React.FC = () => {
               {/* Buttons */}
               <div className="flex gap-2 pt-2">
                 <button className="flex-1 py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                  Đặt Cọc
+                  Mua
                 </button>
                 <Link
                   href={`/component/Category?id=${product.idsanpham}`}
