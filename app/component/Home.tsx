@@ -1,8 +1,9 @@
 "use client";
+
 import Link from "next/link";
 import React, { useState, useEffect } from "react";
 import hinh from "@/app/image/hinh.png";
-import Image from "next/image";
+import { Heart } from "lucide-react";
 
 interface Product {
   idsanpham: number;
@@ -24,20 +25,6 @@ const Home: React.FC = () => {
   const [hoveredId, setHoveredId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Mảng các URL hình ảnh, tương ứng với các sản phẩm có idsanpham từ 1 đến n
-  // const imageUrls = [
-  //   "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn5042-vag-2.jpg", // idsanpham 1
-  //   "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn6012-hog-qjn6034-xnh-3.jpg", // idsanpham 2
-  //   "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn6012-hog-qjn6034-xnh-3.jpg", // idsanpham 3
-  //   "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn6012-hog-qjn6034-xnh-3.jpg", // idsanpham 4
-  //   "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn5042-vag-2.jpg", // idsanpham 5
-  //   "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn6012-hog-qjn6034-xnh-3.jpg", // idsanpham 6
-  //   "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn6012-hog-qjn6034-xnh-3.jpg", // idsanpham 7
-  //   "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn6012-hog-qjn6034-xnh-3.jpg", // idsanpham 8
-
-  //   // Thêm các URL hình ảnh khác theo idsanpham
-  // ];
 
   useEffect(() => {
     fetch("/api/sanpham")
@@ -81,59 +68,78 @@ const Home: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-wrap gap-6 min-h-screen p-8 bg-gray-50 mt-10">
+    <div className="flex flex-wrap gap-6 p-8 bg-gray-50">
       {products && products.length > 0 ? (
         products.map((product) => (
           <div
             key={product.idsanpham}
-            className="card bg-base-100 w-72 h-[600px] shadow-xl relative transition-all duration-300"
+            className="w-full md:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] xl:w-[calc(25%-18px)] group relative bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300"
             onMouseEnter={() => setHoveredId(product.idsanpham)}
             onMouseLeave={() => setHoveredId(null)}
           >
-            <div
-              className={`absolute bg-gradient-to-bl from-blue-600 to-blue-400 w-[303px] h-[303px] z-[-1] -top-2 -left-2 rounded-2xl transition-opacity duration-300 ${
-                hoveredId === product.idsanpham ? "opacity-100" : "opacity-0"
-              }`}
-            ></div>
-            <div className="w-full h-full flex flex-col z-10">
-              <div>
-                <figure className="px-4 pt-4">
-                  {/* Dùng hình ảnh từ mảng imageUrls theo idsanpham, nếu không có thì dùng hình mặc định */}
-                  <img
-                    src={product.hinhanh || hinh.src}
-                    alt={product.tensanpham}
-                    className="rounded-xl w-full h-full object-cover"
-                  />
-                </figure>
+            {/* Image Container */}
+            <div className="relative aspect-square overflow-hidden rounded-t-xl">
+              <img
+                src={product.hinhanh || hinh.src}
+                alt={product.tensanpham}
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+              <div className="absolute top-3 right-3">
+                <button className="p-2 rounded-full bg-white/80 hover:bg-white transition-colors">
+                  <Heart className="w-5 h-5 text-gray-600 hover:text-red-500 transition-colors" />
+                </button>
               </div>
-              <div className="card-body flex flex-col justify-between">
-                <div className="text-center">
-                  <h2 className="text-lg font-semibold mb-2 line-clamp-2">
+              {product.giamgia > 0 && (
+                <span className="absolute top-3 left-3 px-2 py-1 text-xs font-semibold text-white bg-red-500 rounded-full">
+                  -{product.giamgia}%
+                </span>
+              )}
+            </div>
+
+            {/* Content Container */}
+            <div className="p-4 space-y-4">
+              {/* Product Info */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-start">
+                  <h2 className="font-semibold text-lg line-clamp-1">
                     {product.tensanpham}
                   </h2>
-                  <p className="text-sm mb-4 line-clamp-2">{product.mota}</p>
-                  <p className="text-sm mb-4 line-clamp-2">
+                  <span className="px-2 py-1 text-xs border border-gray-300 rounded-full">
                     {product.gioitinh ? "Nam" : "Nữ"}
-                  </p>
-
-                  <p className="text-lg font-bold text-blue-600 mb-4">
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600 line-clamp-2">
+                  {product.mota}
+                </p>
+                <div className="flex items-center justify-between">
+                  <p className="text-lg font-bold text-blue-600">
                     {new Intl.NumberFormat("vi-VN", {
                       style: "currency",
                       currency: "VND",
                     }).format(product.gia)}
                   </p>
+                  {product.giamgia > 0 && (
+                    <p className="text-sm text-gray-500 line-through">
+                      {new Intl.NumberFormat("vi-VN", {
+                        style: "currency",
+                        currency: "VND",
+                      }).format(product.gia * (1 + product.giamgia / 100))}
+                    </p>
+                  )}
                 </div>
-                <div className="flex justify-center gap-2">
-                  <button className="btn btn-sm bg-blue-600 text-white hover:bg-blue-700">
-                    Đặt Cọc
-                  </button>
-                  <Link
-                    href={`/component/Category?id=${product.idsanpham}`}
-                    className="btn btn-sm btn-outline hover:bg-gray-100"
-                  >
-                    Xem Chi Tiết
-                  </Link>
-                </div>
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-2 pt-2">
+                <button className="flex-1 py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                  Đặt Cọc
+                </button>
+                <Link
+                  href={`/component/Category?id=${product.idsanpham}`}
+                  className="flex-1 py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-center"
+                >
+                  Xem Chi Tiết
+                </Link>
               </div>
             </div>
           </div>
