@@ -63,6 +63,7 @@ model Sanpham {
     hinhanh       String?   @db.VarChar(255)
     idloaisanpham Int?      @unique
     giamgia       Decimal?  @db.Decimal(5,2)   
+    gioitinh       Boolean?         // Trường giới tính
   loaisanpham   Loaisanpham? @relation(fields: [idloaisanpham], references: [idloaisanpham])
   chitietnhap   Chitietnhap[]
   chitietdonhang ChitietDonhang[]

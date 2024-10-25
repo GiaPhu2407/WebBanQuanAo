@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
         hinhanh: body.hinhanh,
         idloaisanpham: body.idloaisanpham,
         giamgia: body.giamgia,
+        gioitinh: body.gioitinh === "nam" ? true : false, // Chuyển đổi chuỗi thành boolean
       },
     });
     return NextResponse.json(
@@ -23,13 +24,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: e.message }, { status: 500 });
   }
 }
-export async function DELETE(request: NextRequest) {
-  const sanpham = await prisma.sanpham.deleteMany();
-  return NextResponse.json(
-    { sanpham, message: "Xóa hết dữ liệu thành công" },
-    { status: 200 }
-  );
-}
+
 export async function GET(req: NextRequest) {
   const sanpham = await prisma.sanpham.findMany();
   return NextResponse.json(sanpham);

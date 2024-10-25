@@ -148,6 +148,14 @@ export async function PUT(
       );
     }
 
+    // Chuyển đổi giới tính nếu là chuỗi "nam" hoặc "nữ"
+    let gioitinhBoolean;
+    if (typeof body.gioitinh === "string") {
+      gioitinhBoolean = body.gioitinh === "nam" ? true : false;
+    } else {
+      gioitinhBoolean = body.gioitinh; // Nếu đã là boolean thì giữ nguyên
+    }
+
     // Cập nhật sản phẩm
     const updatedProduct = await prisma.sanpham.update({
       where: { idsanpham: id },
@@ -158,6 +166,7 @@ export async function PUT(
         hinhanh: body.hinhanh,
         idloaisanpham: body.idloaisanpham,
         giamgia: body.giamgia,
+        gioitinh: gioitinhBoolean, // Sử dụng giá trị boolean chính xác
       },
     });
 
