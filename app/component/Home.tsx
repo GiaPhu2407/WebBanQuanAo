@@ -261,9 +261,9 @@ const Home: React.FC = () => {
         <div className="p-4 space-y-4">
           <div className="space-y-2">
             <div className="flex justify-between items-start">
-              <h2 className="font-semibold text-lg line-clamp-1">
+              {/* <h2 className="font-semibold text-lg line-clamp-1">
                 {product.tensanpham}
-              </h2>
+              </h2> */}
               <span className="px-2 py-1 text-xs border border-gray-300 rounded-full">
                 {product.gioitinh ? "Nam" : "Nữ"}
               </span>

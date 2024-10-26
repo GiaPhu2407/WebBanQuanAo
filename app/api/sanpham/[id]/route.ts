@@ -137,7 +137,9 @@ export async function PUT(
     const existingProduct = await prisma.sanpham.findFirst({
       where: {
         tensanpham: body.tensanpham,
-        NOT: { idsanpham: id },
+        AND: {
+          NOT: { idsanpham: id },
+        },
       },
     });
 
@@ -153,7 +155,7 @@ export async function PUT(
     if (typeof body.gioitinh === "string") {
       gioitinhBoolean = body.gioitinh === "nam" ? true : false;
     } else {
-      gioitinhBoolean = body.gioitinh; // Nếu đã là boolean thì giữ nguyên
+      gioitinhBoolean = body.gioitinh;
     }
 
     // Cập nhật sản phẩm
@@ -166,7 +168,7 @@ export async function PUT(
         hinhanh: body.hinhanh,
         idloaisanpham: body.idloaisanpham,
         giamgia: body.giamgia,
-        gioitinh: gioitinhBoolean, // Sử dụng giá trị boolean chính xác
+        gioitinh: gioitinhBoolean,
         size: body.size,
       },
     });
