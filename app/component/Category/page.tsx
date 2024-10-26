@@ -364,7 +364,7 @@ const Category = () => {
 
                 <div className="flex gap-4 mt-6">
                   <button className="w-48 bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition duration-300">
-                    Đặt cọc ngay
+                    Đặt Hàng
                   </button>
                   <button className="w-48 bg-slate-600 text-white py-2 rounded-md hover:bg-black transition duration-300">
                     Thêm vào giỏ hàng

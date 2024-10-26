@@ -167,6 +167,7 @@ export async function PUT(
         idloaisanpham: body.idloaisanpham,
         giamgia: body.giamgia,
         gioitinh: gioitinhBoolean, // Sử dụng giá trị boolean chính xác
+        size: body.size,
       },
     });
 

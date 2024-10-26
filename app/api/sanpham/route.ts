@@ -14,6 +14,7 @@ export async function POST(req: NextRequest) {
         idloaisanpham: body.idloaisanpham,
         giamgia: body.giamgia,
         gioitinh: body.gioitinh === "nam" ? true : false, // Chuyển đổi chuỗi thành boolean
+        size: body.size,
       },
     });
     return NextResponse.json(
