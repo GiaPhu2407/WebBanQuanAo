@@ -83,8 +83,11 @@ const Home: React.FC = () => {
 
   if (loading)
     return (
-      <div className="flex justify-center items-center h-screen">
-        Loading...
+      // <div className="flex justify-center items-center h-screen">
+      //   Loading...
+      // </div>
+      <div className="loader-container">
+        <div className="loader"></div>
       </div>
     );
   if (error)

@@ -4,10 +4,28 @@ import React, { useState } from "react";
 import { FaBagShopping } from "react-icons/fa6";
 import { FaMars, FaVenus } from "react-icons/fa"; // Importing icons
 import { UserButton } from "@clerk/nextjs";
-
+interface Product {
+  idsanpham: number;
+  tensanpham: string;
+  hinhanh: string;
+  gia: number;
+  mota: string;
+  idloaisanpham: number;
+  giamgia: number;
+  gioitinh: boolean;
+  size: string;
+}
 const Menu = () => {
   const [showMaleDropdown, setShowMaleDropdown] = useState(false);
   const [showFemaleDropdown, setShowFemaleDropdown] = useState(false);
+
+  const AddProducttoCard = () => {
+    // const payLoad = {
+    //   idsanpham,
+    //   tensanpham,
+    //   hinhanh,
+    // };
+  };
 
   return (
     <div>
@@ -81,7 +99,9 @@ const Menu = () => {
               />
             </svg>
           </label>
-          <FaBagShopping className="ml-5 text-2xl text-rose-500" />
+          <div className="" onClick={AddProducttoCard}>
+            <FaBagShopping className="ml-5 text-2xl text-rose-500" />
+          </div>
           <div className="ml-10 mt-[4px]">
             <UserButton />
           </div>

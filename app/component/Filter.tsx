@@ -140,7 +140,7 @@ const Filter: React.FC<FilterProps> = ({ onFilterChange }) => {
     fetchData();
   }, []);
 
-  if (loading) return <div>Loading...</div>;
+//   if (loading) return <div>Loading...</div>;
 
   return (
     <div className="w-64 p-4 space-y-6 bg-white shadow-sm rounded-lg h-fit">
