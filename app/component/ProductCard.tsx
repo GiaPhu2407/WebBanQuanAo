@@ -112,9 +112,9 @@ const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
         </div>
 
         <div className="p-4 space-y-3">
-          <h3 className="font-medium text-lg line-clamp-1">
+          {/* <h3 className="font-medium text-lg line-clamp-1">
             {product.tensanpham}
-          </h3>
+          </h3> */}
 
           <div className="flex items-center space-x-2">
             <span className="px-2 py-1 text-xs border border-gray-300 rounded-full">
