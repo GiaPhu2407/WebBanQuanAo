@@ -1,4 +1,4 @@
-import ProductList from "../../app/component/ProductList";
+// import ProductList from "../../app/component/ProductList";
 
 
 export default function Home() {
