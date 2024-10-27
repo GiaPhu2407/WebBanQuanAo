@@ -4,7 +4,6 @@ import Link from "next/link";
 import React, { useState, useEffect } from "react";
 import hinh from "@/app/image/hinh.png";
 import { Heart } from "lucide-react";
-import LoadingTruck from "./LoadingTruck";
 
 interface Product {
   idsanpham: number;
