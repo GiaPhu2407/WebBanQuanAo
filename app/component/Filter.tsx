@@ -1,184 +1,284 @@
-"use client";
-import { SetStateAction, useState } from "react";
+// "use client";
+// import React, { useState, useEffect } from "react";
+// import Link from "next/link";
+// import { Heart } from "lucide-react";
+// import Home from "@/app/component/Home";
+// interface FilterProps {
+//   onFilterChange: (filters: FilterState) => void;
+// }
+// interface FilterState {
+//     categories: number[];
+//     gender: string[];
+//     priceRange: [number, number];
+//     sizes: string[];
+//   }
+  
+//   interface CategoryType {
+//     id: number;
+//     tenloai: string;
+//   }
+  
+// const Filter: React.FC<FilterProps> = ({ onFilterChange }) => {
+//   const [filters, setFilters] = useState<FilterState>({
+//     categories: [],
+//     gender: [],
+//     priceRange: [0, 10000000],
+//     sizes: [],
+//   });
 
-interface Filters {
-  gender: string[];
-  color: string;
-  size: string[];
-  priceRange: string;
-}
+//   const [categories, setCategories] = useState<CategoryType[]>([]);
+//   const [sizes, setSizes] = useState<string[]>([]);
+//   const [loading, setLoading] = useState(true);
 
-interface FilterProps {
-  onFilterChange: (filters: Filters) => void;
-}
+//   useEffect(() => {
+//     const fetchCategories = async () => {
+//       try {
+//         const response = await fetch("/api/loaisanpham");
+//         if (!response.ok) throw new Error("Failed to fetch categories");
+//         const data = await response.json();
+//         setCategories(data);
+//       } catch (error) {
+//         console.error("Error fetching categories:", error);
+//       }
+//       const handleFilterChange = (filters: FilterState) => {
+//         let filtered = [...products];
+//         // Apply filters
+//     if (filters.categories.length > 0) {
+//         filtered = filtered.filter((product) =>
+//           filters.categories.includes(product.idloaisanpham)
+//         );
+//       }
+  
+//       if (filters.gender.length > 0) {
+//         filtered = filtered.filter((product) =>
+//           filters.gender.includes(product.gioitinh ? "nam" : "nu")
+//         );
+//       }
+  
+//       filtered = filtered.filter(
+//         (product) =>
+//           product.gia >= filters.priceRange[0] &&
+//           product.gia <= filters.priceRange[1]
+//       );
+  
+//       if (filters.sizes.length > 0) {
+//         filtered = filtered.filter((product) => {
+//           const productSizes = product.size.split(",").map((s) => s.trim());
+//           return filters.sizes.some((size) => productSizes.includes(size));
+//         });
+//       }
+  
+//       setFilteredProducts(filtered);
+//     };
 
-const Filter: React.FC<FilterProps> = ({ onFilterChange }) => {
-  const [filters, setFilters] = useState<Filters>({
-    gender: [],
-    color: "",
-    size: [],
-    priceRange: "",
-  });
+//     const fetchSizes = async () => {
+//       try {
+//         const response = await fetch("/api/sizes");
+//         if (!response.ok) throw new Error("Failed to fetch sizes");
+//         const data = await response.json();
+//         setSizes(data);
+//       } catch (error) {
+//         console.error("Error fetching sizes:", error);
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
 
-  const [selectedGender, setSelectedGender] = useState<string | null>(null);
+//     fetchCategories();
+//     fetchSizes();
+//   }, []);
+  
 
-  const handleCheckboxChange1 = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    // Nếu đã chọn cùng giá trị thì bỏ chọn, nếu không thì chọn giá trị mới
-    setSelectedGender(selectedGender === value ? null : value);
+//   const handleCategoryChange = (categoryId: number) => {
+//     const newCategories = filters.categories.includes(categoryId)
+//       ? filters.categories.filter((id) => id !== categoryId)
+//       : [...filters.categories, categoryId];
 
-    // Cập nhật vào filters để gửi lên onFilterChange
-    const updatedFilters = { ...filters, gender: [value] };
-    setFilters(updatedFilters);
-    onFilterChange(updatedFilters);
-  };
+//     const newFilters = {
+//       ...filters,
+//       categories: newCategories,
+//     };
+//     setFilters(newFilters);
+//     onFilterChange(newFilters);
+//   };
 
-  const handleRadioChange = (name: string, value: string) => {
-    setFilters((prev) => {
-      const updatedFilters = { ...prev, [name]: value };
-      onFilterChange(updatedFilters);
-      return updatedFilters;
-    });
-  };
+//   const handleSizeChange = (size: string) => {
+//     const newSizes = filters.sizes.includes(size)
+//       ? filters.sizes.filter((s) => s !== size)
+//       : [...filters.sizes, size];
 
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, checked } = e.target;
-    setFilters((prev) => {
-      const updatedArray = checked
-        ? [...(prev[name as keyof Filters] as string[]), value]
-        : (prev[name as keyof Filters] as string[]).filter(
-            (item: string) => item !== value
-          );
-      const updatedFilters = { ...prev, [name]: updatedArray };
-      onFilterChange(updatedFilters);
-      return updatedFilters;
-    });
-  };
+//     const newFilters = {
+//       ...filters,
+//       sizes: newSizes,
+//     };
+//     setFilters(newFilters);
+//     onFilterChange(newFilters);
+//   };
 
-  return (
-    <div className="w-1/4 p-4 border rounded mt-4">
-      <h2 className="text-xl font-semibold mb-4">Bộ lọc</h2>
+//   const handleGenderChange = (gender: string) => {
+//     const newGender = filters.gender.includes(gender)
+//       ? filters.gender.filter((g) => g !== gender)
+//       : [...filters.gender, gender];
 
-      {/* Giới tính */}
-      <div className="mb-6 space-y-2">
-        <label className="block mb-1 font-medium">Giới tính</label>
-        <div className="flex flex-col space-y-2">
-          <label className="flex items-center">
-            <input
-              type="checkbox"
-              name="gender"
-              value="male"
-              checked={selectedGender === "male"}
-              onChange={handleCheckboxChange1}
-              className="mr-2"
-              id="1"
-            />
-            Nam
-          </label>
-          <label className="flex items-center">
-            <input
-              type="checkbox"
-              name="gender"
-              value="female"
-              checked={selectedGender === "female"}
-              onChange={handleCheckboxChange1}
-              className="mr-2"
-              id="2"
-            />
-            Nữ
-          </label>
-        </div>
-      </div>
+//     const newFilters = {
+//       ...filters,
+//       gender: newGender,
+//     };
+//     setFilters(newFilters);
+//     onFilterChange(newFilters);
+//   };
 
-      {/* Màu sắc */}
-      <div className="mb-6 space-y-2">
-        <label className="block mb-1 font-medium">Màu sắc</label>
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { color: "black", label: "Đen" },
-            { color: "red", label: "Đỏ" },
-            { color: "yellow", label: "Vàng" },
-            { color: "orange", label: "Cam" },
-            { color: "gray", label: "Xám" },
-            { color: "pink", label: "Hồng" },
-            { color: "purple", label: "Tím" },
-            { color: "brown", label: "Nâu" },
-            { color: "white", label: "Trắng" },
-            { color: "other", label: "Khác", isSpecial: true },
-          ].map(({ color, label, isSpecial }) => (
-            <div
-              key={color}
-              onClick={() => handleRadioChange("color", color)}
-              className="flex items-center space-x-2 cursor-pointer"
-            >
-              <input
-                type="radio"
-                name="color"
-                value={color}
-                checked={filters.color === color}
-                onChange={(e) =>
-                  handleRadioChange(e.target.name, e.target.value)
-                }
-                className="mr-2 hidden" // Hidden but needed for accessibility
-              />
-              <span
-                className={`w-6 h-6 rounded-full border-2 ${
-                  filters.color === color
-                    ? "border-blue-500"
-                    : "border-gray-300"
-                } ${
-                  isSpecial
-                    ? "bg-gradient-to-r from-green-400 to-orange-500"
-                    : `bg-${color}-500`
-                }`}
-              />
-              <span>{label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+//   const resetFilters = () => {
+//     const initialFilters: FilterState = {
+//       categories: [],
+//       gender: [],
+//       priceRange: [0, 10000000],
+//       sizes: [],
+//     };
+//     setFilters(initialFilters);
+//     onFilterChange(initialFilters);
+//   };
 
-      {/* Kích thước */}
-      <div className="mb-6 space-y-2">
-        <label className="block mb-1 font-medium">Kích thước</label>
-        <div className="flex flex-wrap gap-3">
-          {["S", "M", "L", "XL"].map((size) => (
-            <label key={size} className="flex items-center">
-              <input
-                type="checkbox"
-                name="size"
-                value={size}
-                onChange={handleCheckboxChange}
-                className="mr-2"
-              />
-              {size}
-            </label>
-          ))}
-        </div>
-      </div>
+//   useEffect(() => {
+//     const fetchData = async () => {
+//       try {
+//         // Fetch categories
+//         const categoryResponse = await fetch("/api/loaisanpham");
+//         if (!categoryResponse.ok) throw new Error("Failed to fetch categories");
+//         const categoryData = await categoryResponse.json();
+//         setCategories(categoryData);
 
-      {/* Giá */}
-      <div className="space-y-2">
-        <label className="block mb-1 font-medium">Theo giá</label>
-        <div className="flex flex-col space-y-2">
-          {["0-250000", "250000-500000", "500000-1000000"].map((range) => (
-            <label key={range} className="flex items-center">
-              <input
-                type="radio"
-                name="priceRange"
-                value={range}
-                onChange={(e) =>
-                  handleRadioChange(e.target.name, e.target.value)
-                }
-                className="mr-2"
-              />
-              {range}
-            </label>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
+//         // Fetch products to extract sizes
+//         const productResponse = await fetch("/api/sanpham");
+//         if (!productResponse.ok) throw new Error("Failed to fetch products");
+//         const products = await productResponse.json();
 
-export default Filter;
+//         // Extract unique sizes from products
+//         const allSizes = products
+//           .map((product: Product) =>
+//             product.size.split(",").map((s: string) => s.trim())
+//           )
+//           .flat();
+//         const uniqueSizes = Array.from(new Set(allSizes)).filter(
+//           (size) => size !== ""
+//         );
+//         setSizes(uniqueSizes);
+//       } catch (error) {
+//         console.error("Error fetching data:", error);
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+
+//     fetchData();
+//   }, []);
+//   if (loading) return <LoadingSpinner />;
+
+//   return (
+//     <div className="w-64 p-4 space-y-6 bg-white shadow-sm rounded-lg h-fit">
+//       <div className="flex justify-between items-center">
+//         <h2 className="font-bold text-lg">Bộ lọc</h2>
+//         <button
+//           onClick={resetFilters}
+//           className="text-sm text-blue-600 hover:text-blue-700"
+//         >
+//           Đặt lại
+//         </button>
+//       </div>
+
+//       {/* Categories */}
+//       <div>
+//         <h3 className="font-medium mb-3">Danh mục</h3>
+//         <div className="space-y-2">
+//           {categories.map((category) => (
+//             <label
+//               key={category.id}
+//               className="flex items-center space-x-2 cursor-pointer"
+//             >
+//               <input
+//                 type="checkbox"
+//                 checked={filters.categories.includes(category.id)}
+//                 onChange={() => handleCategoryChange(category.id)}
+//                 className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+//               />
+//               <span className="text-sm">{category.tenloai}</span>
+//             </label>
+//           ))}
+//         </div>
+//       </div>
+
+//       {/* Gender */}
+//       <div>
+//         <h3 className="font-medium mb-3">Giới tính</h3>
+//         <div className="space-y-2">
+//           {[
+//             { id: "nam", label: "Nam" },
+//             { id: "nu", label: "Nữ" },
+//           ].map((gender) => (
+//             <label
+//               key={gender.id}
+//               className="flex items-center space-x-2 cursor-pointer"
+//             >
+//               <input
+//                 type="checkbox"
+//                 checked={filters.gender.includes(gender.id)}
+//                 onChange={() => handleGenderChange(gender.id)}
+//                 className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+//               />
+//               <span className="text-sm">{gender.label}</span>
+//             </label>
+//           ))}
+//         </div>
+//       </div>
+
+//       {/* Price Range */}
+//       <div>
+//         <h3 className="font-medium mb-3">Khoảng giá</h3>
+//         <div className="px-2">
+//           <input
+//             type="range"
+//             min="0"
+//             max="10000000"
+//             step="100000"
+//             value={filters.priceRange[1]}
+//             onChange={(e) => {
+//               const newFilters: FilterState = {
+//                 ...filters,
+//                 priceRange: [0, parseInt(e.target.value)],
+//               };
+//               setFilters(newFilters);
+//               onFilterChange(newFilters);
+//             }}
+//             className="w-full"
+//           />
+//           <div className="flex justify-between mt-2 text-sm text-gray-500">
+//             <span>0đ</span>
+//             <span>
+//               {new Intl.NumberFormat("vi-VN").format(filters.priceRange[1])}đ
+//             </span>
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* Sizes */}
+//       <div>
+//         <h3 className="font-medium mb-3">Kích thước</h3>
+//         <div className="flex flex-wrap gap-2">
+//           {sizes.map((size) => (
+//             <button
+//               key={size}
+//               onClick={() => handleSizeChange(size)}
+//               className={`px-3 py-1 text-sm border rounded-full transition-colors ${
+//                 filters.sizes.includes(size)
+//                   ? "bg-blue-600 text-white border-blue-600"
+//                   : "border-gray-300 hover:border-blue-600"
+//               }`}
+//             >
+//               {size}
+//             </button>
+//           ))}
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
