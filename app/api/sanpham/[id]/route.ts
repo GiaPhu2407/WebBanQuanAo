@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/client";
-import { z } from "zod"; // Để validation
+// import { z } from "zod"; // Để validation
+import { ProductSchema } from "@/app/zodschema/route";
 
-// Schema validation cho sản phẩm
-const ProductSchema = z.object({
-  tensanpham: z.string().min(1, "Tên sản phẩm không được để trống"),
-  mota: z.string().optional(),
-  gia: z.preprocess(
-    (val) => parseFloat(val as string),
-    z.number().min(0, "Giá không được âm")
-  ), // Chuyển chuỗi thành số
-  hinhanh: z.string().optional(),
-  idloaisanpham: z.number(),
-  giamgia: z.number().min(0).max(100).optional(),
-});
+// // Schema validation cho sản phẩm
+// const ProductSchema = z.object({
+//   tensanpham: z.string().min(1, "Tên sản phẩm không được để trống"),
+//   mota: z.string().optional(),
+//   gia: z.preprocess(
+//     (val) => parseFloat(val as string),
+//     z.number().min(0, "Giá không được âm")
+//   ), // Chuyển chuỗi thành số
+//   hinhanh: z.string().optional(),
+//   idloaisanpham: z.number(),
+//   giamgia: z.number().min(0).max(100).optional(),
+// });
 
 // Hàm helper để kiểm tra sự tồn tại của sản phẩm
 async function checkProductExists(id: number) {

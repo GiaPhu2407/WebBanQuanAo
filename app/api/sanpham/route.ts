@@ -1,10 +1,18 @@
 import prisma from "@/prisma/client";
 import { NextRequest, NextResponse } from "next/server";
+import { ProductSchema } from "@/app/zodschema/route";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
 
   try {
+    const validationResult = ProductSchema.safeParse(body);
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { error: "Dữ liệu không hợp lệ", details: validationResult.error },
+        { status: 400 }
+      );
+    }
     const sanpham = await prisma.sanpham.create({
       data: {
         tensanpham: body.tensanpham,

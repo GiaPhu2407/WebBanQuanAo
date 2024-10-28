@@ -169,7 +169,7 @@ const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
         </div>
       </div>
 
-      <style jsx>{`
+      {/* <style jsx>{`
         @keyframes flyToCart {
           0% {
             transform: scale(1);
@@ -182,7 +182,7 @@ const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
             opacity: 0;
           }
         }
-      `}</style>
+      `}</style> */}
     </>
   );
 };

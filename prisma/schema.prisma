@@ -246,3 +246,4 @@ model RolePermission {
   role         Role      @relation(fields: [IdRole], references: [idrole])
   permission   Permission @relation(fields: [idPermission], references: [idPermission])
 }
+
