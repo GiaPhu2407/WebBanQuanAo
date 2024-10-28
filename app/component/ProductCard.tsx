@@ -3,7 +3,6 @@
 
 import React, { useState } from "react";
 import { Heart } from "lucide-react";
-import { FaBagShopping } from "react-icons/fa6";
 import hinh from "@/app/image/hinh.png";
 import Link from "next/link";
 
@@ -35,34 +34,24 @@ const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
       : product.gia;
 
   const handleBuyClick = (e: React.MouseEvent) => {
-    // Get the position of the clicked button
     const buttonRect = e.currentTarget.getBoundingClientRect();
-
-    // Get the position of the cart icon
     const cartIcon = document.querySelector(".shopping-cart-icon");
     const cartRect = cartIcon?.getBoundingClientRect();
 
     if (cartRect) {
-      // Set initial position to the button's position
       setAnimationPosition({
         x: buttonRect.left,
         y: buttonRect.top,
       });
-
-      // Start animation
       setIsAnimating(true);
-
-      // Add item to cart after animation
       setTimeout(() => {
         setIsAnimating(false);
-        // Here you would typically call your cart update function
       }, 1000);
     }
   };
 
   return (
     <>
-      {/* Flying item animation */}
       {isAnimating && (
         <div
           className="fixed w-16 h-16 rounded-full bg-white shadow-lg z-50 pointer-events-none"
@@ -112,10 +101,6 @@ const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
         </div>
 
         <div className="p-4 space-y-3">
-          {/* <h3 className="font-medium text-lg line-clamp-1">
-            {product.tensanpham}
-          </h3> */}
-
           <div className="flex items-center space-x-2">
             <span className="px-2 py-1 text-xs border border-gray-300 rounded-full">
               {product.gioitinh ? "Nam" : "Nữ"}
@@ -154,37 +139,69 @@ const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
 
           <div className="flex gap-2 pt-2">
             <button
-              className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="flex-1 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               onClick={handleBuyClick}
             >
               Mua ngay
             </button>
             <Link
               href={`/component/Category?id=${product.idsanpham}`}
-              className="py-1 px-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-center"
+              className="flex-1 py-1 px-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-center"
             >
               Chi tiết
             </Link>
           </div>
         </div>
       </div>
-
-      {/* <style jsx>{`
-        @keyframes flyToCart {
-          0% {
-            transform: scale(1);
-          }
-          20% {
-            transform: scale(0.8);
-          }
-          100% {
-            transform: scale(0.1);
-            opacity: 0;
-          }
-        }
-      `}</style> */}
     </>
   );
 };
 
-export default ProductCard;
+// components/ProductGrid.tsx
+import { ChevronDown, ChevronUp } from "lucide-react";
+
+interface ProductGridProps {
+  products: Product[];
+}
+
+const ProductGrid: React.FC<ProductGridProps> = ({ products }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const displayedProducts = isExpanded ? products : products.slice(0, 4);
+
+  return (
+    <div className="space-y-6">
+      {/* Grid Container */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {displayedProducts.map((product) => (
+          <ProductCard key={product.idsanpham} product={product} />
+        ))}
+      </div>
+
+      {/* Toggle Button */}
+      {products.length > 4 && (
+        <div className="flex justify-center">
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="group flex items-center gap-2 px-6 py-2 bg-white border border-gray-300 rounded-full hover:bg-gray-50 transition-colors"
+          >
+            {isExpanded ? (
+              <>
+                <span className="font-medium text-gray-700">Thu gọn</span>
+                <ChevronUp className="w-5 h-5 text-gray-500 group-hover:text-gray-700" />
+              </>
+            ) : (
+              <>
+                <span className="font-medium text-gray-700">
+                  Xem thêm {products.length - 4} sản phẩm
+                </span>
+                <ChevronDown className="w-5 h-5 text-gray-500 group-hover:text-gray-700" />
+              </>
+            )}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ProductGrid;

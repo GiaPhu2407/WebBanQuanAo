@@ -1,8 +1,7 @@
-// pages/Home.tsx
 "use client";
 import React, { useState, useEffect } from "react";
-import Filter from "@/app/component/Filter"; // Đảm bảo đường dẫn đúng
-import ProductCard from "@/app/component/ProductCard"; // Đảm bảo đường dẫn đúng
+import Filter from "@/app/component/Filter";
+import ProductGrid from "@/app/component/ProductCard";
 
 interface Product {
   idsanpham: number;
@@ -50,25 +49,28 @@ const Home: React.FC = () => {
   }) => {
     let filtered = [...products];
 
-    // Apply filters
+    // Apply category filter
     if (filters.categories.length > 0) {
       filtered = filtered.filter((product) =>
         filters.categories.includes(product.idloaisanpham)
       );
     }
 
+    // Apply gender filter
     if (filters.gender.length > 0) {
       filtered = filtered.filter((product) =>
         filters.gender.includes(product.gioitinh ? "nam" : "nu")
       );
     }
 
+    // Apply price range filter
     filtered = filtered.filter(
       (product) =>
         product.gia >= filters.priceRange[0] &&
         product.gia <= filters.priceRange[1]
     );
 
+    // Apply size filter
     if (filters.sizes.length > 0) {
       filtered = filtered.filter((product) => {
         const productSizes = product.size.split(",").map((s) => s.trim());
@@ -81,36 +83,43 @@ const Home: React.FC = () => {
     setFilteredProducts(filtered);
   };
 
-  if (loading)
+  if (loading) {
     return (
-      // <div className="flex justify-center items-center h-screen">
-      //   Loading...
-      // </div>
       <div className="loader-container">
         <div className="loader"></div>
       </div>
     );
-  if (error)
-    return <div className="text-red-600 text-center py-8">{error}</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-red-600 text-center py-8">{error}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex gap-8">
-          <Filter onFilterChange={handleFilterChange} />
-          <div className="flex-1">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredProducts.length > 0 ? (
-                filteredProducts.map((product) => (
-                  <ProductCard key={product.idsanpham} product={product} />
-                ))
-              ) : (
-                <div className="col-span-full text-center py-8 text-gray-500">
+          {/* Filter Section */}
+          <aside className="w-64 flex-shrink-0">
+            <Filter onFilterChange={handleFilterChange} />
+          </aside>
+
+          {/* Main Content Section */}
+          <main className="flex-1">
+            {filteredProducts.length > 0 ? (
+              <ProductGrid products={filteredProducts} />
+            ) : (
+              <div className="flex justify-center items-center h-64 bg-white rounded-lg shadow">
+                <p className="text-gray-500 text-lg">
                   Không tìm thấy sản phẩm phù hợp
-                </div>
-              )}
-            </div>
-          </div>
+                </p>
+              </div>
+            )}
+          </main>
         </div>
       </div>
     </div>
