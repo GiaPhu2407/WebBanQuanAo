@@ -34,7 +34,6 @@ CREATE TABLE `Donhang` (
     `ngaydat` VARCHAR(45) NULL,
     `idkhachhang` INTEGER NULL,
 
-    UNIQUE INDEX `Donhang_idkhachhang_key`(`idkhachhang`),
     PRIMARY KEY (`iddonhang`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -44,6 +43,7 @@ CREATE TABLE `Loaisanpham` (
     `tenloai` VARCHAR(255) NULL,
     `mota` VARCHAR(255) NULL,
 
+    UNIQUE INDEX `Loaisanpham_tenloai_key`(`tenloai`),
     PRIMARY KEY (`idloaisanpham`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -56,8 +56,9 @@ CREATE TABLE `Sanpham` (
     `hinhanh` VARCHAR(255) NULL,
     `idloaisanpham` INTEGER NULL,
     `giamgia` DECIMAL(5, 2) NULL,
+    `gioitinh` BOOLEAN NULL,
+    `size` VARCHAR(255) NULL,
 
-    UNIQUE INDEX `Sanpham_idloaisanpham_key`(`idloaisanpham`),
     PRIMARY KEY (`idsanpham`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -70,6 +71,8 @@ CREATE TABLE `Nhacungcap` (
     `email` VARCHAR(45) NULL,
     `trangthai` BOOLEAN NULL,
 
+    UNIQUE INDEX `Nhacungcap_tennhacungcap_key`(`tennhacungcap`),
+    UNIQUE INDEX `Nhacungcap_email_key`(`email`),
     PRIMARY KEY (`idnhacungcap`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -81,7 +84,6 @@ CREATE TABLE `Nhaphang` (
     `tongsoluong` INTEGER NULL,
     `idnhacungcap` INTEGER NULL,
 
-    UNIQUE INDEX `Nhaphang_idnhacungcap_key`(`idnhacungcap`),
     PRIMARY KEY (`idnhaphang`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -93,8 +95,6 @@ CREATE TABLE `Chitietnhap` (
     `soluong` VARCHAR(255) NULL,
     `dongia` VARCHAR(255) NULL,
 
-    UNIQUE INDEX `Chitietnhap_idnhaphang_key`(`idnhaphang`),
-    UNIQUE INDEX `Chitietnhap_idsanpham_key`(`idsanpham`),
     PRIMARY KEY (`idchitietnhap`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -106,7 +106,6 @@ CREATE TABLE `ChitietDonhang` (
     `dongia` DECIMAL(5, 2) NULL,
     `idsanpham` INTEGER NULL,
 
-    UNIQUE INDEX `ChitietDonhang_iddonhang_key`(`iddonhang`),
     PRIMARY KEY (`idchitietdathang`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -117,8 +116,6 @@ CREATE TABLE `Giohang` (
     `idkhachhang` INTEGER NULL,
     `idsanpham` INTEGER NULL,
 
-    UNIQUE INDEX `Giohang_idkhachhang_key`(`idkhachhang`),
-    UNIQUE INDEX `Giohang_idsanpham_key`(`idsanpham`),
     PRIMARY KEY (`idgiohang`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -134,6 +131,8 @@ CREATE TABLE `Nhanvien` (
     `ngayvaolam` DATE NULL,
     `idrolenhanvien` INTEGER NULL,
 
+    UNIQUE INDEX `Nhanvien_sodienthoai_key`(`sodienthoai`),
+    UNIQUE INDEX `Nhanvien_email_key`(`email`),
     PRIMARY KEY (`idNhanvien`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -145,7 +144,6 @@ CREATE TABLE `CaLamViec` (
     `giobatdau` VARCHAR(45) NULL,
     `gioketthuc` VARCHAR(45) NULL,
 
-    UNIQUE INDEX `CaLamViec_idnhanvien_key`(`idnhanvien`),
     PRIMARY KEY (`idCaLamViec`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -158,7 +156,6 @@ CREATE TABLE `Luong` (
     `ngaytinhluong` DATE NULL,
     `tongluong` DECIMAL(10, 2) NULL,
 
-    UNIQUE INDEX `Luong_idnhanvien_key`(`idnhanvien`),
     PRIMARY KEY (`idLuong`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -184,8 +181,6 @@ CREATE TABLE `Danhgia` (
     `noidung` VARCHAR(45) NULL,
     `ngaydanhgia` DATE NULL,
 
-    UNIQUE INDEX `Danhgia_idsanpham_key`(`idsanpham`),
-    UNIQUE INDEX `Danhgia_idkhachang_key`(`idkhachang`),
     PRIMARY KEY (`iddanhgia`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -205,7 +200,6 @@ CREATE TABLE `Vung` (
     `idkho` INTEGER NULL,
     `tenvung` VARCHAR(45) NULL,
 
-    UNIQUE INDEX `Vung_idkho_key`(`idkho`),
     PRIMARY KEY (`idVung`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -215,7 +209,6 @@ CREATE TABLE `Ke` (
     `idvung` INTEGER NULL,
     `tenke` VARCHAR(45) NULL,
 
-    UNIQUE INDEX `Ke_idvung_key`(`idvung`),
     PRIMARY KEY (`idke`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -237,7 +230,6 @@ CREATE TABLE `Tuvanhotro` (
     `trangthai` VARCHAR(45) NULL,
     `idnhanvien` INTEGER NULL,
 
-    UNIQUE INDEX `Tuvanhotro_idkhachang_key`(`idkhachang`),
     PRIMARY KEY (`idtuvanhotro`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -260,6 +252,7 @@ CREATE TABLE `Permission` (
     `idPermission` INTEGER NOT NULL,
     `TenQuyen` VARCHAR(45) NULL,
 
+    UNIQUE INDEX `Permission_TenQuyen_key`(`TenQuyen`),
     PRIMARY KEY (`idPermission`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
