@@ -34,6 +34,33 @@ export default function ProductManagementPage() {
     size: "",
   };
 
+  //   interface LoaiXe {
+  //     idLoaiXe: number;
+  //     TenLoai: string;
+  //   }
+
+  //   interface FormData {
+  //     TenXe: string;
+  //     idLoaiXe: string;
+  //     GiaXe: string;
+  //     MauSac: string;
+  //     DongCo: string;
+  //     TrangThai: string;
+  //     HinhAnh: string;
+  //     NamSanXuat: string;
+  //   }
+
+  //   export default function ProductManagementPage() {
+  //     const initialFormData: FormData = {
+  //       TenXe: '',
+  //       idLoaiXe: '',
+  //       GiaXe: '',
+  //       MauSac: '',
+  //       DongCo: '',
+  //       TrangThai: '',
+  //       HinhAnh: '',
+  //       NamSanXuat: '',
+  //     };
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [loaisanphamList, setLoaisanphamList] = useState<Loaisanpham[]>([]);
   const [error, setError] = useState<string>("");
