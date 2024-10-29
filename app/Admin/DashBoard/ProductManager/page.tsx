@@ -19,7 +19,8 @@ interface Sanpham {
   size: string;
 }
 
-interface FormData extends Sanpham {}
+// Define FormData type based on Sanpham
+type FormData = Omit<Sanpham, "idloaisanpham"> & { idloaisanpham: string };
 
 export default function ProductManagementPage() {
   const initialFormData: FormData = {
@@ -27,7 +28,7 @@ export default function ProductManagementPage() {
     mota: "",
     gia: "",
     hinhanh: "",
-    idloaisanpham: 0,
+    idloaisanpham: "0", // changed to string for controlled input
     giamgia: 0,
     gioitinh: false,
     size: "",
@@ -72,13 +73,28 @@ export default function ProductManagementPage() {
     setError("");
     setSuccess("");
 
+    // Convert idloaisanpham to number before sending
+    const dataToSubmit = {
+      ...formData,
+      idloaisanpham: Number(formData.idloaisanpham),
+    };
+
+    // Validate size input
+    const validSizes = ["S", "M", "XL", "2XL", "3XL"];
+    if (!validSizes.includes(formData.size)) {
+      setError(
+        "Kích thước không hợp lệ. Vui lòng chọn từ S, M, XL, 2XL, hoặc 3XL."
+      );
+      return;
+    }
+
     try {
       const response = await fetch("/api/sanpham", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(dataToSubmit),
       });
 
       if (!response.ok) {
@@ -96,8 +112,8 @@ export default function ProductManagementPage() {
   };
 
   return (
-    <div className="flex ">
-      <SalesDashboard />;
+    <div className="flex">
+      <SalesDashboard />
       <div className="p-6 max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold mb-6 mt-8 text-black">
           Quản Lý Sản Phẩm
@@ -145,16 +161,24 @@ export default function ProductManagementPage() {
                     >
                       Loại Sản Phẩm
                     </label>
-                    <input
-                      type="text"
+                    <select
                       id="idloaisanpham"
                       name="idloaisanpham"
                       value={formData.idloaisanpham}
                       onChange={handleChange}
                       className="w-full px-3 py-2 border text-black bg-white border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Nhập loại sản phẩm"
                       required
-                    />
+                    >
+                      <option value="0">Chọn loại sản phẩm</option>
+                      {loaisanphamList.map((loai) => (
+                        <option
+                          key={loai.idloaisanpham}
+                          value={loai.idloaisanpham}
+                        >
+                          {loai.tenloai}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
@@ -167,7 +191,7 @@ export default function ProductManagementPage() {
                       Giá
                     </label>
                     <input
-                      type="text"
+                      type="number"
                       id="gia"
                       name="gia"
                       value={formData.gia}
@@ -228,7 +252,7 @@ export default function ProductManagementPage() {
                         id="gioitinh-nam"
                         name="gioitinh"
                         value="true"
-                        checked={formData.gioitinh}
+                        checked={formData.gioitinh === true}
                         onChange={handleChange}
                         className="mr-2"
                       />
@@ -243,7 +267,7 @@ export default function ProductManagementPage() {
                         id="gioitinh-nu"
                         name="gioitinh"
                         value="false"
-                        checked={!formData.gioitinh}
+                        checked={formData.gioitinh === false}
                         onChange={handleChange}
                         className="ml-4 mr-2"
                       />
@@ -256,7 +280,6 @@ export default function ProductManagementPage() {
                     </div>
                   </div>
                 </div>
-
                 <div className="flex w-full gap-4">
                   <div className="flex-1">
                     <label
@@ -295,15 +318,12 @@ export default function ProductManagementPage() {
                   </div>
                 </div>
               </div>
-
-              <div className="flex justify-end mt-6">
-                <button
-                  type="submit"
-                  className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                >
-                  Thêm Mới
-                </button>
-              </div>
+              <button
+                type="submit"
+                className="w-full bg-blue-600 text-white font-bold py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                Thêm Sản Phẩm
+              </button>
             </form>
           </div>
         </div>
