@@ -1,13 +1,19 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import SalesDashboard from "../page";
+
+interface Loaisanpham {
+  idloaisanpham: number;
+  tenloai: string;
+  mota: string;
+}
 
 interface Sanpham {
   tensanpham: string;
   mota: string;
   gia: string;
   hinhanh: string;
-  idloaisanpham: string; // Đổi sang string để phù hợp với input
+  idloaisanpham: number;
   giamgia: number;
   gioitinh: boolean;
   size: string;
@@ -21,15 +27,34 @@ export default function ProductManagementPage() {
     mota: "",
     gia: "",
     hinhanh: "",
-    idloaisanpham: "",
+    idloaisanpham: 0,
     giamgia: 0,
     gioitinh: false,
     size: "",
   };
 
   const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [loaisanphamList, setLoaisanphamList] = useState<Loaisanpham[]>([]);
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
+
+  useEffect(() => {
+    fetch("/api/loaisanpham")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to fetch loai san pham data");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        console.log("Loai san pham data:", data);
+        setLoaisanphamList(data);
+      })
+      .catch((err) => {
+        setError("Failed to fetch loai san pham data");
+        console.error("Failed to fetch loai san pham", err);
+      });
+  }, []);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -71,8 +96,8 @@ export default function ProductManagementPage() {
   };
 
   return (
-    <div className="flex">
-      <SalesDashboard />
+    <div className="flex ">
+      <SalesDashboard />;
       <div className="p-6 max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold mb-6 mt-8 text-black">
           Quản Lý Sản Phẩm
