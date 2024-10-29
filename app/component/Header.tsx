@@ -4,6 +4,8 @@ import React, { useState } from "react";
 import { FaBagShopping } from "react-icons/fa6";
 import { FaMars, FaVenus } from "react-icons/fa"; // Importing icons
 import { UserButton } from "@clerk/nextjs";
+import { useAppContext } from "@/app/component/Context/AppContext";
+// import { FaBagShopping } from 'react-icons/fa';
 interface Product {
   idsanpham: number;
   tensanpham: string;

@@ -38,3 +38,8 @@ export async function GET(req: NextRequest) {
   const sanpham = await prisma.sanpham.findMany();
   return NextResponse.json(sanpham);
 }
+
+export async function DELETE(request:NextRequest){
+  const sanpham = await prisma.sanpham.deleteMany();
+  return NextResponse.json({ sanpham, message: "Xoá thành công" ,status:200});
+}

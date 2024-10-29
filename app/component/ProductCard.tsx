@@ -24,7 +24,11 @@ const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [animationPosition, setAnimationPosition] = useState({ x: 0, y: 0 });
-
+  const { favoriteProducts, toggleFavorite } = useAppContext();
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Ngăn chặn sự kiện click từ button ảnh hưởng đến link
+    toggleFavorite(product.idsanpham);
+  };
   const sizes = product.size
     ? product.size.split(",").map((s) => s.trim())
     : [];
@@ -159,6 +163,7 @@ const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
 
 // components/ProductGrid.tsx
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { useAppContext } from "./Context/AppContext";
 
 interface ProductGridProps {
   products: Product[];
