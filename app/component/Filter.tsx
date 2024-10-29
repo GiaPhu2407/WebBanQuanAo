@@ -122,14 +122,15 @@ const Filter: React.FC<FilterProps> = ({ onFilterChange }) => {
         const products = await productResponse.json();
 
         const allSizes = products
-          .map((product: { size: string; }) =>
+          .map((product: { size: string }) =>
             product.size.split(",").map((s: string) => s.trim())
           )
           .flat();
         const uniqueSizes = Array.from(new Set(allSizes)).filter(
           (size) => size !== ""
         );
-        setSizes(uniqueSizes);
+
+        setSizes(uniqueSizes as string[]); //+
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -140,7 +141,7 @@ const Filter: React.FC<FilterProps> = ({ onFilterChange }) => {
     fetchData();
   }, []);
 
-//   if (loading) return <div>Loading...</div>;
+  //   if (loading) return <div>Loading...</div>;
 
   return (
     <div className="w-64 p-4 space-y-6 bg-white shadow-sm rounded-lg h-fit">
