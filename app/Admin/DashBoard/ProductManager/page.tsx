@@ -1,6 +1,7 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import SalesDashboard from "../page";
+import Tabledashboard from "../../TableProduct";
 
 interface LoaiSanPham {
   idloaisanpham: number;
@@ -16,11 +17,25 @@ interface FormData {
   idloaisanpham: number;
   giamgia: number;
   gioitinh: string;
+  size: string[];
+}
+
+interface SanPham {
+  idsanpham: number;
+  tensanpham: string;
+  mota: string;
+  gia: number;
+  hinhanh: string;
+  idloaisanpham: number;
+  giamgia: number;
+  gioitinh: boolean;
   size: string;
 }
 
+const VALID_SIZES = ["S", "M", "L", "XL", "2XL", "3XL"];
+
 export default function ProductManagementPage() {
-  const initialFormData: FormData = {
+  const [formData, setFormData] = useState<FormData>({
     tensanpham: "",
     mota: "",
     gia: "",
@@ -29,33 +44,36 @@ export default function ProductManagementPage() {
     giamgia: 0,
     gioitinh: "nam",
     size: "",
-  };
+  });
 
-  const [formData, setFormData] = useState<FormData>(initialFormData);
   const [loaisanphamList, setLoaisanphamList] = useState<LoaiSanPham[]>([]);
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const VALID_SIZES = ["S", "M", "L", "XL", "2XL", "3XL"];
+  const [reloadKey, setReloadKey] = useState(0);
+  const [currentProductId, setCurrentProductId] = useState<number | null>(null);
 
   useEffect(() => {
-    fetch("/api/loaisanpham")
-      .then((response) => response.json())
-      .then((data) => {
-        console.log("Loai san pham data:", data);
-        setLoaisanphamList(data);
-      })
-      .catch((err) => {
-        console.error("Failed to fetch loai san pham:", err);
-        setError("Không thể tải danh sách loại sản phẩm");
-      });
+    fetchLoaiSanPham();
   }, []);
+
+  const fetchLoaiSanPham = async () => {
+    try {
+      const response = await fetch("/api/loaisanpham");
+      const data = await response.json();
+      console.log("Loai san pham data:", data);
+      setLoaisanphamList(data);
+    } catch (err) {
+      console.error("Failed to fetch loai san pham:", err);
+      setError("Không thể tải danh sách loại sản phẩm");
+    }
+  };
 
   const validateForm = (): string | null => {
     if (!formData.tensanpham.trim()) return "Vui lòng nhập tên sản phẩm";
     if (!formData.mota.trim()) return "Vui lòng nhập mô tả";
-    if (!formData.gia) return "Vui lòng nhập giá hợp lệ";
+    if (!formData.gia || isNaN(Number(formData.gia)))
+      return "Vui lòng nhập giá hợp lệ";
     if (!formData.hinhanh.trim()) return "Vui lòng nhập URL hình ảnh";
     if (!formData.idloaisanpham) return "Vui lòng chọn loại sản phẩm";
     if (formData.size.length === 0) return "Vui lòng chọn ít nhất một size";
@@ -65,46 +83,30 @@ export default function ProductManagementPage() {
   };
 
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-
     if (name === "idloaisanpham") {
-      setFormData((prev) => ({
-        ...prev,
-        idloaisanpham: parseInt(value) || 0,
-      }));
+      setFormData((prev) => ({ ...prev, idloaisanpham: parseInt(value) || 0 }));
     } else if (name === "giamgia") {
       setFormData((prev) => ({
         ...prev,
         giamgia: value === "" ? 0 : parseFloat(value),
       }));
     } else if (name === "gia") {
-      setFormData((prev) => ({
-        ...prev,
-        gia: value,
-      }));
+      setFormData((prev) => ({ ...prev, gia: value }));
     } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
+      setFormData((prev) => ({ ...prev, [name]: value }));
     }
   };
 
   const handleSizeChange = (selectedSize: string) => {
     setFormData((prev) => {
-      const currentSizes = prev.size.split(", ").filter(Boolean);
+      const currentSizes = prev.size;
       const newSizes = currentSizes.includes(selectedSize)
         ? currentSizes.filter((size) => size !== selectedSize)
         : [...currentSizes, selectedSize];
-
-      return {
-        ...prev,
-        size: newSizes.join(", "),
-      };
+      return { ...prev, size: newSizes };
     });
   };
 
@@ -123,29 +125,82 @@ export default function ProductManagementPage() {
 
     try {
       console.log("Submitting data:", formData);
+      const method = currentProductId ? "PUT" : "POST";
+      const endpoint = currentProductId
+        ? `/api/sanpham/${currentProductId}`
+        : "/api/sanpham";
 
-      const response = await fetch("/api/sanpham", {
-        method: "POST",
+      const response = await fetch(endpoint, {
+        method,
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          gioitinh: formData.gioitinh === "nam",
+          size: formData.size,
+        }),
       });
 
-      const responseData = await response.json();
-      console.log("Response:", response.status, responseData);
-
       if (!response.ok) {
-        throw new Error(responseData.message || "Failed to create product");
+        const responseData = await response.json();
+        throw new Error(responseData.message || "Lỗi khi xử lý sản phẩm");
       }
 
-      setSuccess("Sản phẩm đã được tạo thành công");
-      setFormData(initialFormData);
+      setSuccess(
+        currentProductId
+          ? "Sản phẩm đã được cập nhật thành công"
+          : "Sản phẩm đã được tạo thành công"
+      );
+      resetForm();
+      setReloadKey((prevKey) => prevKey + 1); // Reload the table data
     } catch (err) {
-      console.error("Error creating san pham:", err);
-      setError(err instanceof Error ? err.message : "Lỗi khi tạo sản phẩm");
+      console.error("Error submitting product:", err);
+      setError(err instanceof Error ? err.message : "Lỗi khi xử lý sản phẩm");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      tensanpham: "",
+      mota: "",
+      gia: "",
+      hinhanh: "",
+      idloaisanpham: 0,
+      giamgia: 0,
+      gioitinh: "nam",
+      size: [],
+    });
+    setCurrentProductId(null); // Reset ID sản phẩm hiện tại
+  };
+
+  const handleEdit = (product: SanPham) => {
+    setFormData({
+      tensanpham: product.tensanpham,
+      mota: product.mota,
+      gia: product.gia.toString(),
+      hinhanh: product.hinhanh,
+      idloaisanpham: product.idloaisanpham,
+      giamgia: product.giamgia,
+      gioitinh: product.gioitinh ? "nam" : "nu",
+
+      // size: product.size,//-
+      size: product.size.split(","), //+
+    });
+    setCurrentProductId(product.idsanpham); // Thiết lập ID sản phẩm hiện tại
+  };
+
+  const handleDelete = async (id: number) => {
+    try {
+      const response = await fetch(`/api/sanpham/${id}`, { method: "DELETE" });
+      if (!response.ok) throw new Error("Không thể xóa sản phẩm.");
+      setSuccess("Sản phẩm đã được xóa thành công.");
+      setReloadKey((prevKey) => prevKey + 1); // Reload the table data
+    } catch (err) {
+      console.error("Error deleting product:", err);
+      setError(err instanceof Error ? err.message : "Lỗi khi xóa sản phẩm.");
     }
   };
 
@@ -153,203 +208,176 @@ export default function ProductManagementPage() {
     <div className="flex">
       <SalesDashboard />
       <div className="p-6 max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6 mt-8 text-black">
-          Quản Lý Sản Phẩm
-        </h1>
-
-        <div className="flex w-full">
-          <div className="pt-6 w-full">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-                  {error}
-                </div>
-              )}
-
-              {success && (
-                <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative">
-                  {success}
-                </div>
-              )}
-
-              <div className="flex justify-center w-full flex-wrap gap-4">
-                {/* Tên Sản Phẩm và Loại Sản Phẩm */}
-                <div className="flex w-full gap-4">
-                  <div className="flex-1">
-                    <label className="block font-medium text-gray-700 mb-1">
-                      Tên Sản Phẩm
-                    </label>
+        <h1 className="text-2xl font-bold mb-4">Quản lý sản phẩm</h1>
+        {error && <div className="text-red-500">{error}</div>}
+        {success && <div className="text-green-500">{success}</div>}
+        <div className="bg-white shadow-md rounded-lg p-6">
+          <form onSubmit={handleSubmit}>
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <label
+                  htmlFor="tensanpham"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Tên sản phẩm
+                </label>
+                <input
+                  type="text"
+                  name="tensanpham"
+                  value={formData.tensanpham}
+                  onChange={handleChange}
+                  required
+                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="mota"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Mô tả
+                </label>
+                <input
+                  type="text"
+                  name="mota"
+                  value={formData.mota}
+                  onChange={handleChange}
+                  required
+                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="gia"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Giá
+                </label>
+                <input
+                  type="number"
+                  name="gia"
+                  value={formData.gia}
+                  onChange={handleChange}
+                  required
+                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="hinhanh"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  URL hình ảnh
+                </label>
+                <input
+                  type="text"
+                  name="hinhanh"
+                  value={formData.hinhanh}
+                  onChange={handleChange}
+                  required
+                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="idloaisanpham"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Loại sản phẩm
+                </label>
+                <select
+                  name="idloaisanpham"
+                  value={formData.idloaisanpham}
+                  onChange={handleChange}
+                  required
+                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                >
+                  <option value={0}>Chọn loại sản phẩm</option>
+                  {loaisanphamList.map((loai) => (
+                    <option key={loai.idloaisanpham} value={loai.idloaisanpham}>
+                      {loai.tenloai}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label
+                  htmlFor="giamgia"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Giảm giá (%)
+                </label>
+                <input
+                  type="number"
+                  name="giamgia"
+                  value={formData.giamgia}
+                  onChange={handleChange}
+                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Giới tính
+                </label>
+                <div className="flex items-center">
+                  <label className="mr-4">
                     <input
-                      type="text"
-                      name="tensanpham"
-                      value={formData.tensanpham}
+                      type="radio"
+                      name="gioitinh"
+                      value="nam"
+                      checked={formData.gioitinh === "nam"}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border text-black bg-white border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-
-                  <div className="flex-1">
-                    <label className="block font-medium text-gray-700 mb-1">
-                      Loại Sản Phẩm
-                    </label>
-                    <select
-                      name="idloaisanpham"
-                      value={formData.idloaisanpham}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border text-black bg-white border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    >
-                      <option value="">Chọn loại sản phẩm</option>
-                      {loaisanphamList.map((loai) => (
-                        <option
-                          key={loai.idloaisanpham}
-                          value={loai.idloaisanpham}
-                        >
-                          {loai.tenloai}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Giá và Hình Ảnh */}
-                <div className="flex w-full gap-4">
-                  <div className="flex-1">
-                    <label className="block font-medium text-gray-700 mb-1">
-                      Giá
-                    </label>
+                    />{" "}
+                    Nam
+                  </label>
+                  <label>
                     <input
-                      type="number"
-                      name="gia"
-                      value={formData.gia}
+                      type="radio"
+                      name="gioitinh"
+                      value="nu"
+                      checked={formData.gioitinh === "nu"}
                       onChange={handleChange}
-                      min="0"
-                      className="w-full px-3 py-2 border text-black bg-white border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-
-                  <div className="flex-1">
-                    <label className="block font-medium text-gray-700 mb-1">
-                      Hình Ảnh URL
-                    </label>
-                    <input
-                      type="url"
-                      name="hinhanh"
-                      value={formData.hinhanh}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border text-black bg-white border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Giảm Giá và Size */}
-                <div className="flex w-full gap-4">
-                  <div className="flex-1">
-                    <label className="block font-medium text-gray-700 mb-1">
-                      Giảm Giá (%)
-                    </label>
-                    <input
-                      type="number"
-                      name="giamgia"
-                      value={formData.giamgia}
-                      onChange={handleChange}
-                      min="0"
-                      max="100"
-                      className="w-full px-3 py-2 border text-black bg-white border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-
-                  <div className="flex-1">
-                    <label className="block font-medium text-gray-700 mb-1">
-                      Size
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {VALID_SIZES.map((size) => (
-                        <label
-                          key={size}
-                          className={`inline-flex items-center p-2 rounded cursor-pointer ${
-                            formData.size.includes(size)
-                              ? "bg-blue-500 text-white"
-                              : "bg-gray-100"
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={formData.size.includes(size)}
-                            onChange={() => handleSizeChange(size)}
-                            className="mr-2"
-                          />
-                          <span>{size}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Mô Tả và Giới Tính */}
-                <div className="flex w-full gap-4">
-                  <div className="flex-1">
-                    <label className="block font-medium text-gray-700 mb-1">
-                      Mô Tả
-                    </label>
-                    <textarea
-                      name="mota"
-                      value={formData.mota}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border text-black bg-white border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      rows={4}
-                      required
-                    />
-                  </div>
-
-                  <div className="flex-1">
-                    <label className="block font-medium text-gray-700 mb-1">
-                      Giới Tính
-                    </label>
-                    <div className="flex flex-col space-y-2 mt-2">
-                      <label className="inline-flex items-center p-2 rounded hover:bg-gray-100 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="gioitinh"
-                          value="nam"
-                          checked={formData.gioitinh === "nam"}
-                          onChange={handleChange}
-                          className="mr-2"
-                        />
-                        <span className="ml-2">Nam</span>
-                      </label>
-                      <label className="inline-flex items-center p-2 rounded hover:bg-gray-100 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="gioitinh"
-                          value="nu"
-                          checked={formData.gioitinh === "nu"}
-                          onChange={handleChange}
-                          className="mr-2"
-                        />
-                        <span className="ml-2">Nữ</span>
-                      </label>
-                    </div>
-                  </div>
+                    />{" "}
+                    Nữ
+                  </label>
                 </div>
               </div>
-
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Size
+                </label>
+                {VALID_SIZES.map((size) => (
+                  <label key={size} className="mr-4">
+                    <input
+                      type="checkbox"
+                      checked={formData.size.includes(size)}
+                      onChange={() => handleSizeChange(size)}
+                    />{" "}
+                    {size}
+                  </label>
+                ))}
+              </div>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className={`w-full bg-blue-600 text-white font-bold py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150 ease-in-out ${
-                  isSubmitting ? "opacity-50 cursor-not-allowed" : ""
-                }`}
+                className={`mt-4 w-full p-2 text-white ${
+                  isSubmitting ? "bg-gray-400" : "bg-blue-600"
+                } rounded-md`}
               >
-                {isSubmitting ? "Đang xử lý..." : "Thêm Sản Phẩm"}
+                {isSubmitting
+                  ? "Đang xử lý..."
+                  : currentProductId
+                  ? "Cập nhật sản phẩm"
+                  : "Thêm sản phẩm"}
               </button>
-            </form>
-          </div>
+            </div>
+          </form>
         </div>
+        <Tabledashboard
+          reloadKey={reloadKey}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
       </div>
     </div>
   );
