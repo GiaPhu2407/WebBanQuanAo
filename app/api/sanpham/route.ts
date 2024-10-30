@@ -6,7 +6,28 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
 
   try {
-    const validationResult = ProductSchema.safeParse(body);
+    const validationResult = ProductSchema.safeParse({
+      tensanpham: body.tensanpham,
+      mota: body.mota,
+      gia: body.gia,
+      hinhanh: body.hinhanh,
+      idloaisanpham: parseInt(body.idloaisanpham),
+      giamgia: parseFloat(body.giamgia),
+      gioitinh: body.gioitinh === "nam" ? true : false,
+      size: body.size,
+    });
+    const loaiXeExists = await prisma.loaisanpham.findUnique({
+      where: {
+        idloaisanpham: parseInt(body.idloaisanpham)
+      }
+    });
+
+    if (!loaiXeExists) {
+      return NextResponse.json({
+        message: "Loại xe không tồn tại",
+        code: "invalid_loai_xe"
+      }, { status: 400 });
+    }
     if (!validationResult.success) {
       return NextResponse.json(
         { error: "Dữ liệu không hợp lệ", details: validationResult.error },
@@ -19,8 +40,8 @@ export async function POST(req: NextRequest) {
         mota: body.mota,
         gia: body.gia,
         hinhanh: body.hinhanh,
-        idloaisanpham: body.idloaisanpham,
-        giamgia: body.giamgia,
+        idloaisanpham: parseInt(body.idloaisanpham),
+        giamgia: parseFloat(body.giamgia),
         gioitinh: body.gioitinh === "nam" ? true : false, // Chuyển đổi chuỗi thành boolean
         size: body.size,
       },
