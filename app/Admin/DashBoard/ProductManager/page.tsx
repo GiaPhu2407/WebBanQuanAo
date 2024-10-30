@@ -43,7 +43,7 @@ export default function ProductManagementPage() {
     idloaisanpham: 0,
     giamgia: 0,
     gioitinh: "nam",
-    size: "",
+    size: [],
   });
 
   const [loaisanphamList, setLoaisanphamList] = useState<LoaiSanPham[]>([]);
