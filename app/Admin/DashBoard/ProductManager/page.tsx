@@ -11,11 +11,11 @@ interface LoaiSanPham {
 interface FormData {
   tensanpham: string;
   mota: string;
-  gia: string; // Changed to number
+  gia: string;
   hinhanh: string;
-  idloaisanpham: number; // Changed to number
+  idloaisanpham: number;
   giamgia: number;
-  gioitinh: boolean; // Changed to string "nam" or "nu"
+  gioitinh: string;
   size: string;
 }
 
@@ -27,7 +27,7 @@ export default function ProductManagementPage() {
     hinhanh: "",
     idloaisanpham: 0,
     giamgia: 0,
-    gioitinh: false, // Default to "nu"
+    gioitinh: "nam",
     size: "",
   };
 
@@ -55,7 +55,7 @@ export default function ProductManagementPage() {
   const validateForm = (): string | null => {
     if (!formData.tensanpham.trim()) return "Vui lòng nhập tên sản phẩm";
     if (!formData.mota.trim()) return "Vui lòng nhập mô tả";
-    if (formData.gia <= "") return "Vui lòng nhập giá hợp lệ";
+    if (!formData.gia) return "Vui lòng nhập giá hợp lệ";
     if (!formData.hinhanh.trim()) return "Vui lòng nhập URL hình ảnh";
     if (!formData.idloaisanpham) return "Vui lòng chọn loại sản phẩm";
     if (formData.size.length === 0) return "Vui lòng chọn ít nhất một size";
@@ -64,34 +64,27 @@ export default function ProductManagementPage() {
     return null;
   };
 
-  const handleChange = (e: any) => {
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
+  ) => {
     const { name, value } = e.target;
 
-    if (name === "gioitinh") {
-      setFormData((prev) => ({
-        ...prev,
-        gioitinh: value === "true", // "nam" or "nu"
-      }));
-    } else if (name === "size") {
-      const select = e.target as HTMLSelectElement;
-      const selectedSizes = Array.from(select.selectedOptions)
-        .map((option) => option.value)
-        .join(","); // Join selected sizes into a comma-separated string
-
-      setFormData((prev) => ({
-        ...prev,
-        size: selectedSizes,
-      }));
-    } else if (name === "idloaisanpham") {
+    if (name === "idloaisanpham") {
       setFormData((prev) => ({
         ...prev,
         idloaisanpham: parseInt(value) || 0,
       }));
     } else if (name === "giamgia") {
-      const numValue = value === "" ? 0 : parseFloat(value);
       setFormData((prev) => ({
         ...prev,
-        giamgia: numValue,
+        giamgia: value === "" ? 0 : parseFloat(value),
+      }));
+    } else if (name === "gia") {
+      setFormData((prev) => ({
+        ...prev,
+        gia: value,
       }));
     } else {
       setFormData((prev) => ({
@@ -103,14 +96,14 @@ export default function ProductManagementPage() {
 
   const handleSizeChange = (selectedSize: string) => {
     setFormData((prev) => {
-      const currentSizes = prev.size.split(", ").filter(Boolean); // Tách thành mảng các size đã chọn
+      const currentSizes = prev.size.split(", ").filter(Boolean);
       const newSizes = currentSizes.includes(selectedSize)
-        ? currentSizes.filter((size) => size !== selectedSize) // Xóa size nếu đã chọn
-        : [...currentSizes, selectedSize]; // Thêm size nếu chưa chọn
+        ? currentSizes.filter((size) => size !== selectedSize)
+        : [...currentSizes, selectedSize];
 
       return {
         ...prev,
-        size: newSizes.join(", "), // Kết hợp lại thành chuỗi
+        size: newSizes.join(", "),
       };
     });
   };
@@ -322,23 +315,23 @@ export default function ProductManagementPage() {
                         <input
                           type="radio"
                           name="gioitinh"
-                          value="true"
-                          checked={formData.gioitinh === true}
+                          value="nam"
+                          checked={formData.gioitinh === "nam"}
                           onChange={handleChange}
                           className="mr-2"
                         />
-                        <span>Nam</span>
+                        <span className="ml-2">Nam</span>
                       </label>
                       <label className="inline-flex items-center p-2 rounded hover:bg-gray-100 cursor-pointer">
                         <input
                           type="radio"
                           name="gioitinh"
-                          value="false"
-                          checked={formData.gioitinh === false}
+                          value="nu"
+                          checked={formData.gioitinh === "nu"}
                           onChange={handleChange}
                           className="mr-2"
                         />
-                        <span>Nữ</span>
+                        <span className="ml-2">Nữ</span>
                       </label>
                     </div>
                   </div>
