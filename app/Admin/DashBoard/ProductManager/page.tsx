@@ -17,18 +17,18 @@ interface FormData {
   idloaisanpham: number;
   giamgia: number;
   gioitinh: string;
-  size: string[];
+  size: string;
 }
 
 interface SanPham {
   idsanpham: number;
   tensanpham: string;
   mota: string;
-  gia: number;
+  gia: string;
   hinhanh: string;
   idloaisanpham: number;
   giamgia: number;
-  gioitinh: boolean;
+  gioitinh: string;
   size: string;
 }
 
@@ -43,7 +43,7 @@ export default function ProductManagementPage() {
     idloaisanpham: 0,
     giamgia: 0,
     gioitinh: "nam",
-    size: [],
+    size: "",
   });
 
   const [loaisanphamList, setLoaisanphamList] = useState<LoaiSanPham[]>([]);
@@ -99,14 +99,22 @@ export default function ProductManagementPage() {
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
   };
-
   const handleSizeChange = (selectedSize: string) => {
-    setFormData((prev) => {
-      const currentSizes = prev.size;
-      const newSizes = currentSizes.includes(selectedSize)
-        ? currentSizes.filter((size) => size !== selectedSize)
-        : [...currentSizes, selectedSize];
-      return { ...prev, size: newSizes };
+    setFormData((prev: FormData) => {
+      // Kiểm tra xem kích thước đã được chọn hay chưa
+      const sizeSet = new Set(prev.size.split(",").map((s) => s.trim())); // Chuyển đổi thành Set để dễ dàng thêm/xóa kích thước
+
+      if (sizeSet.has(selectedSize)) {
+        sizeSet.delete(selectedSize); // Nếu đã chọn thì xóa
+      } else {
+        sizeSet.add(selectedSize); // Nếu chưa chọn thì thêm
+      }
+
+      // Trả về một đối tượng mới với tất cả các thuộc tính của FormData
+      return {
+        ...prev,
+        size: Array.from(sizeSet).join(","), // Chuyển đổi lại thành chuỗi để lưu vào formData
+      };
     });
   };
 
@@ -114,51 +122,40 @@ export default function ProductManagementPage() {
     e.preventDefault();
     setError("");
     setSuccess("");
-    setIsSubmitting(true);
 
-    const validationError = validateForm();
-    if (validationError) {
-      setError(validationError);
-      setIsSubmitting(false);
-      return;
-    }
+    const url = isSubmitting
+      ? `/api/sanpham/${currentProductId}`
+      : "/api/sanpham";
+    const method = isSubmitting ? "PUT" : "POST";
 
     try {
-      console.log("Submitting data:", formData);
-      const method = currentProductId ? "PUT" : "POST";
-      const endpoint = currentProductId
-        ? `/api/sanpham/${currentProductId}`
-        : "/api/sanpham";
-
-      const response = await fetch(endpoint, {
+      const response = await fetch(url, {
         method,
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          ...formData,
-          gioitinh: formData.gioitinh === "nam",
-          size: formData.size,
-        }),
+        body: JSON.stringify(formData),
       });
 
       if (!response.ok) {
-        const responseData = await response.json();
-        throw new Error(responseData.message || "Lỗi khi xử lý sản phẩm");
+        const errorData = await response.json();
+        throw new Error(
+          errorData.message ||
+            `Failed to ${isSubmitting ? "update" : "create"} product`
+        );
       }
 
-      setSuccess(
-        currentProductId
-          ? "Sản phẩm đã được cập nhật thành công"
-          : "Sản phẩm đã được tạo thành công"
-      );
-      resetForm();
-      setReloadKey((prevKey) => prevKey + 1); // Reload the table data
-    } catch (err) {
-      console.error("Error submitting product:", err);
-      setError(err instanceof Error ? err.message : "Lỗi khi xử lý sản phẩm");
-    } finally {
+      const data = await response.json();
+      setSuccess(data.message);
+      setFormData(formData);
       setIsSubmitting(false);
+      setCurrentProductId(null);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : `Error ${isSubmitting ? "updating" : "creating"} product`
+      );
     }
   };
 
@@ -171,7 +168,7 @@ export default function ProductManagementPage() {
       idloaisanpham: 0,
       giamgia: 0,
       gioitinh: "nam",
-      size: [],
+      size: "",
     });
     setCurrentProductId(null); // Reset ID sản phẩm hiện tại
   };
@@ -185,10 +182,9 @@ export default function ProductManagementPage() {
       idloaisanpham: product.idloaisanpham,
       giamgia: product.giamgia,
       gioitinh: product.gioitinh ? "nam" : "nu",
-
-      // size: product.size,//-
-      size: product.size.split(","), //+
+      size: product.size.toString(), //+
     });
+    setIsSubmitting(true);
     setCurrentProductId(product.idsanpham); // Thiết lập ID sản phẩm hiện tại
   };
 
@@ -267,7 +263,7 @@ export default function ProductManagementPage() {
                   htmlFor="hinhanh"
                   className="block text-sm font-medium text-gray-700"
                 >
-                  URL hình ảnh
+                  Hình ảnh (URL)
                 </label>
                 <input
                   type="text"
@@ -289,8 +285,8 @@ export default function ProductManagementPage() {
                   name="idloaisanpham"
                   value={formData.idloaisanpham}
                   onChange={handleChange}
-                  required
                   className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                  required
                 >
                   <option value={0}>Chọn loại sản phẩm</option>
                   {loaisanphamList.map((loai) => (
@@ -319,15 +315,15 @@ export default function ProductManagementPage() {
                 <label className="block text-sm font-medium text-gray-700">
                   Giới tính
                 </label>
-                <div className="flex items-center">
-                  <label className="mr-4">
+                <div>
+                  <label>
                     <input
                       type="radio"
                       name="gioitinh"
                       value="nam"
                       checked={formData.gioitinh === "nam"}
                       onChange={handleChange}
-                    />{" "}
+                    />
                     Nam
                   </label>
                   <label>
@@ -337,40 +333,42 @@ export default function ProductManagementPage() {
                       value="nu"
                       checked={formData.gioitinh === "nu"}
                       onChange={handleChange}
-                    />{" "}
+                    />
                     Nữ
                   </label>
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Size
+                  Kích thước
                 </label>
-                {VALID_SIZES.map((size) => (
-                  <label key={size} className="mr-4">
-                    <input
-                      type="checkbox"
-                      checked={formData.size.includes(size)}
-                      onChange={() => handleSizeChange(size)}
-                    />{" "}
-                    {size}
-                  </label>
-                ))}
+                <div className="flex flex-wrap">
+                  {VALID_SIZES.map((size) => (
+                    <label key={size} className="mr-4">
+                      <input
+                        type="checkbox"
+                        checked={formData.size.split(",").includes(size)} // Kiểm tra xem kích thước có trong mảng đã chọn không
+                        onChange={() => handleSizeChange(size)}
+                      />
+                      {size}
+                    </label>
+                  ))}
+                </div>
               </div>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className={`mt-4 w-full p-2 text-white ${
-                  isSubmitting ? "bg-gray-400" : "bg-blue-600"
-                } rounded-md`}
-              >
-                {isSubmitting
-                  ? "Đang xử lý..."
-                  : currentProductId
-                  ? "Cập nhật sản phẩm"
-                  : "Thêm sản phẩm"}
-              </button>
             </div>
+            <button
+              type="submit"
+              className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-md"
+            >
+              {isSubmitting ? "Cập nhật sản phẩm" : "Thêm sản phẩm"}
+            </button>
+            <button
+              type="button"
+              onClick={resetForm}
+              className="mt-4 ml-2 bg-gray-500 text-white px-4 py-2 rounded-md"
+            >
+              Đặt lại
+            </button>
           </form>
         </div>
         <Tabledashboard

@@ -4,11 +4,11 @@ interface SanPham {
   idsanpham: number;
   tensanpham: string;
   hinhanh: string;
-  gia: number;
+  gia: string;
   mota: string;
   idloaisanpham: number;
   giamgia: number;
-  gioitinh: boolean;
+  gioitinh: string;
   size: string;
   LoaiSanPham?: {
     tenloai: string;
@@ -76,9 +76,8 @@ const Tabledashboard: React.FC<TableDashboardProps> = ({
   };
 
   return (
-    <div className="">
+    <div>
       <table className="table mt-7 w-[900px]">
-        {/* head */}
         <thead>
           <tr className="bg-blue-900 text-white text-center">
             <th>ID Sản Phẩm</th>
@@ -93,7 +92,6 @@ const Tabledashboard: React.FC<TableDashboardProps> = ({
           </tr>
         </thead>
         <tbody>
-          {/* rows */}
           {isXeTable.map((sanpham) => (
             <tr key={sanpham.idsanpham} className="text-black text-center">
               <th>{sanpham.idsanpham}</th>
@@ -105,7 +103,7 @@ const Tabledashboard: React.FC<TableDashboardProps> = ({
               <td>{sanpham.size}</td>
               <td>
                 <img
-                  src={sanpham.hinhanh || "/default-image.png"} // Thêm hình ảnh mặc định
+                  src={sanpham.hinhanh || "/default-image.png"}
                   alt={sanpham.tensanpham}
                   width="50"
                 />

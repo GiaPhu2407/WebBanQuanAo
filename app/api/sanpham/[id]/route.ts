@@ -126,7 +126,16 @@ export async function PUT(
     const body = await request.json();
 
     // Validate dữ liệu đầu vào
-    const validationResult = ProductSchema.safeParse(body);
+    const validationResult = ProductSchema.safeParse({
+      tensanpham: body.tensanpham,
+      mota: body.mota,
+      gia: body.gia,
+      hinhanh: body.hinhanh,
+      idloaisanpham: parseInt(body.idloaisanpham),
+      giamgia: parseFloat(body.giamgia),
+      gioitinh: body.gioitinh === "nam" ? true : false,
+      size: body.size,
+    });
     if (!validationResult.success) {
       return NextResponse.json(
         { error: "Dữ liệu không hợp lệ", details: validationResult.error },
@@ -138,13 +147,13 @@ export async function PUT(
     const existingProduct = await prisma.sanpham.findFirst({
       where: {
         tensanpham: body.tensanpham,
-        AND: {
+         
           NOT: { idsanpham: id },
-        },
+        
       },
     });
 
-    if (existingProduct) {
+    if (existingProduct !== null) {
       return NextResponse.json(
         { error: "Tên sản phẩm đã tồn tại" },
         { status: 400 }
@@ -152,12 +161,12 @@ export async function PUT(
     }
 
     // Chuyển đổi giới tính nếu là chuỗi "nam" hoặc "nữ"
-    let gioitinhBoolean;
-    if (typeof body.gioitinh === "string") {
-      gioitinhBoolean = body.gioitinh === "nam" ? true : false;
-    } else {
-      gioitinhBoolean = body.gioitinh;
-    }
+    // let gioitinhBoolean;
+    // if (typeof body.gioitinh === "string") {
+    //   gioitinhBoolean = body.gioitinh === "nam" ? true : false;
+    // } else {
+    //   gioitinhBoolean = body.gioitinh;
+    // }
 
     // Cập nhật sản phẩm
     const updatedProduct = await prisma.sanpham.update({
@@ -167,9 +176,9 @@ export async function PUT(
         mota: body.mota,
         gia: body.gia,
         hinhanh: body.hinhanh,
-        idloaisanpham: body.idloaisanpham,
-        giamgia: body.giamgia,
-        gioitinh: gioitinhBoolean,
+        idloaisanpham: parseInt(body.idloaisanpham),
+        giamgia: parseFloat(body.giamgia),
+        gioitinh: body.gioitinh === "nam" ? true : false,
         size: body.size,
       },
     });
@@ -181,11 +190,11 @@ export async function PUT(
       },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error:any) {
     console.error("Lỗi khi cập nhật sản phẩm:", error);
-    return NextResponse.json(
-      { error: "Lỗi khi cập nhật sản phẩm" },
-      { status: 500 }
+    return Response.json(
+      { message: "Failed to update product", details: error.message },
+      { status: 400 }
     );
   }
 }
