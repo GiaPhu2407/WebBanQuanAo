@@ -115,8 +115,12 @@ export async function PUT(
       );
     }
 
-    const exists = await checkProductExists(id);
-    if (!exists) {
+    // Kiểm tra sản phẩm tồn tại
+    const existingProduct = await prisma.sanpham.findUnique({
+      where: { idsanpham: id },
+    });
+
+    if (!existingProduct) {
       return NextResponse.json(
         { error: "Không tìm thấy sản phẩm để cập nhật" },
         { status: 404 }
@@ -125,48 +129,22 @@ export async function PUT(
 
     const body = await request.json();
 
-    // Validate dữ liệu đầu vào
-    const validationResult = ProductSchema.safeParse({
-      tensanpham: body.tensanpham,
-      mota: body.mota,
-      gia: body.gia,
-      hinhanh: body.hinhanh,
-      idloaisanpham: parseInt(body.idloaisanpham),
-      giamgia: parseFloat(body.giamgia),
-      gioitinh: body.gioitinh === "nam" ? true : false,
-      size: body.size,
-    });
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: "Dữ liệu không hợp lệ", details: validationResult.error },
-        { status: 400 }
-      );
-    }
-
-    // Kiểm tra tên sản phẩm trùng
-    const existingProduct = await prisma.sanpham.findFirst({
+    // Kiểm tra tên sản phẩm trùng (loại trừ sản phẩm hiện tại)
+    const duplicateProduct = await prisma.sanpham.findFirst({
       where: {
         tensanpham: body.tensanpham,
-         
-          NOT: { idsanpham: id },
-        
+        NOT: {
+          idsanpham: id,
+        },
       },
     });
 
-    if (existingProduct !== null) {
+    if (duplicateProduct) {
       return NextResponse.json(
         { error: "Tên sản phẩm đã tồn tại" },
         { status: 400 }
       );
     }
-
-    // Chuyển đổi giới tính nếu là chuỗi "nam" hoặc "nữ"
-    // let gioitinhBoolean;
-    // if (typeof body.gioitinh === "string") {
-    //   gioitinhBoolean = body.gioitinh === "nam" ? true : false;
-    // } else {
-    //   gioitinhBoolean = body.gioitinh;
-    // }
 
     // Cập nhật sản phẩm
     const updatedProduct = await prisma.sanpham.update({
@@ -174,27 +152,24 @@ export async function PUT(
       data: {
         tensanpham: body.tensanpham,
         mota: body.mota,
-        gia: body.gia,
+        gia: body.gia.toString(),
         hinhanh: body.hinhanh,
         idloaisanpham: parseInt(body.idloaisanpham),
         giamgia: parseFloat(body.giamgia),
-        gioitinh: body.gioitinh === "nam" ? true : false,
+        gioitinh: body.gioitinh === "nam",
         size: body.size,
       },
     });
 
-    return NextResponse.json(
-      {
-        message: "Cập nhật sản phẩm thành công",
-        data: updatedProduct,
-      },
-      { status: 200 }
-    );
-  } catch (error:any) {
+    return NextResponse.json({
+      message: "Cập nhật sản phẩm thành công",
+      data: updatedProduct,
+    });
+  } catch (error: any) {
     console.error("Lỗi khi cập nhật sản phẩm:", error);
-    return Response.json(
-      { message: "Failed to update product", details: error.message },
-      { status: 400 }
+    return NextResponse.json(
+      { error: "Lỗi khi cập nhật sản phẩm", details: error.message },
+      { status: 500 }
     );
   }
 }

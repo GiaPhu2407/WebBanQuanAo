@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-
+import { Pencil, Trash2 } from "lucide-react";
 interface SanPham {
   idsanpham: number;
   tensanpham: string;
@@ -113,13 +113,13 @@ const Tabledashboard: React.FC<TableDashboardProps> = ({
                   onClick={() => onEdit(sanpham)}
                   className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
                 >
-                  Sửa
+                  <Pencil />
                 </button>
                 <button
                   onClick={() => onDelete(sanpham.idsanpham)}
                   className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
                 >
-                  Xóa
+                  <Trash2 />
                 </button>
               </td>
             </tr>
