@@ -111,13 +111,13 @@ const Tabledashboard: React.FC<TableDashboardProps> = ({
               <td className="flex space-x-2">
                 <button
                   onClick={() => onEdit(sanpham)}
-                  className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                  className="px-3 py-1 text-blue-500  rounded hover:bg-blue-600 hover:text-white transition-colors"
                 >
                   <Pencil />
                 </button>
                 <button
                   onClick={() => onDelete(sanpham.idsanpham)}
-                  className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                  className="px-3 py-1 text-red-500  rounded hover:bg-red-600 hover:text-white  transition-colors"
                 >
                   <Trash2 />
                 </button>
