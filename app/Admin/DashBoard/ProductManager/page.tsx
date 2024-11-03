@@ -424,6 +424,7 @@ export default function ProductManagementPage() {
             onEdit={handleEdit}
             onDelete={handleDelete}
             // ActionButtons={ActionButtons}
+            
             reloadKey={reloadKey}
           />
         </div>
