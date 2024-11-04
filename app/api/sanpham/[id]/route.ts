@@ -1,22 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/client";
-// import { z } from "zod"; // Để validation
 import { ProductSchema } from "@/app/zodschema/route";
 
-// // Schema validation cho sản phẩm
-// const ProductSchema = z.object({
-//   tensanpham: z.string().min(1, "Tên sản phẩm không được để trống"),
-//   mota: z.string().optional(),
-//   gia: z.preprocess(
-//     (val) => parseFloat(val as string),
-//     z.number().min(0, "Giá không được âm")
-//   ), // Chuyển chuỗi thành số
-//   hinhanh: z.string().optional(),
-//   idloaisanpham: z.number(),
-//   giamgia: z.number().min(0).max(100).optional(),
-// });
-
-// Hàm helper để kiểm tra sự tồn tại của sản phẩm
 async function checkProductExists(id: number) {
   const product = await prisma.sanpham.findUnique({
     where: { idsanpham: id },
@@ -24,7 +9,26 @@ async function checkProductExists(id: number) {
   return product !== null;
 }
 
-// GET - Lấy thông tin sản phẩm
+// Helper function để cập nhật lại các ID
+async function reorderProductIds() {
+  try {
+    const products = await prisma.sanpham.findMany({
+      orderBy: { idsanpham: "asc" },
+    });
+
+    // Re-assign IDs sequentially
+    for (let i = 0; i < products.length; i++) {
+      await prisma.sanpham.update({
+        where: { idsanpham: products[i].idsanpham },
+        data: { idsanpham: i + 1 },
+      });
+    }
+  } catch (error) {
+    console.error("Error while reordering product IDs:", error);
+    throw error;
+  }
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -62,46 +66,43 @@ export async function GET(
   }
 }
 
-// DELETE - Xóa sản phẩm
+// In your helper file (server-side logic for database)
+
+// In your DELETE handler, call reorderProductIds after deleting a product
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const id = parseInt(params.id);
-    if (isNaN(id)) {
+    if (isNaN(id))
       return NextResponse.json(
-        { error: "ID sản phẩm không hợp lệ" },
+        { error: "Invalid product ID" },
         { status: 400 }
       );
-    }
 
     const exists = await checkProductExists(id);
-    if (!exists) {
-      return NextResponse.json(
-        { error: "Không tìm thấy sản phẩm để xóa" },
-        { status: 404 }
-      );
-    }
+    if (!exists)
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
 
-    const sanpham = await prisma.sanpham.delete({
-      where: { idsanpham: id },
+    await prisma.$transaction(async (prisma) => {
+      await prisma.sanpham.delete({ where: { idsanpham: id } });
+      await reorderProductIds(); // Call the reorder function after deletion
     });
 
     return NextResponse.json(
-      { message: "Xóa sản phẩm thành công", data: sanpham },
+      { message: "Product deleted successfully" },
       { status: 200 }
     );
   } catch (error) {
-    console.error("Lỗi khi xóa sản phẩm:", error);
+    console.error("Error deleting product:", error);
     return NextResponse.json(
-      { error: "Lỗi khi xóa sản phẩm" },
+      { error: "Error deleting product" },
       { status: 500 }
     );
   }
 }
 
-// PUT - Cập nhật sản phẩm
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -115,7 +116,7 @@ export async function PUT(
       );
     }
 
-    // Kiểm tra sản phẩm tồn tại
+    // Check if the product exists
     const existingProduct = await prisma.sanpham.findUnique({
       where: { idsanpham: id },
     });
@@ -129,7 +130,26 @@ export async function PUT(
 
     const body = await request.json();
 
-    // Kiểm tra tên sản phẩm trùng (loại trừ sản phẩm hiện tại)
+    // Validate input data similar to POST
+    const validationResult = ProductSchema.safeParse({
+      tensanpham: body.tensanpham,
+      mota: body.mota,
+      gia: body.gia,
+      hinhanh: body.hinhanh,
+      idloaisanpham: parseInt(body.idloaisanpham),
+      giamgia: parseFloat(body.giamgia),
+      gioitinh: body.gioitinh, // Expecting a boolean value directly
+      size: body.size,
+    });
+
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { error: "Dữ liệu không hợp lệ", details: validationResult.error },
+        { status: 400 }
+      );
+    }
+
+    // Check for duplicate product name
     const duplicateProduct = await prisma.sanpham.findFirst({
       where: {
         tensanpham: body.tensanpham,
@@ -146,17 +166,17 @@ export async function PUT(
       );
     }
 
-    // Cập nhật sản phẩm
+    // Update product
     const updatedProduct = await prisma.sanpham.update({
       where: { idsanpham: id },
       data: {
         tensanpham: body.tensanpham,
         mota: body.mota,
-        gia: body.gia.toString(),
+        gia: body.gia, // Ensure that this is a number
         hinhanh: body.hinhanh,
         idloaisanpham: parseInt(body.idloaisanpham),
         giamgia: parseFloat(body.giamgia),
-        gioitinh: body.gioitinh === "nam",
+        gioitinh: body.gioitinh, // Expecting a boolean
         size: body.size,
       },
     });

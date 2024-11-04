@@ -16,7 +16,7 @@ interface FormData {
   hinhanh: string;
   idloaisanpham: number;
   giamgia: number;
-  gioitinh: string;
+  gioitinh: boolean; // true for "Nam", false for "Nữ"
   size: string;
 }
 
@@ -34,7 +34,7 @@ export default function ProductManagementPage() {
     hinhanh: "",
     idloaisanpham: 0,
     giamgia: 0,
-    gioitinh: "nam",
+    gioitinh: true, // default to "Nam"
     size: "",
   });
 
@@ -61,14 +61,13 @@ export default function ProductManagementPage() {
   };
 
   const validateForm = (): string | null => {
-    if (!formData.tensanpham.trim() && !isEditing)
-      return "Vui lòng nhập tên sản phẩm";
+    if (!formData.tensanpham.trim()) return "Vui lòng nhập tên sản phẩm";
     if (!formData.mota.trim()) return "Vui lòng nhập mô tả";
     if (!formData.gia || isNaN(Number(formData.gia)))
       return "Vui lòng nhập giá hợp lệ";
     if (!formData.hinhanh.trim()) return "Vui lòng nhập URL hình ảnh";
     if (!formData.idloaisanpham) return "Vui lòng chọn loại sản phẩm";
-    if (formData.size.length === 0) return "Vui lòng chọn ít nhất một size";
+    if (!formData.size) return "Vui lòng chọn ít nhất một size";
     if (formData.giamgia < 0 || formData.giamgia > 100)
       return "Giảm giá phải từ 0 đến 100";
     return null;
@@ -84,11 +83,15 @@ export default function ProductManagementPage() {
       ...prev,
       [name]:
         name === "idloaisanpham"
-          ? parseInt(value) || 0
+          ? parseInt(value)
           : name === "giamgia"
-          ? parseFloat(value) || 0
+          ? parseFloat(value)
           : value,
     }));
+  };
+
+  const handleGenderChange = (isMale: boolean) => {
+    setFormData((prev) => ({ ...prev, gioitinh: isMale }));
   };
 
   const handleSizeChange = (selectedSize: string) => {
@@ -104,10 +107,7 @@ export default function ProductManagementPage() {
       } else {
         sizeSet.add(selectedSize);
       }
-      return {
-        ...prev,
-        size: Array.from(sizeSet).join(","),
-      };
+      return { ...prev, size: Array.from(sizeSet).join(",") };
     });
   };
 
@@ -125,15 +125,12 @@ export default function ProductManagementPage() {
     const url = currentProductId
       ? `/api/sanpham/${currentProductId}`
       : "/api/sanpham";
-
     const method = currentProductId ? "PUT" : "POST";
 
     try {
       const response = await fetch(url, {
         method,
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
@@ -147,7 +144,6 @@ export default function ProductManagementPage() {
           ? "Cập nhật sản phẩm thành công"
           : "Thêm sản phẩm thành công"
       );
-
       resetForm();
       setReloadKey((prev) => prev + 1);
     } catch (err) {
@@ -171,7 +167,7 @@ export default function ProductManagementPage() {
       hinhanh: "",
       idloaisanpham: 0,
       giamgia: 0,
-      gioitinh: "nam",
+      gioitinh: true, // Reset to "Nam"
       size: "",
     });
     setCurrentProductId(null);
@@ -346,8 +342,8 @@ export default function ProductManagementPage() {
                         type="radio"
                         name="gioitinh"
                         value="nam"
-                        checked={formData.gioitinh === "nam"}
-                        onChange={handleChange}
+                        checked={formData.gioitinh === true}
+                        onChange={() => handleGenderChange(true)}
                         className="form-radio h-5 w-5 text-blue-600"
                       />
                       <span className="ml-2">Nam</span>
@@ -357,9 +353,9 @@ export default function ProductManagementPage() {
                         type="radio"
                         name="gioitinh"
                         value="nu"
-                        checked={formData.gioitinh === "nu"}
-                        onChange={handleChange}
-                        className="form-radio h-5 w-5 text-blue-600"
+                        checked={formData.gioitinh === false}
+                        onChange={() => handleGenderChange(false)}
+                        className="form-radio h-5 w-5 text-pink-600"
                       />
                       <span className="ml-2">Nữ</span>
                     </label>

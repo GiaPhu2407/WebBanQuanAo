@@ -9,7 +9,7 @@ interface SanPham {
   mota: string;
   idloaisanpham: number;
   giamgia: number;
-  gioitinh: string;
+  gioitinh: boolean;
   size: string;
   LoaiSanPham?: {
     tenloai: string;
@@ -118,7 +118,7 @@ const TableDashboard: React.FC<TableDashboardProps> = ({
   return (
     <div className="space-y-4">
       <div className=" max-w-full ">
-        <table className="w-[1000px] border-collapse border border-gray-200">
+        <table className=" border-collapse border border-gray-200">
           <thead>
             <tr className="bg-blue-900 text-white">
               <th className="px-4 py-2 text-center">ID</th>
@@ -158,7 +158,7 @@ const TableDashboard: React.FC<TableDashboardProps> = ({
                   </td>
                   <td className="px-4 py-2 text-center">{product.giamgia}%</td>
                   <td className="px-4 py-2 text-center">
-                    {product.gioitinh === "nam" ? "Nam" : "Nữ"}
+                    {product.gioitinh ? "Nam" : "Nữ"} {/* Thay đổi ở đây */}
                   </td>
                   <td className="px-4 py-2 text-center">{product.size}</td>
                   <td className="px-4 py-2 text-center">
