@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/client";
 import { ProductSchema } from "@/app/zodschema/route";
+import { USER_NOT_EXIST } from "@/lib/constant";
 
 async function checkProductExists(id: number) {
   const product = await prisma.sanpham.findUnique({
@@ -68,37 +69,21 @@ export async function GET(
 
 // In your helper file (server-side logic for database)
 
-// In your DELETE handler, call reorderProductIds after deleting a product
+// In your DELETE handler, call reorderProductIds after deleting a productexport async function DELETE(
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const userId = Number(params.id);
   try {
-    const id = parseInt(params.id);
-    if (isNaN(id))
-      return NextResponse.json(
-        { error: "Invalid product ID" },
-        { status: 400 }
-      );
-
-    const exists = await checkProductExists(id);
-    if (!exists)
-      return NextResponse.json({ error: "Product not found" }, { status: 404 });
-
-    await prisma.$transaction(async (prisma) => {
-      await prisma.sanpham.delete({ where: { idsanpham: id } });
-      await reorderProductIds(); // Call the reorder function after deletion
+    const deleteUser = await prisma.sanpham.delete({
+      where: { idsanpham: userId },
     });
-
+    return NextResponse.json({ deleteUser }, { status: 200 });
+  } catch (error: any) {
     return NextResponse.json(
-      { message: "Product deleted successfully" },
-      { status: 200 }
-    );
-  } catch (error) {
-    console.error("Error deleting product:", error);
-    return NextResponse.json(
-      { error: "Error deleting product" },
-      { status: 500 }
+      { error_code: USER_NOT_EXIST.error_code, cause: USER_NOT_EXIST.message },
+      { status: 400 }
     );
   }
 }

@@ -12,3 +12,16 @@ export const ProductSchema = z.object({
   idloaisanpham: z.number(),
   giamgia: z.number().min(0).max(100).optional(),
 });
+
+const UserSchema = z.object({
+  // email: z.string().email({ message: "Email khong hop le" }),
+  tenloai: z
+    .string()
+    .min(8, { message: "Ten phai dai hon 8 ky tu" })
+    .max(255, { message: "Ten khong duoc dai qua 255 ky tu" }),
+  mota: z
+    .string()
+    .min(8, { message: "Ten phai dai hon 8 ky tu" })
+    .max(255, { message: "Ten khong duoc dai qua 255 ky tu" }),
+});
+export default UserSchema;

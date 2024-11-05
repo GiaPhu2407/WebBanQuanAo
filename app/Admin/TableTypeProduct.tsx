@@ -1,22 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 
-interface SanPham {
-  idsanpham: number;
-  tensanpham: string;
-  hinhanh: string;
-  gia: string;
-  mota: string;
-  idloaisanpham: number;
-  giamgia: number;
-  gioitinh: boolean;
-  size: string;
-  LoaiSanPham?: {
-    tenloai: string;
-    mota: string;
-  };
-}
-
 interface LoaiSanPham {
   idloaisanpham: number;
   tenloai: string;
@@ -31,17 +15,16 @@ interface Meta {
 }
 
 interface TableDashboardProps {
-  onEdit: (product: SanPham) => void;
+  onEdit: (category: LoaiSanPham) => void;
   onDelete: (id: number) => void;
   reloadKey: number;
 }
 
-const TableDashboard: React.FC<TableDashboardProps> = ({
+const TableTypeProduct: React.FC<TableDashboardProps> = ({
   onEdit,
   onDelete,
   reloadKey,
 }) => {
-  const [products, setProducts] = useState<SanPham[]>([]);
   const [categories, setCategories] = useState<LoaiSanPham[]>([]);
   const [meta, setMeta] = useState<Meta>({
     page: 1,
@@ -51,18 +34,18 @@ const TableDashboard: React.FC<TableDashboardProps> = ({
   });
   const [loading, setLoading] = useState(false);
 
-  const fetchProducts = async () => {
+  const fetchCategories = async () => {
     setLoading(true);
     try {
       const response = await fetch(
-        `/api/phantrang?page=${meta.page}&limit_size=${meta.limit_size}`
+        `/api/phantrangloaisanpham?page=${meta.page}&limit_size=${meta.limit_size}`
       );
       if (!response.ok) {
         throw new Error("Network response was not ok");
       }
       const result = await response.json();
       if (result.data) {
-        setProducts(result.data);
+        setCategories(result.data);
         setMeta({
           page: result.meta.page,
           limit_size: result.meta.limit_size,
@@ -71,34 +54,16 @@ const TableDashboard: React.FC<TableDashboardProps> = ({
         });
       }
     } catch (error) {
-      console.error("Error fetching products:", error);
-      setProducts([]);
+      console.error("Error fetching categories:", error);
+      setCategories([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchCategories = async () => {
-    try {
-      const response = await fetch("/api/loaisanpham");
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-      const data = await response.json();
-      setCategories(data || []);
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-      setCategories([]);
-    }
-  };
-
-  useEffect(() => {
-    fetchProducts();
-  }, [meta.page, meta.limit_size, reloadKey]);
-
   useEffect(() => {
     fetchCategories();
-  }, []);
+  }, [meta.page, meta.limit_size, reloadKey]);
 
   const handlePageChange = (newPage: number) => {
     setMeta((prev) => ({ ...prev, page: newPage }));
@@ -108,76 +73,46 @@ const TableDashboard: React.FC<TableDashboardProps> = ({
     setMeta((prev) => ({ ...prev, page: 1, limit_size: newLimit }));
   };
 
-  const getLoaiSanPhamName = (idloaisanpham: number) => {
-    const category = categories.find(
-      (cat) => cat.idloaisanpham === idloaisanpham
-    );
-    return category?.tenloai || "N/A";
-  };
-
   return (
     <div className="space-y-4">
-      <div className=" max-w-full  ">
-        <table className="  border-collapse border border-gray-200">
+      <div className=" max-w-full ">
+        <table className=" border-collapse border border-gray-200">
           <thead>
             <tr className="bg-blue-900 text-white">
-              <th className="px-4 py-2 text-center">ID</th>
-              <th className="px-4 py-2 text-center">Tên Sản Phẩm</th>
-              <th className="px-4 py-2 text-center">Loại SP</th>
-              <th className="px-4 py-2 text-center">Giá</th>
-              <th className="px-4 py-2 text-center">Giảm Giá</th>
-              <th className="px-4 py-2 text-center">Giới Tính</th>
-              <th className="px-4 py-2 text-center">Size</th>
-              <th className="px-4 py-2 text-center">Hình Ảnh</th>
+              <th className="px-4 py-2 text-center">ID Loại SP</th>
+              <th className="px-4 py-2 text-center">Tên Loại</th>
+              <th className="px-4 py-2 text-center">Mô Tả</th>
               <th className="px-4 py-2 text-center">Thao Tác</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={9} className="text-center py-4">
+                <td colSpan={4} className="text-center py-4">
                   Đang tải dữ liệu...
                 </td>
               </tr>
-            ) : products && products.length > 0 ? (
-              products.map((product) => (
+            ) : categories && categories.length > 0 ? (
+              categories.map((category) => (
                 <tr
-                  key={product.idsanpham}
+                  key={category.idloaisanpham}
                   className="border-b hover:bg-gray-50"
                 >
-                  <td className="px-4 py-2 text-center">{product.idsanpham}</td>
-                  <td className="px-4 py-2">{product.tensanpham}</td>
                   <td className="px-4 py-2 text-center">
-                    {getLoaiSanPhamName(product.idloaisanpham)}
+                    {category.idloaisanpham}
                   </td>
-                  <td className="px-4 py-2 text-right">
-                    {new Intl.NumberFormat("vi-VN", {
-                      style: "currency",
-                      currency: "VND",
-                    }).format(Number(product.gia))}
-                  </td>
-                  <td className="px-4 py-2 text-center">{product.giamgia}%</td>
-                  <td className="px-4 py-2 text-center">
-                    {product.gioitinh ? "Nam" : "Nữ"} {/* Thay đổi ở đây */}
-                  </td>
-                  <td className="px-4 py-2 text-center">{product.size}</td>
-                  <td className="px-4 py-2 text-center">
-                    <img
-                      src={product.hinhanh || "/default-image.png"}
-                      alt={product.tensanpham}
-                      className="w-12 h-12 object-cover mx-auto"
-                    />
-                  </td>
+                  <td className="px-4 py-2">{category.tenloai}</td>
+                  <td className="px-4 py-2">{category.mota}</td>
                   <td className="px-4 py-2">
                     <div className="flex justify-center gap-2">
                       <button
-                        onClick={() => onEdit(product)}
+                        onClick={() => onEdit(category)}
                         className="text-blue-500 hover:text-blue-700"
                       >
                         <Pencil />
                       </button>
                       <button
-                        onClick={() => onDelete(product.idsanpham)}
+                        onClick={() => onDelete(category.idloaisanpham)}
                         className="text-red-500 hover:text-red-700"
                       >
                         <Trash2 />
@@ -188,8 +123,8 @@ const TableDashboard: React.FC<TableDashboardProps> = ({
               ))
             ) : (
               <tr>
-                <td colSpan={9} className="text-center py-4">
-                  Không có sản phẩm nào
+                <td colSpan={4} className="text-center py-4">
+                  Không có loại sản phẩm nào
                 </td>
               </tr>
             )}
@@ -223,4 +158,4 @@ const TableDashboard: React.FC<TableDashboardProps> = ({
   );
 };
 
-export default TableDashboard;
+export default TableTypeProduct;

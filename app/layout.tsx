@@ -9,6 +9,9 @@ import {
   // UserButton,
 } from "@clerk/nextjs";
 import Header from "./Profile/(Home)/Header";
+import { extractRouterConfig } from "uploadthing/server";
+import { ourFileRouter } from "./api/uploadthing/core";
+import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
 
 // const geistSans = localFont({
 //   src: "./fonts/GeistVF.woff",
@@ -44,6 +47,15 @@ export default function RootLayout({
       <body>
         <ClerkProvider>
           {/* <Header /> */}
+          <NextSSRPlugin
+          /**
+           * The `extractRouterConfig` will extract **only** the route configs
+           * from the router to prevent additional information from being
+           * leaked to the client. The data passed to the client is the same
+           * as if you were to fetch `/api/uploadthing` directly.
+           */
+          routerConfig={extractRouterConfig(ourFileRouter)}
+        />
           {children}
         </ClerkProvider>
       </body>

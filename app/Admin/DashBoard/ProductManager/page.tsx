@@ -1,7 +1,8 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, HtmlHTMLAttributes } from "react";
 import SalesDashboard from "../page";
 import Tabledashboard from "../../TableProduct";
+import Fileupload from "@/components/ui/Fileupload";
 
 interface LoaiSanPham {
   idloaisanpham: number;
@@ -44,6 +45,7 @@ export default function ProductManagementPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [currentProductId, setCurrentProductId] = useState<number | null>(null);
+  const [imageUrl, setImageUrl] = useState("");
 
   useEffect(() => {
     fetchLoaiSanPham();
@@ -65,7 +67,7 @@ export default function ProductManagementPage() {
     if (!formData.mota.trim()) return "Vui lòng nhập mô tả";
     if (!formData.gia || isNaN(Number(formData.gia)))
       return "Vui lòng nhập giá hợp lệ";
-    if (!formData.hinhanh.trim()) return "Vui lòng nhập URL hình ảnh";
+
     if (!formData.idloaisanpham) return "Vui lòng chọn loại sản phẩm";
     if (!formData.size) return "Vui lòng chọn ít nhất một size";
     if (formData.giamgia < 0 || formData.giamgia > 100)
@@ -131,11 +133,12 @@ export default function ProductManagementPage() {
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, hinhanh: imageUrl }),
       });
 
       if (!response.ok) {
         const data = await response.json();
+
         throw new Error(data.error || "Lỗi khi cập nhật sản phẩm");
       }
 
@@ -146,6 +149,7 @@ export default function ProductManagementPage() {
       );
       resetForm();
       setReloadKey((prev) => prev + 1);
+      setImageUrl("");
     } catch (err) {
       console.error("Error:", err);
       setError(err instanceof Error ? err.message : "Lỗi khi xử lý yêu cầu");
@@ -156,7 +160,17 @@ export default function ProductManagementPage() {
     setFormData(product);
     setCurrentProductId(product.idsanpham);
     setIsEditing(true);
-    document.getElementById("my_modal_3")?.showModal();
+    const data = document.getElementById("my_modal_3") as HTMLDialogElement;
+    data.showModal();
+  };
+  const handleAddNewClick = () => {
+    setIsEditing(false);
+    setFormData(formData);
+    setCurrentProductId(null);
+    const data = document.getElementById("my_modal_3") as HTMLDialogElement;
+    if (data) {
+      data.showModal();
+    }
   };
 
   const resetForm = () => {
@@ -180,9 +194,16 @@ export default function ProductManagementPage() {
         const response = await fetch(`/api/sanpham/${id}`, {
           method: "DELETE",
         });
-        if (!response.ok) throw new Error("Không thể xóa sản phẩm.");
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || "Không thể xóa sản phẩm.");
+        }
+
+        // Cập nhật thông báo thành công
         setSuccess("Sản phẩm đã được xóa thành công.");
-        setReloadKey((prevKey) => prevKey + 1);
+
+        // Cập nhật lại danh sách sản phẩm, có thể là thông qua một hàm reload dữ liệu
+        setReloadKey((prevKey) => prevKey + 1); // Reload the product list
       } catch (err) {
         console.error("Error deleting product:", err);
         setError(err instanceof Error ? err.message : "Lỗi khi xóa sản phẩm.");
@@ -192,7 +213,8 @@ export default function ProductManagementPage() {
 
   const handleCancelEdit = () => {
     resetForm();
-    document.getElementById("my_modal_3")?.close();
+    const data = document.getElementById("my_modal_3") as HTMLDialogElement;
+    data.close();
   };
 
   return (
@@ -203,10 +225,7 @@ export default function ProductManagementPage() {
           <h1 className="text-2xl font-bold mb-4 whitespace-nowrap">
             Quản lý sản phẩm
           </h1>
-          <button
-            className="btn btn-primary"
-            onClick={() => document.getElementById("my_modal_3")?.showModal()}
-          >
+          <button className="btn btn-primary" onClick={handleAddNewClick}>
             Thêm sản phẩm
           </button>
         </div>
@@ -215,7 +234,7 @@ export default function ProductManagementPage() {
           id="my_modal_3"
           className="modal fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50"
         >
-          <div className="bg-white shadow-xl rounded-lg p-8 w-full max-w-3xl relative">
+          <div className="bg-white shadow-xl rounded-lg p-4 w-full max-w-3xl relative">
             <button
               onClick={() => handleCancelEdit()}
               className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
@@ -271,13 +290,29 @@ export default function ProductManagementPage() {
                   <label className="block text-sm font-medium text-gray-700">
                     Hình ảnh (URL)
                   </label>
-                  <input
-                    type="text"
-                    name="hinhanh"
-                    value={formData.hinhanh}
-                    onChange={handleChange}
-                    className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                  <Fileupload
+                    endpoint="imageUploader"
+                    onChange={(url) => {
+                      setImageUrl(url || "");
+                    }}
+                    showmodal={!imageUrl}
                   />
+                  {imageUrl && (
+                    <div className="mt-2 flex flex-col items-center">
+                      <img
+                        src={imageUrl}
+                        alt="Uploaded"
+                        className="max-w-xs max-h-48"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setImageUrl("")}
+                        className="mt-2 px-4 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
