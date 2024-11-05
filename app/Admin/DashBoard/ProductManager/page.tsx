@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, HtmlHTMLAttributes } from "react";
-import SalesDashboard from "../page";
+import SalesDashboard from "../NvarbarAdmin";
 import Tabledashboard from "../../TableProduct";
 import Fileupload from "@/components/ui/Fileupload";
 

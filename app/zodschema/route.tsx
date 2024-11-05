@@ -25,3 +25,12 @@ const UserSchema = z.object({
     .max(255, { message: "Ten khong duoc dai qua 255 ky tu" }),
 });
 export default UserSchema;
+
+export const SupplierSchema = z.object({
+  id: z.number().optional(), // ID là tùy chọn nếu không dùng trong create
+  tennhacungcap: z.string().min(1, "Tên nhà cung cấp không được để trống"),
+  sodienthoai: z.string().min(1, "Số điện thoại không được để trống"),
+  diachi: z.string().optional(),
+  email: z.string().email("Email không hợp lệ").optional(),
+  trangthai: z.boolean(), // true cho "Đang cung cấp", false cho "Ngừng cung cấp"
+});

@@ -58,3 +58,17 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+export async function GET(request: NextRequest, response: NextResponse) {
+  const nhacungcap = await prisma.nhacungcap.findMany();
+  return NextResponse.json(
+    { nhacungcap, message: "Liệt kê tất cả các nhà cung cấp" },
+    { status: 200 }
+  );
+}
+export async function DELETE(request: NextRequest, response: NextResponse) {
+  const nhacungcap = await prisma.nhacungcap.deleteMany();
+  return NextResponse.json(
+    { nhacungcap, message: "Dã xoá tất cả" },
+    { status: 200 }
+  );
+}

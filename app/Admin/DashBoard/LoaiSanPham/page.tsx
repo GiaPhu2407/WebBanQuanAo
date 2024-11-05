@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import SalesDashboard from "../page";
+import SalesDashboard from "../NvarbarAdmin";
 import TableTypeProduct from "../../TableTypeProduct";
 
 interface LoaiSanPham {
