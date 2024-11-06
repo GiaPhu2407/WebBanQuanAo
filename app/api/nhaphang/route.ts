@@ -47,3 +47,16 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+export async function GET(req: NextRequest) {
+  try {
+    // Get all products ordered by ID
+    const sanpham = await prisma.nhaphang.findMany({
+      orderBy: {
+        idnhaphang: "asc",
+      },
+    });
+    return NextResponse.json(sanpham);
+  } catch (e: any) {
+    return NextResponse.json({ message: e.message }, { status: 500 });
+  }
+}

@@ -18,13 +18,16 @@ const SupplierSchema = z.object({
   trangthai: z.boolean(),
 });
 
+// import prisma from "@/prisma/client";
+// import { NextRequest, NextResponse } from "next/server";
+// import { SupplierSchema } from "@/app/zodschema/route"; // Đảm bảo đường dẫn chính xác
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
     // Validate input data
     const validationResult = SupplierSchema.safeParse(body);
-
     if (!validationResult.success) {
       return NextResponse.json(
         {
@@ -35,9 +38,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create new supplier
+    // Tìm ID nhà cung cấp lớn nhất trong cơ sở dữ liệu
+    const maxIdSupplier = await prisma.nhacungcap.findFirst({
+      orderBy: {
+        idnhacungcap: 'desc',  // Lấy ID lớn nhất
+      },
+      select: {
+        idnhacungcap: true,
+      },
+    });
+
+    // Tính toán ID tiếp theo
+    const nextId = maxIdSupplier ? maxIdSupplier.idnhacungcap + 1 : 1;
+
+    // Create new supplier with nextId
     const nhacungcap = await prisma.nhacungcap.create({
       data: {
+        idnhacungcap: nextId,  // Đặt ID mới theo thứ tự tăng dần
         tennhacungcap: body.tennhacungcap,
         sodienthoai: body.sodienthoai,
         diachi: body.diachi,
@@ -58,6 +75,7 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
 export async function GET(request: NextRequest, response: NextResponse) {
   const nhacungcap = await prisma.nhacungcap.findMany();
   return NextResponse.json(
