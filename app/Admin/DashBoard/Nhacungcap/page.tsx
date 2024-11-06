@@ -66,10 +66,15 @@ export default function NhaCungCapManagementPage() {
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >
   ) => {
-    const { name, value, type } = e.target;
-    const finalValue =
-      type === "checkbox" ? (e.target as HTMLInputElement).checked : value;
-    setFormData((prev) => ({ ...prev, [name]: finalValue }));
+    //+
+    const { name, value, type } = e.target; //+
+    const finalValue = //+
+      name === "trangthai" //+
+        ? value === "true" // Chuyển đổi chuỗi "true" và "false" thành boolean//+
+        : type === "checkbox" //+
+        ? (e.target as HTMLInputElement).checked //+
+        : value; //+
+    setFormData((prev) => ({ ...prev, [name]: finalValue })); //
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -110,8 +115,8 @@ export default function NhaCungCapManagementPage() {
       );
       fetchNhaCungCap();
       resetForm();
-      // const modal = document.getElementById("my_modal_3") as HTMLDialogElement;
-      // modal.close();
+      const modal = document.getElementById("my_modal_3") as HTMLDialogElement;
+      modal.close();
     } catch (err) {
       console.error("Error:", err);
       setError(err instanceof Error ? err.message : "Lỗi khi xử lý yêu cầu");
