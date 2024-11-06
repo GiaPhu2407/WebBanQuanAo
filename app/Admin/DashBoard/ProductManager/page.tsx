@@ -141,7 +141,8 @@ export default function ProductManagementPage() {
 
         throw new Error(data.error || "Lỗi khi cập nhật sản phẩm");
       }
-
+      const data = document.getElementById("my_modal_3") as HTMLDialogElement;
+      data.close();
       setSuccess(
         currentProductId
           ? "Cập nhật sản phẩm thành công"
@@ -243,7 +244,11 @@ export default function ProductManagementPage() {
             </button>
 
             {error && <div className="text-red-500 mb-4">{error}</div>}
-            {success && <div className="text-green-500 mb-4">{success}</div>}
+            {success && (
+              <div className="alert alert-success">
+                <span>{success}</span>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit}>
               <h2 className="text-xl font-semibold text-gray-800 mb-6">

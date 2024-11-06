@@ -1,9 +1,13 @@
-import prisma from "@/prisma/client";
 import { NextRequest, NextResponse } from "next/server";
-import { SupplierSchema } from "@/app/zodschema/route"; // Đảm bảo đường dẫn chính xác
-
-export async function PUT(req: NextRequest) {
+import { z } from "zod";
+import prisma from "@/prisma/client"; // Ensure this path matches your project structure
+import { SupplierSchema } from "@/app/zodschema/route";
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
+    const { id } = params;
     const body = await req.json();
 
     // Validate input data
@@ -18,68 +22,17 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    // Kiểm tra xem `idnhacungcap` có được cung cấp không
-    if (!body.idnhacungcap || typeof body.idnhacungcap !== "number") {
-      return NextResponse.json(
-        { error: "ID nhà cung cấp không hợp lệ hoặc không được cung cấp" },
-        { status: 400 }
-      );
-    }
-
-    // Kiểm tra xem `idnhacungcap` mới có trùng với ID đã có trong cơ sở dữ liệu không
-    const existingSupplier = await prisma.nhacungcap.findUnique({
-      where: { idnhacungcap: body.idnhacungcap },
-    });
-
-    if (!existingSupplier) {
-      return NextResponse.json(
-        { message: "Không tìm thấy nhà cung cấp với ID đã cung cấp" },
-        { status: 404 }
-      );
-    }
-
-    // Kiểm tra nếu có yêu cầu thay đổi ID (cập nhật lại ID)
-    if (body.newIdnhacungcap && typeof body.newIdnhacungcap === "number") {
-      // Kiểm tra xem ID mới đã tồn tại chưa
-      const idExists = await prisma.nhacungcap.findUnique({
-        where: { idnhacungcap: body.newIdnhacungcap },
-      });
-
-      if (idExists) {
-        return NextResponse.json(
-          { error: "ID mới đã tồn tại trong cơ sở dữ liệu" },
-          { status: 400 }
-        );
-      }
-
-      // Cập nhật lại ID và các trường khác
-      const nhacungcap = await prisma.nhacungcap.update({
-        where: { idnhacungcap: body.idnhacungcap },
-        data: {
-          idnhacungcap: body.newIdnhacungcap, // Cập nhật ID mới
-          tennhacungcap: body.tennhacungcap,
-          sodienthoai: body.sodienthoai,
-          diachi: body.diachi,
-          email: body.email,
-          trangthai: body.trangthai, // true cho "Đang cung cấp", false cho "Ngừng cung cấp"
-        },
-      });
-
-      return NextResponse.json(
-        { nhacungcap, message: "Cập nhật nhà cung cấp thành công" },
-        { status: 200 }
-      );
-    }
-
-    // Cập nhật nếu không có thay đổi ID
+    // Update the supplier
     const nhacungcap = await prisma.nhacungcap.update({
-      where: { idnhacungcap: body.idnhacungcap },
+      where: {
+        idnhacungcap: parseInt(id),
+      },
       data: {
         tennhacungcap: body.tennhacungcap,
         sodienthoai: body.sodienthoai,
         diachi: body.diachi,
         email: body.email,
-        trangthai: body.trangthai, // true cho "Đang cung cấp", false cho "Ngừng cung cấp"
+        trangthai: body.trangthai,
       },
     });
 
@@ -89,18 +42,9 @@ export async function PUT(req: NextRequest) {
     );
   } catch (e: any) {
     console.error("Error in PUT:", e);
-    if (e.code === "P2025") {
-      // Lỗi Prisma khi không tìm thấy bản ghi cần cập nhật
-      return NextResponse.json(
-        { message: "Không tìm thấy nhà cung cấp với ID đã cung cấp" },
-        { status: 404 }
-      );
-    } else {
-      // Lỗi chung khác
-      return NextResponse.json(
-        { message: "Đã xảy ra lỗi: " + e.message },
-        { status: 500 }
-      );
-    }
+    return NextResponse.json(
+      { message: "Đã xảy ra lỗi: " + e.message },
+      { status: 500 }
+    );
   }
 }

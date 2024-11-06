@@ -92,7 +92,10 @@ export default function NhaCungCapManagementPage() {
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          trangthai: formData.trangthai === true, // Convert string to boolean//+
+        }),
       });
 
       if (!response.ok) {
@@ -107,8 +110,8 @@ export default function NhaCungCapManagementPage() {
       );
       fetchNhaCungCap();
       resetForm();
-      const modal = document.getElementById("my_modal_3") as HTMLDialogElement;
-      modal.close();
+      // const modal = document.getElementById("my_modal_3") as HTMLDialogElement;
+      // modal.close();
     } catch (err) {
       console.error("Error:", err);
       setError(err instanceof Error ? err.message : "Lỗi khi xử lý yêu cầu");
