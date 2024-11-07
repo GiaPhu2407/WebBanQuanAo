@@ -48,3 +48,29 @@ export async function PUT(
     );
   }
 }
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const { id } = params;
+
+    // Delete the supplier
+    const deletedSupplier = await prisma.nhacungcap.delete({
+      where: {
+        idnhacungcap: parseInt(id),
+      },
+    });
+
+    return NextResponse.json(
+      { nhacungcap: deletedSupplier, message: "Xóa nhà cung cấp thành công" },
+      { status: 200 }
+    );
+  } catch (e: any) {
+    console.error("Error in DELETE:", e);
+    return NextResponse.json(
+      { message: "Đã xảy ra lỗi: " + e.message },
+      { status: 500 }
+    );
+  }
+}

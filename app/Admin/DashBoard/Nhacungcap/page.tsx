@@ -115,8 +115,8 @@ export default function NhaCungCapManagementPage() {
       );
       fetchNhaCungCap();
       resetForm();
-      const modal = document.getElementById("my_modal_3") as HTMLDialogElement;
-      modal.close();
+      // const modal = document.getElementById("my_modal_3") as HTMLDialogElement;
+      // modal.close();
     } catch (err) {
       console.error("Error:", err);
       setError(err instanceof Error ? err.message : "Lỗi khi xử lý yêu cầu");
