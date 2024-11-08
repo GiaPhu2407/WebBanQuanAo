@@ -128,11 +128,21 @@ const TableSupplier: React.FC<TableSupplierProps> = ({
                       key={supplier.idnhacungcap}
                       className={`hover:bg-blue-50 transition-colors duration-200`}
                     >
-                      <td className="px-6 py-4 whitespace-nowrap">{supplier.idnhacungcap}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{supplier.tennhacungcap}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{supplier.sodienthoai}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{supplier.diachi}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{supplier.email}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {supplier.idnhacungcap}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {supplier.tennhacungcap}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {supplier.sodienthoai}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {supplier.diachi}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {supplier.email}
+                      </td>
                       <td className="px-6 py-4 text-center">
                         <span
                           className={`px-2 py-1 rounded-full text-sm ${
