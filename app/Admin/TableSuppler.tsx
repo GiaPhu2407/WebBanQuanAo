@@ -96,7 +96,7 @@ const TableSupplier: React.FC<TableSupplierProps> = ({
   };
 
   return (
-    <div className="space-y-4 -ml-40 ">
+    <div className="space-y-4 -ml-56 ">
       <div className="w-full">
         <CardContent>
           <div className="w-full rounded-lg shadow">
@@ -238,7 +238,7 @@ const TableSupplier: React.FC<TableSupplierProps> = ({
           disabled={meta.page >= meta.totalPages}
           className="px-3 py-1 rounded-md bg-white border hover:bg-gray-100 disabled:opacity-50"
         >
-          »
+        
         </button>
       </div>
     </div>

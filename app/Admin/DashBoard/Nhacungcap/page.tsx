@@ -31,10 +31,6 @@ export default function NhaCungCapManagementPage() {
     null
   );
 
-  useEffect(() => {
-    fetchNhaCungCap();
-  }, [reloadKey]);
-
   const fetchNhaCungCap = async () => {
     try {
       const response = await fetch("/api/nhacungcap");
@@ -51,10 +47,8 @@ export default function NhaCungCapManagementPage() {
     if (!formData.sodienthoai.trim()) return "Vui lòng nhập số điện thoại";
     if (!formData.diachi.trim()) return "Vui lòng nhập địa chỉ";
     if (!formData.email.trim()) return "Vui lòng nhập email";
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) return "Email không hợp lệ";
-    // Validate phone number (Vietnamese format)
     const phoneRegex = /(84|0[3|5|7|8|9])+([0-9]{8})\b/;
     if (!phoneRegex.test(formData.sodienthoai))
       return "Số điện thoại không hợp lệ";
@@ -66,15 +60,14 @@ export default function NhaCungCapManagementPage() {
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >
   ) => {
-    //+
-    const { name, value, type } = e.target; //+
-    const finalValue = //+
-      name === "trangthai" //+
-        ? value === "true" // Chuyển đổi chuỗi "true" và "false" thành boolean//+
-        : type === "checkbox" //+
-        ? (e.target as HTMLInputElement).checked //+
-        : value; //+
-    setFormData((prev) => ({ ...prev, [name]: finalValue })); //
+    const { name, value, type } = e.target;
+    const finalValue =
+      name === "trangthai"
+        ? value === "true"
+        : type === "checkbox"
+        ? (e.target as HTMLInputElement).checked
+        : value;
+    setFormData((prev) => ({ ...prev, [name]: finalValue }));
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -99,7 +92,7 @@ export default function NhaCungCapManagementPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
-          trangthai: formData.trangthai === true, // Convert string to boolean//+
+          trangthai: formData.trangthai === true,
         }),
       });
 
@@ -113,13 +106,39 @@ export default function NhaCungCapManagementPage() {
           ? "Cập nhật nhà cung cấp thành công"
           : "Thêm nhà cung cấp thành công"
       );
-      fetchNhaCungCap();
+
+      // Increment reloadKey to trigger re-fetch in TableSupplier
+      setReloadKey((prev) => prev + 1);
+
+      // Close the modal
+      const modal = document.getElementById("my_modal_3") as HTMLDialogElement;
+      if (modal) {
+        modal.close();
+      }
+
+      // Reset form
       resetForm();
-      // const modal = document.getElementById("my_modal_3") as HTMLDialogElement;
-      // modal.close();
     } catch (err) {
       console.error("Error:", err);
       setError(err instanceof Error ? err.message : "Lỗi khi xử lý yêu cầu");
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (window.confirm("Bạn có chắc chắn muốn xóa nhà cung cấp này?")) {
+      try {
+        const response = await fetch(`/api/nhacungcap/${id}`, {
+          method: "DELETE",
+        });
+        if (!response.ok) throw new Error("Không thể xóa nhà cung cấp");
+        setSuccess("Nhà cung cấp đã được xóa thành công");
+        setReloadKey((prev) => prev + 1);
+      } catch (err) {
+        console.error("Error deleting nha cung cap:", err);
+        setError(
+          err instanceof Error ? err.message : "Lỗi khi xóa nhà cung cấp"
+        );
+      }
     }
   };
 
@@ -142,24 +161,6 @@ export default function NhaCungCapManagementPage() {
     });
     setCurrentNhaCungCapId(null);
     setIsEditing(false);
-  };
-
-  const handleDelete = async (id: number) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa nhà cung cấp này?")) {
-      try {
-        const response = await fetch(`/api/nhacungcap/${id}`, {
-          method: "DELETE",
-        });
-        if (!response.ok) throw new Error("Không thể xóa nhà cung cấp");
-        setSuccess("Nhà cung cấp đã được xóa thành công");
-        setReloadKey((prevKey) => prevKey + 1);
-      } catch (err) {
-        console.error("Error deleting nha cung cap:", err);
-        setError(
-          err instanceof Error ? err.message : "Lỗi khi xóa nhà cung cấp"
-        );
-      }
-    }
   };
 
   const handleCancelEdit = () => {
