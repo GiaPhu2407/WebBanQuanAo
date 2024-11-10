@@ -1,11 +1,10 @@
 "use client";
 import Link from "next/link";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaBagShopping } from "react-icons/fa6";
-import { FaMars, FaVenus } from "react-icons/fa"; // Importing icons
-import { UserButton } from "@clerk/nextjs";
-import { useAppContext } from "@/app/component/Context/AppContext";
-// import { FaBagShopping } from 'react-icons/fa';
+import { FaMars, FaVenus } from "react-icons/fa";
+import { UserAuth } from "@/app/types/auth";
+
 interface Product {
   idsanpham: number;
   tensanpham: string;
@@ -17,22 +16,43 @@ interface Product {
   gioitinh: boolean;
   size: string;
 }
+
 const Menu = () => {
   const [showMaleDropdown, setShowMaleDropdown] = useState(false);
   const [showFemaleDropdown, setShowFemaleDropdown] = useState(false);
+  const [user, setUser] = useState<UserAuth | null>(null);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
 
-  const AddProducttoCard = () => {
-    // const payLoad = {
-    //   idsanpham,
-    //   tensanpham,
-    //   hinhanh,
-    // };
+  useEffect(() => {
+    fetch("api/auth/session")
+      .then((response) => {
+        if (!response.ok) throw new Error("Failed to fetch session");
+        return response.json();
+      })
+      .then((data) => {
+        setUser(data);
+      })
+      .catch((error) => {
+        console.error("Failed to fetch session", error);
+      });
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      setUser(null);
+      window.location.href = "/";
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
   };
 
   return (
     <div>
       <div className="bg-white w-full h-20 shadow fixed z-[99]">
         <div className="flex items-center justify-center h-full">
+          {/* Existing menu items */}
           <div className="flex gap-10 content-center">
             <ul className="flex gap-10 content-center ">
               <li>
@@ -82,6 +102,8 @@ const Menu = () => {
               </li>
             </ul>
           </div>
+
+          {/* Search bar */}
           <label className="input input-bordered flex items-center gap-2 ml-3">
             <input
               type="text"
@@ -101,11 +123,76 @@ const Menu = () => {
               />
             </svg>
           </label>
-          <div className="" onClick={AddProducttoCard}>
+
+          {/* Shopping cart */}
+          <div className="cursor-pointer">
             <FaBagShopping className="ml-5 text-2xl text-rose-500" />
           </div>
-          <div className="ml-10 mt-[4px]">
-            <UserButton />
+
+          {/* User Avatar with Tooltip */}
+          <div className="ml-10">
+            {user ? (
+              <div className="relative">
+                <button
+                  onClick={() => setIsProfileOpen(!isProfileOpen)}
+                  onMouseEnter={() => setShowTooltip(true)}
+                  onMouseLeave={() => setShowTooltip(false)}
+                  className="flex items-center space-x-2"
+                >
+                  <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white">
+                    {user.Hoten?.[0] || user.Tentaikhoan?.[0] || "U"}
+                  </div>
+                </button>
+
+                {/* Tooltip */}
+                {showTooltip && !isProfileOpen && (
+                  <div className="absolute -left-24 top-12 w-64 bg-black text-white p-2 rounded-md shadow-lg z-50">
+                    <div className="absolute -top-2 right-6 w-4 h-4 bg-black transform rotate-45"></div>
+                    <div className="relative z-10">
+                      <p className="font-semibold">
+                        {user.Hoten || user.Tentaikhoan}
+                      </p>
+                      <p className="text-sm text-gray-300">{user.Email}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Dropdown Menu */}
+                {isProfileOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                    <Link
+                      href="/profile"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Profile
+                    </Link>
+                    {user.role?.TenNguoiDung === "Admin" && (
+                      <Link
+                        href="/dashboard"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        Dashboard
+                      </Link>
+                    )}
+                    <button
+                      onClick={handleLogout}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex gap-5">
+                <Link
+                  href="/Login"
+                  className="btn transition-all duration-500 bg-green-400 hover:text-red-500 px-4 w-20 sm:w-28"
+                >
+                  Login
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>

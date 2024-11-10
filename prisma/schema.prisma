@@ -14,6 +14,20 @@ model Role {
   Nhanvien      Nhanvien[]
   Admin         Admin[]
   RolePermission RolePermission[]
+  Users         Users[]
+}
+model Users {
+  idUsers     Int       @id @default(autoincrement())
+  Tentaikhoan String?   @db.VarChar(225)
+  Matkhau     String?   @db.VarChar(225)
+  Hoten       String?   @db.VarChar(225)
+  Sdt         String?   @db.VarChar(15)
+  Diachi      String?   @db.VarChar(45)
+  Email       String?   @db.VarChar(45) @unique
+  idRole      Int?      
+  Ngaydangky  DateTime? @db.Date
+  role        Role?     @relation(fields: [idRole], references: [idrole])
+  
 }
 
 model Khachhang {
