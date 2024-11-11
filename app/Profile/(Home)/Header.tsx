@@ -75,23 +75,23 @@ const Header = () => {
             </a>
             <div className="flex justify-center items-center md:order-2 space-x-1 md:space-x-2 rtl:space-x-reverse">
               <div>
-                {!user ? (
-                  <div className="flex gap-5">
-                    <Link
-                      href="/Login"
-                      className="btn transition-all duration-500 bg-green-400 hover:text-red-500 px-4 w-20 sm:w-28 "
-                    >
-                      Login
-                    </Link>
-                    <Link
-                      href="/Register"
-                      className="btn transition-all duration-500 hover:text-red-500 bg-blue-400 px-5 w-20 sm:w-28"
-                    >
-                      Register
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="relative">
+                {/* {!user ? ( */}
+                <div className="flex gap-5">
+                  <Link
+                    href="/Login"
+                    className="btn transition-all duration-500 bg-green-400 hover:text-red-500 px-4 w-20 sm:w-28 "
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/Register"
+                    className="btn transition-all duration-500 hover:text-red-500 bg-blue-400 px-5 w-20 sm:w-28"
+                  >
+                    Register
+                  </Link>
+                </div>
+                {/* ) : ( */}
+                {/* <div className="relative">
                     <button
                       onClick={() => setIsProfileOpen(!isProfileOpen)}
                       className="flex items-center space-x-2"
@@ -126,7 +126,7 @@ const Header = () => {
                       </div>
                     )}
                   </div>
-                )}
+                )} */}
               </div>
               <button
                 data-collapse-toggle="mega-menu-icons"

@@ -8,6 +8,6 @@ export interface UserAuth {
     DiaChi?: string;
     idRole?: number;
     role?: {
-      TenNguoiDung?: string;
+      Tennguoidung?: string;
     }
   }

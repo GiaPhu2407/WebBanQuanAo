@@ -104,8 +104,8 @@ export default function RegisterPage() {
                 </label>
                 <input
                   type="text"
-                  id="fullName"
-                  name="fullName"
+                  id="fullname"
+                  name="fullmame"
                   placeholder="Full Name"
                   className="input input-bordered"
                   required
