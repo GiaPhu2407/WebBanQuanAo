@@ -1,14 +1,20 @@
 "use client";
-
-import { useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  // AlertDialog,
+  // AlertDialogAction,
+} from "@/components/ui/alert";
 
-export default function RegisterPage() {
+const RegistrationPage = () => {
   const [error, setError] = useState("");
   const router = useRouter();
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
 
@@ -33,145 +39,136 @@ export default function RegisterPage() {
     } catch (error) {
       setError("Registration failed. Please try again.");
     }
-  }
+  };
 
   return (
-    <div className="min-h-screen hero bg-base-200" data-theme="light">
-      <div className="hero-content flex w-full bg-gradient-to-r from-pink-300 rounded-2xl to-blue-400 mt-10">
-        <div className="text-center lg:text-left lg:ml-8">
-          <h1 className="text-5xl font-bold">Register now!</h1>
-          <p className="py-6">
+    <div className="min-h-screen flex">
+      {/* Phần hình ảnh */}
+      <div className="bg-gradient-to-r from-pink-300 to-blue-400 flex-1 flex items-center justify-center hidden md:flex">
+        <div className="text-center text-white">
+          <h1 className="text-5xl font-bold mb-6">Register Now</h1>
+          <p className="text-lg">
             Join us to explore our amazing products and services.
           </p>
         </div>
-        <div className="card flex shadow-2xl bg-base-100 h-auto">
-          <form onSubmit={handleSubmit} className="card-body">
-            {error && (
-              <div className="alert alert-error">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="stroke-current shrink-0 h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <span>{error}</span>
-              </div>
-            )}
+      </div>
 
-            {/* Hàng đầu tiên với Email và Username */}
-            <div className="flex gap-4  z-10">
-              <div className="form-control flex-1">
-                <label className="label">
-                  <span className="label-text">Email</span>
+      {/* Phần form đăng ký */}
+      <div className="flex-1 flex items-center justify-center">
+        <div className="bg-white shadow-2xl rounded-2xl w-full max-w-md p-8">
+          {error && (
+            <Alert status="error" className="mb-6">
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="flex gap-10">
+              <div>
+                <label htmlFor="email" className="block font-medium mb-2">
+                  Email
                 </label>
                 <input
                   type="email"
                   id="email"
                   name="email"
                   placeholder="Email"
-                  className="input input-bordered"
+                  className="border border-gray-300 rounded-md px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
               </div>
 
-              <div className="form-control flex-1  z-10">
-                <label className="label">
-                  <span className="label-text">Username</span>
+              <div>
+                <label htmlFor="username" className="block font-medium mb-2">
+                  Username
                 </label>
                 <input
                   type="text"
                   id="username"
                   name="username"
                   placeholder="Username"
-                  className="input input-bordered"
+                  className="border border-gray-300 rounded-md px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
               </div>
             </div>
-
-            {/* Hàng thứ hai với Full Name và Phone Number */}
-            <div className="flex gap-4  z-10">
-              <div className="form-control flex-1">
-                <label className="label">
-                  <span className="label-text">Full Name</span>
+            <div className="flex gap-10">
+              <div>
+                <label htmlFor="fullname" className="block font-medium mb-2">
+                  Full Name
                 </label>
                 <input
                   type="text"
                   id="fullname"
-                  name="fullmame"
+                  name="fullname"
                   placeholder="Full Name"
-                  className="input input-bordered"
+                  className="border border-gray-300 rounded-md px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
               </div>
 
-              <div className="form-control flex-1  z-10">
-                <label className="label">
-                  <span className="label-text">Phone Number</span>
+              <div>
+                <label htmlFor="phone" className="block font-medium mb-2">
+                  Phone Number
                 </label>
                 <input
                   type="tel"
                   id="phone"
                   name="phone"
                   placeholder="Phone Number"
-                  className="input input-bordered"
+                  className="border border-gray-300 rounded-md px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
               </div>
             </div>
-
-            <div className="flex gap-4  z-10">
-              {/* Trường Address */}
-              <div className="form-control flex-1">
-                <label className="label w-56">
-                  <span className="label-text">Address</span>
-                </label>
-                <textarea
-                  id="address"
-                  name="address"
-                  placeholder="Address"
-                  className="textarea textarea-bordered"
-                  rows={3}
-                />
-              </div>
-
-              {/* Trường Password */}
-              <div className="form-control flex-1  z-10">
-                <label className="label">
-                  <span className="label-text">Password</span>
-                </label>
-                <input
-                  type="password"
-                  id="password"
-                  name="password"
-                  placeholder="Password"
-                  className="input input-bordered"
-                  required
-                />
-              </div>
+            <div>
+              <label htmlFor="address" className="block font-medium mb-2">
+                Address
+              </label>
+              <textarea
+                id="address"
+                name="address"
+                placeholder="Address"
+                className="border border-gray-300 rounded-md px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                rows={3}
+              />
             </div>
 
-            <div className="form-control mt-6  z-10">
-              <button type="submit" className="btn btn-primary">
-                Register
-              </button>
+            <div>
+              <label htmlFor="password" className="block font-medium mb-2">
+                Password
+              </label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                placeholder="Password"
+                className="border border-gray-300 rounded-md px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
             </div>
 
-            <label className="label  z-10">
-              <Link href="/Login" className="label-text-alt link link-hover">
-                Already have an account? Login
-              </Link>
-            </label>
+            <button
+              type="submit"
+              className="bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-md px-4 py-3 w-full"
+            >
+              Register
+            </button>
           </form>
+
+          <div className="mt-6 text-center">
+            <p>
+              Already have an account?{" "}
+              <Link href="/Login" className="text-blue-500 hover:underline">
+                Login
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default RegistrationPage;
