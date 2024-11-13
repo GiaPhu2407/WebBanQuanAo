@@ -8,7 +8,38 @@ interface LoaiSanPham {
   tenloai: string;
   mota: string;
 }
-
+const Toast = ({
+  message,
+  type,
+  isVisible,
+  onClose,
+}: {
+  message: string;
+  type: "error" | "success";
+  isVisible: boolean;
+  onClose: () => void;
+}) => {
+  return (
+    <div
+      className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg transform transition-transform duration-300 z-50 ${
+        isVisible ? "translate-x-0" : "translate-x-full"
+      } ${
+        type === "error" ? "bg-red-500 text-white" : "bg-green-500 text-white"
+      }`}
+    >
+      <div className="flex items-center">
+        <span className="mr-2">{type === "error" ? "❌" : "✅"}</span>
+        <p className="font-medium">{message}</p>
+        <button
+          onClick={onClose}
+          className="ml-4 text-white hover:text-gray-200 focus:outline-none"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+  );
+};
 export default function LoaiSanPhamManagementPage() {
   const [formData, setFormData] = useState<LoaiSanPham>({
     idloaisanpham: 0,
@@ -19,6 +50,8 @@ export default function LoaiSanPhamManagementPage() {
   const [loaisanphamList, setLoaisanphamList] = useState<LoaiSanPham[]>([]);
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
+  const [showToast, setShowToast] = useState(false);
+
   const [isEditing, setIsEditing] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [currentLoaiSanPhamId, setCurrentLoaiSanPhamId] = useState<
@@ -29,6 +62,18 @@ export default function LoaiSanPhamManagementPage() {
     fetchLoaiSanPham();
   }, [reloadKey]);
 
+  useEffect(() => {
+    if (error || success) {
+      setShowToast(true);
+      const timer = setTimeout(() => {
+        setShowToast(false);
+        setError("");
+        setSuccess("");
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [error, success]);
   const fetchLoaiSanPham = async () => {
     try {
       const response = await fetch("/api/loaisanpham");
@@ -88,6 +133,7 @@ export default function LoaiSanPhamManagementPage() {
       );
       fetchLoaiSanPham(); // Gọi lại danh sách mà không cần tải lại trang
       resetForm();
+      setReloadKey((prev) => prev +1);
       const data = document.getElementById("my_modal_3") as HTMLDialogElement; // Đóng modal sau khi submit thành công
       data.close();
     } catch (err) {
@@ -151,6 +197,18 @@ export default function LoaiSanPhamManagementPage() {
     <div className="flex">
       <SalesDashboard />
       <div className="p-6 max-w-4xl mx-auto">
+        {(error || success) && (
+          <Toast
+            message={error || success}
+            type={error ? "error" : "success"}
+            isVisible={showToast}
+            onClose={() => {
+              setShowToast(false);
+              setError("");
+              setSuccess("");
+            }}
+          />
+        )}
         <div className="flex justify-evenly gap-[580px] ">
           <h1 className="text-2xl font-bold mb-4 whitespace-nowrap">
             Quản lý loại sản phẩm
@@ -172,8 +230,8 @@ export default function LoaiSanPhamManagementPage() {
               ✕
             </button>
 
-            {error && <div className="text-red-500 mb-4">{error}</div>}
-            {success && <div className="text-green-500 mb-4">{success}</div>}
+            {/* {error && <div className="text-red-500 mb-4">{error}</div>}
+            {success && <div className="text-green-500 mb-4">{success}</div>} */}
 
             <form onSubmit={handleSubmit}>
               <h2 className="text-xl font-semibold text-gray-800 mb-6">
