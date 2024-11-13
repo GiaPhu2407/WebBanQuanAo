@@ -1,64 +1,68 @@
 "use client";
-
 import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/use-toast"; // Đảm bảo rằng đường dẫn tới `use-toast` là chính xác
-import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { loginUser } from "../api/auth/(functions)/function";
+loginUser;
 
 const LoginPage = () => {
-  const [error, setError] = useState("");
-  const { toast } = useToast(); // Đảm bảo hook này được cấu hình chính xác
   const router = useRouter();
+  const [formData, setFormData] = useState({
+    usernameOrEmail: "",
+    password: "",
+  });
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const usernameOrEmail = formData.get("usernameOrEmail")?.toString();
-    const password = formData.get("password")?.toString();
+  const [error, setError] = useState("");
+  const { toast } = useToast();
 
-    // Kiểm tra xác thực
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const { usernameOrEmail, password } = formData;
+
+    // Kiểm tra đầu vào
     if (!usernameOrEmail || !password) {
+      setError("Please fill in both email and password.");
       toast({
-        title: "Validation Error",
-        description: "Please enter both email/username and password.",
+        title: "Validation Error!",
+        description: "Please fill in both email and password.",
         variant: "destructive",
       });
       return;
     }
 
-    setError("");
-
+    setError(""); // Xóa lỗi khi nhập đầy đủ thông tin
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          usernameOrEmail,
-          password,
-        }),
-      });
-
-      if (!res.ok) {
-        throw new Error("Login failed");
+      const res = await loginUser(usernameOrEmail, password);
+      if (res?.status) {
+        localStorage.setItem("userData", JSON.stringify(res.data));
+        toast({
+          title: "Login Successful!",
+          description: "Welcome back!",
+          variant: "success",
+        });
+        router.push("/Show");
+      } else {
+        toast({
+          title: "Login Failed",
+          description: "Please check your email and password.",
+          variant: "destructive",
+        });
       }
-
-      // Hiển thị toast thành công và chuyển hướng
-      toast({
-        title: "Login Successful",
-        description: "Welcome back!",
-        variant: "success",
-      });
-      router.push("/Show"); // Chuyển hướng tới trang Show
     } catch (error) {
-      setError("Invalid credentials");
       toast({
-        title: "Login Failed",
-        description: "Invalid email/username or password.",
+        title: "Error!",
+        description: "Login failed - Please check your email and password.",
         variant: "destructive",
       });
     }
@@ -93,11 +97,13 @@ const LoginPage = () => {
                 </label>
                 <Input
                   id="usernameOrEmail"
-                  name="usernameOrEmail"
+                  name="usernameOrEmail" // Gắn name trùng với formData
                   type="text"
                   required
                   className="w-full"
                   placeholder="Enter your email or username"
+                  value={formData.usernameOrEmail} // Gắn giá trị của formData.email vào value
+                  onChange={handleChange} // Đảm bảo onChange được gọi khi nhập liệu
                 />
               </div>
 
@@ -110,11 +116,13 @@ const LoginPage = () => {
                 </label>
                 <Input
                   id="password"
-                  name="password"
+                  name="password" // Gắn name trùng với formData
                   type="password"
                   required
                   className="w-full"
                   placeholder="Enter your password"
+                  value={formData.password} // Gắn giá trị của formData.password vào value
+                  onChange={handleChange} // Đảm bảo onChange được gọi khi nhập liệu
                 />
               </div>
 
