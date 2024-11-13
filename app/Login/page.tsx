@@ -4,21 +4,42 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/use-toast"; // Đảm bảo rằng đường dẫn tới `use-toast` là chính xác
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const LoginPage = () => {
   const [error, setError] = useState("");
+  const { toast } = useToast(); // Đảm bảo hook này được cấu hình chính xác
+  const router = useRouter();
 
-  const handleSubmit = async (event: any) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const formData = new FormData(event.target);
+    const formData = new FormData(event.currentTarget);
+    const usernameOrEmail = formData.get("usernameOrEmail")?.toString();
+    const password = formData.get("password")?.toString();
+
+    // Kiểm tra xác thực
+    if (!usernameOrEmail || !password) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter both email/username and password.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setError("");
 
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
-          usernameOrEmail: formData.get("usernameOrEmail"),
-          password: formData.get("password"),
+          usernameOrEmail,
+          password,
         }),
       });
 
@@ -26,10 +47,20 @@ const LoginPage = () => {
         throw new Error("Login failed");
       }
 
-      // Handle successful login
-      window.location.href = "/Show";
+      // Hiển thị toast thành công và chuyển hướng
+      toast({
+        title: "Login Successful",
+        description: "Welcome back!",
+        variant: "success",
+      });
+      router.push("/Show"); // Chuyển hướng tới trang Show
     } catch (error) {
       setError("Invalid credentials");
+      toast({
+        title: "Login Failed",
+        description: "Invalid email/username or password.",
+        variant: "destructive",
+      });
     }
   };
 

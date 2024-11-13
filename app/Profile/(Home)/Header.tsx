@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 
-import { useAuth, UserButton } from "@clerk/nextjs";
+// import { useAuth, UserButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { UserAuth } from "@/app/types/auth";
 const Header = () => {
@@ -10,7 +10,7 @@ const Header = () => {
   const toggleDropdown = () => {
     setIsDropdownOpen(!isDropdownOpen);
   };
-  const { userId } = useAuth();
+  // const { userId } = useAuth();
   const [user, setUser] = useState<UserAuth | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
