@@ -17,13 +17,47 @@ interface FormData {
   hinhanh: string;
   idloaisanpham: number;
   giamgia: number;
-  gioitinh: boolean; // true for "Nam", false for "Nữ"
+  gioitinh: boolean;
   size: string;
 }
 
 interface SanPham extends FormData {
   idsanpham: number;
 }
+
+// Toast Component
+const Toast = ({
+  message,
+  type,
+  isVisible,
+  onClose,
+}: {
+  message: string;
+  type: "error" | "success";
+  isVisible: boolean;
+  onClose: () => void;
+}) => {
+  return (
+    <div
+      className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg transform transition-transform duration-300 z-50 ${
+        isVisible ? "translate-x-0" : "translate-x-full"
+      } ${
+        type === "error" ? "bg-red-500 text-white" : "bg-green-500 text-white"
+      }`}
+    >
+      <div className="flex items-center">
+        <span className="mr-2">{type === "error" ? "❌" : "✅"}</span>
+        <p className="font-medium">{message}</p>
+        <button
+          onClick={onClose}
+          className="ml-4 text-white hover:text-gray-200 focus:outline-none"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const VALID_SIZES = ["S", "M", "L", "XL", "2XL", "3XL"];
 
@@ -35,13 +69,14 @@ export default function ProductManagementPage() {
     hinhanh: "",
     idloaisanpham: 0,
     giamgia: 0,
-    gioitinh: true, // default to "Nam"
+    gioitinh: true,
     size: "",
   });
 
   const [loaisanphamList, setLoaisanphamList] = useState<LoaiSanPham[]>([]);
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
+  const [showToast, setShowToast] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [currentProductId, setCurrentProductId] = useState<number | null>(null);
@@ -50,6 +85,19 @@ export default function ProductManagementPage() {
   useEffect(() => {
     fetchLoaiSanPham();
   }, []);
+
+  useEffect(() => {
+    if (error || success) {
+      setShowToast(true);
+      const timer = setTimeout(() => {
+        setShowToast(false);
+        setError("");
+        setSuccess("");
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [error, success]);
 
   const fetchLoaiSanPham = async () => {
     try {
@@ -67,7 +115,6 @@ export default function ProductManagementPage() {
     if (!formData.mota.trim()) return "Vui lòng nhập mô tả";
     if (!formData.gia || isNaN(Number(formData.gia)))
       return "Vui lòng nhập giá hợp lệ";
-
     if (!formData.idloaisanpham) return "Vui lòng chọn loại sản phẩm";
     if (!formData.size) return "Vui lòng chọn ít nhất một size";
     if (formData.giamgia < 0 || formData.giamgia > 100)
@@ -138,9 +185,9 @@ export default function ProductManagementPage() {
 
       if (!response.ok) {
         const data = await response.json();
-
         throw new Error(data.error || "Lỗi khi cập nhật sản phẩm");
       }
+
       const data = document.getElementById("my_modal_3") as HTMLDialogElement;
       data.close();
       setSuccess(
@@ -164,9 +211,10 @@ export default function ProductManagementPage() {
     const data = document.getElementById("my_modal_3") as HTMLDialogElement;
     data.showModal();
   };
+
   const handleAddNewClick = () => {
     setIsEditing(false);
-    setFormData(formData);
+    resetForm();
     setCurrentProductId(null);
     const data = document.getElementById("my_modal_3") as HTMLDialogElement;
     if (data) {
@@ -182,7 +230,7 @@ export default function ProductManagementPage() {
       hinhanh: "",
       idloaisanpham: 0,
       giamgia: 0,
-      gioitinh: true, // Reset to "Nam"
+      gioitinh: true,
       size: "",
     });
     setCurrentProductId(null);
@@ -200,11 +248,8 @@ export default function ProductManagementPage() {
           throw new Error(data.error || "Không thể xóa sản phẩm.");
         }
 
-        // Cập nhật thông báo thành công
         setSuccess("Sản phẩm đã được xóa thành công.");
-
-        // Cập nhật lại danh sách sản phẩm, có thể là thông qua một hàm reload dữ liệu
-        setReloadKey((prevKey) => prevKey + 1); // Reload the product list
+        setReloadKey((prevKey) => prevKey + 1);
       } catch (err) {
         console.error("Error deleting product:", err);
         setError(err instanceof Error ? err.message : "Lỗi khi xóa sản phẩm.");
@@ -222,7 +267,20 @@ export default function ProductManagementPage() {
     <div className="flex">
       <SalesDashboard />
       <div className="p-6 max-w-4xl mx-auto">
-        <div className="flex justify-evenly gap-[580px] ">
+        {(error || success) && (
+          <Toast
+            message={error || success}
+            type={error ? "error" : "success"}
+            isVisible={showToast}
+            onClose={() => {
+              setShowToast(false);
+              setError("");
+              setSuccess("");
+            }}
+          />
+        )}
+
+        <div className="flex justify-evenly gap-[580px]">
           <h1 className="text-2xl font-bold mb-4 whitespace-nowrap">
             Quản lý sản phẩm
           </h1>
@@ -243,13 +301,6 @@ export default function ProductManagementPage() {
               ✕
             </button>
 
-            {error && <div className="text-red-500 mb-4">{error}</div>}
-            {success && (
-              <div className="alert alert-success">
-                <span>{success}</span>
-              </div>
-            )}
-
             <form onSubmit={handleSubmit}>
               <h2 className="text-xl font-semibold text-gray-800 mb-6">
                 {isEditing ? "Cập nhật sản phẩm" : "Thêm sản phẩm"}
@@ -267,7 +318,6 @@ export default function ProductManagementPage() {
                     className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm"
                   />
                 </div>
-                {/* Các trường form khác giữ nguyên */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
                     Mô tả
@@ -428,8 +478,6 @@ export default function ProductManagementPage() {
             key={reloadKey}
             onEdit={handleEdit}
             onDelete={handleDelete}
-            // ActionButtons={ActionButtons}
-
             reloadKey={reloadKey}
           />
         </div>

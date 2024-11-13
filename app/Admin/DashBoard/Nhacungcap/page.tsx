@@ -12,6 +12,40 @@ interface NhaCungCap {
   trangthai: boolean;
 }
 
+// Toast Component
+const Toast = ({
+  message,
+  type,
+  isVisible,
+  onClose,
+}: {
+  message: string;
+  type: "error" | "success";
+  isVisible: boolean;
+  onClose: () => void;
+}) => {
+  return (
+    <div
+      className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg transform transition-transform duration-300 z-50 ${
+        isVisible ? "translate-x-0" : "translate-x-full"
+      } ${
+        type === "error" ? "bg-red-500 text-white" : "bg-green-500 text-white"
+      }`}
+    >
+      <div className="flex items-center">
+        <span className="mr-2">{type === "error" ? "❌" : "✅"}</span>
+        <p className="font-medium">{message}</p>
+        <button
+          onClick={onClose}
+          className="ml-4 text-white hover:text-gray-200 focus:outline-none"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+  );
+};
+
 export default function NhaCungCapManagementPage() {
   const [formData, setFormData] = useState<NhaCungCap>({
     idnhacungcap: 0,
@@ -25,11 +59,25 @@ export default function NhaCungCapManagementPage() {
   const [nhacungcapList, setNhacungcapList] = useState<NhaCungCap[]>([]);
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
+  const [showToast, setShowToast] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [currentNhaCungCapId, setCurrentNhaCungCapId] = useState<number | null>(
     null
   );
+
+  useEffect(() => {
+    if (error || success) {
+      setShowToast(true);
+      const timer = setTimeout(() => {
+        setShowToast(false);
+        setError("");
+        setSuccess("");
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [error, success]);
 
   const fetchNhaCungCap = async () => {
     try {
@@ -86,19 +134,36 @@ export default function NhaCungCapManagementPage() {
       : "/api/nhacungcap";
     const method = currentNhaCungCapId ? "PUT" : "POST";
 
+    // Chuẩn bị dữ liệu gửi đi
+    const submitData = {
+      tennhacungcap: formData.tennhacungcap,
+      sodienthoai: formData.sodienthoai,
+      diachi: formData.diachi,
+      email: formData.email,
+      trangthai: Boolean(formData.trangthai),
+    };
+
     try {
       const response = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          trangthai: formData.trangthai === true,
-        }),
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(submitData),
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Lỗi khi cập nhật nhà cung cấp");
+        const errorData = await response.json();
+        throw new Error(
+          errorData.message || "Lỗi khi thêm/cập nhật nhà cung cấp"
+        );
+      }
+
+      const responseData = await response.json();
+
+      if (responseData.error) {
+        throw new Error(responseData.error);
       }
 
       setSuccess(
@@ -107,17 +172,16 @@ export default function NhaCungCapManagementPage() {
           : "Thêm nhà cung cấp thành công"
       );
 
-      // Increment reloadKey to trigger re-fetch in TableSupplier
-      setReloadKey((prev) => prev + 1);
+      // Cập nhật danh sách
+      await fetchNhaCungCap();
 
-      // Close the modal
+      // Đóng modal và reset form
       const modal = document.getElementById("my_modal_3") as HTMLDialogElement;
       if (modal) {
         modal.close();
       }
-
-      // Reset form
       resetForm();
+      setReloadKey((prev) => prev + 1);
     } catch (err) {
       console.error("Error:", err);
       setError(err instanceof Error ? err.message : "Lỗi khi xử lý yêu cầu");
@@ -182,6 +246,19 @@ export default function NhaCungCapManagementPage() {
     <div className="flex">
       <SalesDashboard />
       <div className="p-6 max-w-4xl mx-auto">
+        {(error || success) && (
+          <Toast
+            message={error || success}
+            type={error ? "error" : "success"}
+            isVisible={showToast}
+            onClose={() => {
+              setShowToast(false);
+              setError("");
+              setSuccess("");
+            }}
+          />
+        )}
+
         <div className="flex justify-evenly gap-[580px]">
           <h1 className="text-2xl font-bold mb-4 whitespace-nowrap">
             Quản lý nhà cung cấp
@@ -202,9 +279,6 @@ export default function NhaCungCapManagementPage() {
             >
               ✕
             </button>
-
-            {error && <div className="text-red-500 mb-4">{error}</div>}
-            {success && <div className="text-green-500 mb-4">{success}</div>}
 
             <form onSubmit={handleSubmit}>
               <h2 className="text-xl font-semibold text-gray-800 mb-6">

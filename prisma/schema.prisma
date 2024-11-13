@@ -87,15 +87,15 @@ model Sanpham {
   kho           Kho[]
 }
 
-model Nhacungcap {
-  idnhacungcap  Int       @id @default(autoincrement())
-  tennhacungcap String?   @db.VarChar(255) @unique
-  sodienthoai   String?   @db.VarChar(10)
-  diachi        String?   @db.VarChar(45)
-  email         String?   @db.VarChar(45)  @unique
-  trangthai     Boolean?  @db.TinyInt
-  nhaphang      Nhaphang[]
-}
+  model Nhacungcap {
+    idnhacungcap  Int       @id @default(autoincrement())
+    tennhacungcap String?   @db.VarChar(255) @unique
+    sodienthoai   String?   @db.VarChar(10)
+    diachi        String?   @db.VarChar(45)
+    email         String?   @db.VarChar(45)  @unique
+    trangthai     Boolean?  @db.TinyInt
+    nhaphang      Nhaphang[]
+  }
 
 model Nhaphang {
   idnhaphang   Int       @id @default(autoincrement())

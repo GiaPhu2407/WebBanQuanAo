@@ -1,13 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import prisma from "@/prisma/client"; // Ensure this path matches your project structure
+import prisma from "@/prisma/client"; // Đảm bảo đường dẫn này đúng với cấu trúc dự án của bạn
 import { SupplierSchema } from "@/app/zodschema/route";
+
+async function findNextAvailableId() {
+  const allIds = await prisma.nhacungcap.findMany({
+    select: { idnhacungcap: true },
+    orderBy: { idnhacungcap: "asc" },
+  });
+  let nextId = 1;
+
+  for (const record of allIds) {
+    if (record.idnhacungcap !== nextId) {
+      break;
+    }
+    nextId++;
+  }
+
+  return nextId;
+}
+
 export async function PUT(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = params;
+    let { id } = params;
     const body = await req.json();
 
     // Validate input data
@@ -22,12 +40,28 @@ export async function PUT(
       );
     }
 
-    // Update the supplier
-    const nhacungcap = await prisma.nhacungcap.update({
-      where: {
-        idnhacungcap: parseInt(id),
+    // Kiểm tra nếu ID có tồn tại trong cơ sở dữ liệu
+    const supplierExists = await prisma.nhacungcap.findUnique({
+      where: { idnhacungcap: parseInt(id) },
+    });
+
+    // Nếu không tồn tại, tìm ID tiếp theo chưa sử dụng và gán cho bản ghi này
+    if (!supplierExists) {
+      id = (await findNextAvailableId()).toString();
+    }
+
+    // Cập nhật nhà cung cấp với ID đã tồn tại hoặc ID tiếp theo chưa sử dụng
+    const nhacungcap = await prisma.nhacungcap.upsert({
+      where: { idnhacungcap: parseInt(id) },
+      update: {
+        tennhacungcap: body.tennhacungcap,
+        sodienthoai: body.sodienthoai,
+        diachi: body.diachi,
+        email: body.email,
+        trangthai: body.trangthai,
       },
-      data: {
+      create: {
+        idnhacungcap: parseInt(id),
         tennhacungcap: body.tennhacungcap,
         sodienthoai: body.sodienthoai,
         diachi: body.diachi,
@@ -48,6 +82,7 @@ export async function PUT(
     );
   }
 }
+
 export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }

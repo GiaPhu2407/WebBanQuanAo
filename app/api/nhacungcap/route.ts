@@ -1,92 +1,122 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import prisma from "@/prisma/client"; // Ensure this path matches your project structure
+import prisma from "@/prisma/client";
 
-// Define the schema for validating the supplier data
 const SupplierSchema = z.object({
-  tennhacungcap: z.string().min(1, "Tên nhà cung cấp không được bỏ trống"),
+  tennhacungcap: z
+    .string()
+    .min(3, { message: "Tên nhà cung cấp phải có ít nhất 3 ký tự" })
+    .max(255, { message: "Tên nhà cung cấp có độ dài tối đa là 255 ký tự" }),
   sodienthoai: z
     .string()
-    .length(10, "Số điện thoại phải có 10 ký tự")
+    .length(10, { message: "Số điện thoại phải có đúng 10 ký tự" })
     .optional(),
-  diachi: z.string().max(45, "Địa chỉ không được vượt quá 45 ký tự").optional(),
+  diachi: z
+    .string()
+    .max(45, { message: "Địa chỉ không được vượt quá 45 ký tự" })
+    .optional(),
   email: z
     .string()
-    .email("Email không hợp lệ")
-    .max(45, "Email không được vượt quá 45 ký tự")
-    .optional(),
-  trangthai: z.boolean(),
+    .email({ message: "Email không hợp lệ" })
+    .max(45, { message: "Email có độ dài tối đa là 45 ký tự" }),
+  trangthai: z.boolean().optional(),
 });
 
-// import prisma from "@/prisma/client";
-// import { NextRequest, NextResponse } from "next/server";
-// import { SupplierSchema } from "@/app/zodschema/route"; // Đảm bảo đường dẫn chính xác
-
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const body = await req.json();
+    // Lấy dữ liệu từ yêu cầu
+    const body = await request.json();
 
-    // Validate input data
-    const validationResult = SupplierSchema.safeParse(body);
+    // Xác thực dữ liệu với Zod
+    const validationResult = SupplierSchema.safeParse({
+      tennhacungcap: body.tennhacungcap,
+      sodienthoai: body.sodienthoai,
+      diachi: body.diachi,
+      email: body.email,
+      trangthai: body.trangthai,
+    });
+
+    // Nếu dữ liệu không hợp lệ thì trả về lỗi
     if (!validationResult.success) {
       return NextResponse.json(
-        {
-          error: "Dữ liệu không hợp lệ",
-          details: validationResult.error.errors,
-        },
+        { errors: validationResult.error.errors },
         { status: 400 }
       );
     }
 
-    // Tìm ID nhà cung cấp lớn nhất trong cơ sở dữ liệu
-    const maxIdSupplier = await prisma.nhacungcap.findFirst({
-      orderBy: {
-        idnhacungcap: 'desc',  // Lấy ID lớn nhất
-      },
-      select: {
-        idnhacungcap: true,
+    // Kiểm tra trùng lặp tên nhà cung cấp hoặc email
+    const existingSupplier = await prisma.nhacungcap.findFirst({
+      where: {
+        OR: [{ tennhacungcap: body.tennhacungcap }, { email: body.email }],
       },
     });
 
-    // Tính toán ID tiếp theo
-    const nextId = maxIdSupplier ? maxIdSupplier.idnhacungcap + 1 : 1;
+    if (existingSupplier) {
+      const conflictField =
+        existingSupplier.email === body.email ? "Email" : "Tên nhà cung cấp";
+      return NextResponse.json(
+        { message: `${conflictField} đã tồn tại` },
+        { status: 400 }
+      );
+    }
 
-    // Create new supplier with nextId
+    // Thêm nhà cung cấp mới vào cơ sở dữ liệu
     const nhacungcap = await prisma.nhacungcap.create({
       data: {
-        idnhacungcap: nextId,  // Đặt ID mới theo thứ tự tăng dần
         tennhacungcap: body.tennhacungcap,
-        sodienthoai: body.sodienthoai,
-        diachi: body.diachi,
+        sodienthoai: body.sodienthoai ?? null,
+        diachi: body.diachi ?? null,
         email: body.email,
-        trangthai: body.trangthai, // true for "Đang cung cấp", false for "Ngừng cung cấp"
+        trangthai: body.trangthai ?? false,
       },
     });
 
+    // Trả về kết quả
     return NextResponse.json(
-      { nhacungcap, message: "Thêm nhà cung cấp thành công" },
+      { nhacungcap, message: "Thêm mới nhà cung cấp thành công" },
       { status: 201 }
     );
-  } catch (e: any) {
-    console.error("Error in POST:", e);
+  } catch (error) {
+    console.error("Lỗi khi thêm nhà cung cấp:", error);
     return NextResponse.json(
-      { message: "Đã xảy ra lỗi: " + e.message },
+      {
+        message: "Đã xảy ra lỗi trong quá trình thêm nhà cung cấp",
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
       { status: 500 }
     );
   }
 }
 
-export async function GET(request: NextRequest, response: NextResponse) {
-  const nhacungcap = await prisma.nhacungcap.findMany();
-  return NextResponse.json(
-    { nhacungcap, message: "Liệt kê tất cả các nhà cung cấp" },
-    { status: 200 }
-  );
+export async function GET() {
+  try {
+    const nhacungcap = await prisma.nhacungcap.findMany({
+      orderBy: {
+        idnhacungcap: "asc",
+      },
+    });
+    return NextResponse.json(nhacungcap);
+  } catch (error) {
+    console.error("Lỗi khi lấy danh sách nhà cung cấp:", error);
+    return NextResponse.json(
+      { error: "Lỗi khi lấy danh sách nhà cung cấp" },
+      { status: 500 }
+    );
+  }
 }
-export async function DELETE(request: NextRequest, response: NextResponse) {
-  const nhacungcap = await prisma.nhacungcap.deleteMany();
-  return NextResponse.json(
-    { nhacungcap, message: "Dã xoá tất cả" },
-    { status: 200 }
-  );
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const nhacungcap = await prisma.nhacungcap.deleteMany();
+    return NextResponse.json(
+      { message: "Đã xoá tất cả nhà cung cấp" },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Lỗi khi xoá nhà cung cấp:", error);
+    return NextResponse.json(
+      { error: "Lỗi khi xoá nhà cung cấp" },
+      { status: 500 }
+    );
+  }
 }
