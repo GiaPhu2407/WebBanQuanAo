@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
 import { loginUser } from "../api/auth/(functions)/function";
-loginUser;
+import { Toaster } from "@/components/ui/toaster";
 
 const LoginPage = () => {
   const router = useRouter();
@@ -15,7 +16,7 @@ const LoginPage = () => {
     usernameOrEmail: "",
     password: "",
   });
-
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const { toast } = useToast();
 
@@ -30,7 +31,7 @@ const LoginPage = () => {
     e.preventDefault();
     const { usernameOrEmail, password } = formData;
 
-    // Kiểm tra đầu vào
+    // Validation check
     if (!usernameOrEmail || !password) {
       setError("Please fill in both email and password.");
       toast({
@@ -41,7 +42,9 @@ const LoginPage = () => {
       return;
     }
 
-    setError(""); // Xóa lỗi khi nhập đầy đủ thông tin
+    setError("");
+    setIsLoading(true);
+
     try {
       const res = await loginUser(usernameOrEmail, password);
       if (res?.status) {
@@ -53,6 +56,7 @@ const LoginPage = () => {
         });
         router.push("/Show");
       } else {
+        setError("Invalid credentials");
         toast({
           title: "Login Failed",
           description: "Please check your email and password.",
@@ -60,11 +64,14 @@ const LoginPage = () => {
         });
       }
     } catch (error) {
+      setError("An error occurred during login");
       toast({
         title: "Error!",
         description: "Login failed - Please check your email and password.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -97,13 +104,14 @@ const LoginPage = () => {
                 </label>
                 <Input
                   id="usernameOrEmail"
-                  name="usernameOrEmail" // Gắn name trùng với formData
+                  name="usernameOrEmail"
                   type="text"
                   required
+                  disabled={isLoading}
                   className="w-full"
                   placeholder="Enter your email or username"
-                  value={formData.usernameOrEmail} // Gắn giá trị của formData.email vào value
-                  onChange={handleChange} // Đảm bảo onChange được gọi khi nhập liệu
+                  value={formData.usernameOrEmail}
+                  onChange={handleChange}
                 />
               </div>
 
@@ -116,21 +124,30 @@ const LoginPage = () => {
                 </label>
                 <Input
                   id="password"
-                  name="password" // Gắn name trùng với formData
+                  name="password"
                   type="password"
                   required
+                  disabled={isLoading}
                   className="w-full"
                   placeholder="Enter your password"
-                  value={formData.password} // Gắn giá trị của formData.password vào value
-                  onChange={handleChange} // Đảm bảo onChange được gọi khi nhập liệu
+                  value={formData.password}
+                  onChange={handleChange}
                 />
               </div>
 
               <Button
                 type="submit"
+                disabled={isLoading}
                 className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium py-2 px-4 rounded-md transition-all duration-200"
               >
-                Login
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Logging in...
+                  </>
+                ) : (
+                  "Login"
+                )}
               </Button>
 
               <p className="text-center text-sm text-gray-600">
