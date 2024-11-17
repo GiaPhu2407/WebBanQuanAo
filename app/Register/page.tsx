@@ -2,31 +2,49 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-  // AlertDialog,
-  // AlertDialogAction,
-} from "@/components/ui/alert";
+import { useToast } from "@/components/ui/use-toast";
+import { Loader2 } from "lucide-react";
+import { Toaster } from "@/components/ui/toaster";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const RegistrationPage = () => {
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { toast } = useToast();
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setIsLoading(true);
     const formData = new FormData(event.currentTarget);
+
+    // Basic validation
+    const email = formData.get("email");
+    const username = formData.get("username");
+    const password = formData.get("password");
+    const fullname = formData.get("fullname");
+    const phone = formData.get("phone");
+
+    if (!email || !username || !password || !fullname || !phone) {
+      setError("Please fill in all required fields.");
+      toast({
+        title: "Validation Error!",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         body: JSON.stringify({
-          email: formData.get("email"),
-          username: formData.get("username"),
-          password: formData.get("password"),
-          fullname: formData.get("fullname"),
-          phone: formData.get("phone"),
+          email: email,
+          username: username,
+          password: password,
+          fullname: fullname,
+          phone: phone,
           address: formData.get("address"),
         }),
       });
@@ -35,15 +53,31 @@ const RegistrationPage = () => {
         throw new Error("Registration failed");
       }
 
-      router.push("/Login");
+      toast({
+        title: "Registration Successful!",
+        description: "Your account has been created. Please login.",
+        variant: "success",
+      });
+
+      // Delay redirect slightly to allow toast to be seen
+      setTimeout(() => {
+        router.push("/Login");
+      }, 2000);
     } catch (error) {
       setError("Registration failed. Please try again.");
+      toast({
+        title: "Registration Failed",
+        description: "Please check your information and try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen flex">
-      {/* Phần hình ảnh */}
+      {/* Left side with image */}
       <div className="bg-gradient-to-r from-pink-300 to-blue-400 flex-1 flex items-center justify-center hidden md:flex">
         <div className="text-center text-white">
           <h1 className="text-5xl font-bold mb-6">Register Now</h1>
@@ -53,11 +87,11 @@ const RegistrationPage = () => {
         </div>
       </div>
 
-      {/* Phần form đăng ký */}
+      {/* Registration form */}
       <div className="flex-1 flex items-center justify-center">
         <div className="bg-white shadow-2xl rounded-2xl w-full max-w-md p-8">
           {error && (
-            <Alert status="error" className="mb-6">
+            <Alert variant="destructive" className="mb-6">
               <AlertTitle>Error</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
@@ -76,6 +110,7 @@ const RegistrationPage = () => {
                   placeholder="Email"
                   className="border border-gray-300 rounded-md px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
+                  disabled={isLoading}
                 />
               </div>
 
@@ -90,6 +125,7 @@ const RegistrationPage = () => {
                   placeholder="Username"
                   className="border border-gray-300 rounded-md px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -105,6 +141,7 @@ const RegistrationPage = () => {
                   placeholder="Full Name"
                   className="border border-gray-300 rounded-md px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
+                  disabled={isLoading}
                 />
               </div>
 
@@ -119,6 +156,7 @@ const RegistrationPage = () => {
                   placeholder="Phone Number"
                   className="border border-gray-300 rounded-md px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -132,6 +170,7 @@ const RegistrationPage = () => {
                 placeholder="Address"
                 className="border border-gray-300 rounded-md px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                 rows={3}
+                disabled={isLoading}
               />
             </div>
 
@@ -146,14 +185,23 @@ const RegistrationPage = () => {
                 placeholder="Password"
                 className="border border-gray-300 rounded-md px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
+                disabled={isLoading}
               />
             </div>
 
             <button
               type="submit"
-              className="bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-md px-4 py-3 w-full"
+              disabled={isLoading}
+              className="bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-md px-4 py-3 w-full flex items-center justify-center"
             >
-              Register
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Registering...
+                </>
+              ) : (
+                "Register"
+              )}
             </button>
           </form>
 
@@ -167,6 +215,7 @@ const RegistrationPage = () => {
           </div>
         </div>
       </div>
+      <Toaster />
     </div>
   );
 };
