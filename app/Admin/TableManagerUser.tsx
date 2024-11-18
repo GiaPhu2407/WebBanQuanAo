@@ -114,46 +114,18 @@ const TableUserDashboard: React.FC<TableUserDashboardProps> = ({
     setMeta((prev) => ({ ...prev, page: newPage }));
   };
 
-  const getRoleName = (idRole: number) => {
-    const role = roles.find((role) => role.idrole === idRole);
-    return role?.tenrole || "N/A";
-  };
-
-  const generatePaginationNumbers = () => {
-    const pageNumbers = [];
-    let start = Math.max(1, meta.page - 2);
-    let end = Math.min(meta.totalPages, meta.page + 2);
-
-    if (start > 1) {
-      pageNumbers.push(1);
-      if (start > 2) pageNumbers.push("...");
-    }
-
-    for (let i = start; i <= end; i++) {
-      pageNumbers.push(i);
-    }
-
-    if (end < meta.totalPages) {
-      if (end < meta.totalPages - 1) pageNumbers.push("...");
-      pageNumbers.push(meta.totalPages);
-    }
-
-    return pageNumbers;
-  };
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("vi-VN");
   };
 
   return (
-    <div className="space-y-2">
-      <div className="w-full rounded-lg ">
-        <table className="w-full overflow-x-auto  divide-gray-200 bg-gradient-to-r from-red-500 to-pink-400">
-          <thead>
+    <div className="space-y-4">
+      <div className="w-full rounded-lg overflow-hidden">
+        <table className="w-full divide-y divide-gray-200">
+          <thead className="bg-gradient-to-r from-red-500 to-pink-400">
             <tr>
               <th className="px-3 py-2 text-white">ID</th>
               <th className="px-3 py-2 text-white">Tên tài khoản</th>
-              {/* <th className="px-3 py-2 text-white">Mật khẩu</th> */}
               <th className="px-3 py-2 text-white">Họ tên</th>
               <th className="px-3 py-2 text-white">SĐT</th>
               <th className="px-3 py-2 text-white">Địa chỉ</th>
@@ -166,7 +138,7 @@ const TableUserDashboard: React.FC<TableUserDashboardProps> = ({
           <tbody className="bg-white divide-y divide-gray-200">
             {loading ? (
               <tr>
-                <td colSpan={10} className="px-6 py-4 text-center">
+                <td colSpan={9} className="px-6 py-4 text-center">
                   <div className="flex items-center justify-center">
                     <div className="w-6 h-6 border-2 border-blue-600 rounded-full animate-spin border-t-transparent"></div>
                     <span className="ml-2">Đang tải dữ liệu...</span>
@@ -183,31 +155,11 @@ const TableUserDashboard: React.FC<TableUserDashboardProps> = ({
                 >
                   <td className="px-3 py-2">{user.idUsers}</td>
                   <td className="px-3 py-2">{user.Tentaikhoan}</td>
-                  {/* <td className="px-3 py-2">
-                    <div className="flex items-center space-x-2">
-                      <span>
-                        {showPasswords[user.idUsers]
-                          ? user.Matkhau
-                          : "••••••••"}
-                      </span>
-                      <button
-                        onClick={() => togglePasswordVisibility(user.idUsers)}
-                        className="text-gray-500 hover:text-gray-700"
-                      >
-                        {showPasswords[user.idUsers] ? (
-                          <EyeOff className="w-4 h-4" />
-                        ) : (
-                          <Eye className="w-4 h-4" />
-                        )}
-                      </button>
-                    </div>
-                    {user.Matkhau}
-                  </td> */}
                   <td className="px-3 py-2">{user.Hoten}</td>
                   <td className="px-3 py-2">{user.Sdt}</td>
                   <td className="px-3 py-2">{user.Diachi}</td>
                   <td className="px-3 py-2">{user.Email}</td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm">
+                  <td className="px-3 py-2 whitespace-nowrap">
                     {user.idRole === 1 ? (
                       <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
                         Admin
@@ -221,9 +173,9 @@ const TableUserDashboard: React.FC<TableUserDashboardProps> = ({
                         Chưa phân quyền
                       </span>
                     )}
-                  </td>{" "}
-                  <td className="px-6 py-4">{formatDate(user.Ngaydangky)}</td>
-                  <td className="px-6 py-4">
+                  </td>
+                  <td className="px-3 py-2">{formatDate(user.Ngaydangky)}</td>
+                  <td className="px-3 py-2">
                     <div className="flex justify-center space-x-2">
                       <button
                         onClick={() => onEdit(user)}
@@ -243,10 +195,7 @@ const TableUserDashboard: React.FC<TableUserDashboardProps> = ({
               ))
             ) : (
               <tr>
-                <td
-                  colSpan={10}
-                  className="px-6 py-4 text-center text-gray-500"
-                >
+                <td colSpan={9} className="px-6 py-4 text-center text-gray-500">
                   Không có người dùng nào
                 </td>
               </tr>
@@ -256,55 +205,114 @@ const TableUserDashboard: React.FC<TableUserDashboardProps> = ({
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-center space-x-1 mt-4">
-        <button
-          onClick={() => handlePageChange(1)}
-          disabled={meta.page === 1}
-          className="px-3 py-1 rounded-md bg-white border hover:bg-gray-100 disabled:opacity-50"
-        >
-          «
-        </button>
-        <button
-          onClick={() => handlePageChange(meta.page - 1)}
-          disabled={meta.page === 1}
-          className="px-3 py-1 rounded-md bg-white border hover:bg-gray-100 disabled:opacity-50"
-        >
-          ‹
-        </button>
+      <div className="flex items-center justify-between px-4">
+        <div className="text-sm text-gray-700">
+          Results: {(meta.page - 1) * meta.limit_size + 1} -{" "}
+          {Math.min(meta.page * meta.limit_size, meta.totalRecords)} of{" "}
+          {meta.totalRecords}
+        </div>
 
-        {generatePaginationNumbers().map((number, index) => (
+        <div className="flex items-center space-x-2">
           <button
-            key={index}
-            onClick={() =>
-              typeof number === "number" && handlePageChange(number)
-            }
-            disabled={number === "..."}
-            className={`px-3 py-1 rounded-md border ${
-              number === meta.page
-                ? "bg-blue-500 text-white"
-                : typeof number === "number" && number % 2 === 0
-                ? "bg-gray-200 font-semibold"
-                : "bg-white hover:bg-gray-100"
-            } ${number === "..." ? "cursor-default" : ""}`}
+            onClick={() => handlePageChange(meta.page - 1)}
+            disabled={meta.page === 1}
+            className="p-2 rounded-lg border bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {number}
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
           </button>
-        ))}
 
-        <button
-          onClick={() => handlePageChange(meta.page + 1)}
-          disabled={meta.page >= meta.totalPages}
-          className="px-3 py-1 rounded-md bg-white border hover:bg-gray-100 disabled:opacity-50"
-        >
-          ›
-        </button>
-        <button
-          onClick={() => handlePageChange(meta.totalPages)}
-          disabled={meta.page >= meta.totalPages}
-          className="px-3 py-1 rounded-md bg-white border hover:bg-gray-100 disabled:opacity-50"
-        >
-          »
-        </button>
+          {[1, 2, 3].map((number) => (
+            <button
+              key={number}
+              onClick={() => handlePageChange(number)}
+              className={`min-w-[40px] h-[40px] flex items-center justify-center rounded-lg border text-sm
+                ${
+                  number === meta.page
+                    ? "bg-blue-500 text-white border-blue-500"
+                    : "bg-white hover:bg-gray-50"
+                }`}
+            >
+              {number}
+            </button>
+          ))}
+
+          {meta.totalPages > 3 && <span className="px-2">...</span>}
+
+          {meta.totalPages > 3 && (
+            <button
+              onClick={() => handlePageChange(meta.totalPages)}
+              className={`min-w-[40px] h-[40px] flex items-center justify-center rounded-lg border text-sm bg-white hover:bg-gray-50`}
+            >
+              {meta.totalPages}
+            </button>
+          )}
+
+          <button
+            onClick={() => handlePageChange(meta.page + 1)}
+            disabled={meta.page >= meta.totalPages}
+            className="p-2 rounded-lg border bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </button>
+
+          <div className="relative ml-2">
+            <select
+              value={meta.limit_size}
+              onChange={(e) =>
+                setMeta((prev) => ({
+                  ...prev,
+                  limit_size: Number(e.target.value),
+                  page: 1,
+                }))
+              }
+              className="appearance-none bg-white border rounded-lg px-4 py-2 pr-8 cursor-pointer text-sm"
+            >
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2">
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
