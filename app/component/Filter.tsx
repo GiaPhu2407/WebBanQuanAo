@@ -1,40 +1,31 @@
-// components/Filter.tsx
-import React, { useState, useEffect } from "react";
-
-// Types
-interface FilterState {
-  categories: number[];
-  gender: string[];
-  priceRange: [number, number];
-  sizes: string[];
-}
-
-interface CategoryType {
-  id: number;
-  tenloai: string;
-}
+import React, { useEffect } from "react";
+import { FilterState } from "@/app/component/Type";
 
 interface FilterProps {
   onFilterChange: (filters: FilterState) => void;
 }
 
+interface Category {
+  idloaisanpham: number;
+  tenloai: string;
+}
+
 const Filter: React.FC<FilterProps> = ({ onFilterChange }) => {
-  const [filters, setFilters] = useState<FilterState>({
+  const [filters, setFilters] = React.useState<FilterState>({
     categories: [],
     gender: [],
-    priceRange: [0, 10000000],
+    priceRange: [0, 1000000],
     sizes: [],
   });
 
-  const [categories, setCategories] = useState<CategoryType[]>([]);
-  const [sizes, setSizes] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = React.useState<Category[]>([]);
+  const availableSizes = ["S", "M", "L", "XL", "2XL"];
 
+  // Fetch categories from API
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         const response = await fetch("/api/loaisanpham");
-        if (!response.ok) throw new Error("Failed to fetch categories");
         const data = await response.json();
         setCategories(data);
       } catch (error) {
@@ -42,209 +33,113 @@ const Filter: React.FC<FilterProps> = ({ onFilterChange }) => {
       }
     };
 
-    const fetchSizes = async () => {
-      try {
-        const response = await fetch("/api/sizes");
-        if (!response.ok) throw new Error("Failed to fetch sizes");
-        const data = await response.json();
-        setSizes(data);
-      } catch (error) {
-        console.error("Error fetching sizes:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchCategories();
-    fetchSizes();
   }, []);
 
-  const handleCategoryChange = (categoryId: number) => {
-    const newCategories = filters.categories.includes(categoryId)
-      ? filters.categories.filter((id) => id !== categoryId)
-      : [...filters.categories, categoryId];
-
-    const newFilters = {
-      ...filters,
-      categories: newCategories,
-    };
+  const handleChange = (key: keyof FilterState, value: any) => {
+    const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
     onFilterChange(newFilters);
   };
-
-  const handleSizeChange = (size: string) => {
-    const newSizes = filters.sizes.includes(size)
-      ? filters.sizes.filter((s) => s !== size)
-      : [...filters.sizes, size];
-
-    const newFilters = {
-      ...filters,
-      sizes: newSizes,
-    };
-    setFilters(newFilters);
-    onFilterChange(newFilters);
-  };
-
-  const handleGenderChange = (gender: string) => {
-    const newGender = filters.gender.includes(gender)
-      ? filters.gender.filter((g) => g !== gender)
-      : [...filters.gender, gender];
-
-    const newFilters = {
-      ...filters,
-      gender: newGender,
-    };
-    setFilters(newFilters);
-    onFilterChange(newFilters);
-  };
-
-  const resetFilters = () => {
-    const initialFilters: FilterState = {
-      categories: [],
-      gender: [],
-      priceRange: [0, 10000000],
-      sizes: [],
-    };
-    setFilters(initialFilters);
-    onFilterChange(initialFilters);
-  };
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const categoryResponse = await fetch("/api/loaisanpham");
-        if (!categoryResponse.ok) throw new Error("Failed to fetch categories");
-        const categoryData = await categoryResponse.json();
-        setCategories(categoryData);
-
-        const productResponse = await fetch("/api/sanpham");
-        if (!productResponse.ok) throw new Error("Failed to fetch products");
-        const products = await productResponse.json();
-
-        const allSizes = products
-          .map((product: { size: string }) =>
-            product.size.split(",").map((s: string) => s.trim())
-          )
-          .flat();
-        const uniqueSizes = Array.from(new Set(allSizes)).filter(
-          (size) => size !== ""
-        );
-
-        setSizes(uniqueSizes as string[]); //+
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  //   if (loading) return <div>Loading...</div>;
 
   return (
-    <div className="w-64 p-4 space-y-6 bg-white shadow-sm rounded-lg h-fit">
-      <div className="flex justify-between items-center">
-        <h2 className="font-bold text-lg">Bộ lọc</h2>
-        <button
-          onClick={resetFilters}
-          className="text-sm text-blue-600 hover:text-blue-700"
-        >
-          Đặt lại
-        </button>
-      </div>
-
-      {/* Categories */}
+    <div className="space-y-6 p-4 bg-white rounded-lg shadow">
       <div>
-        <h3 className="font-medium mb-3">Danh mục</h3>
+        <h3 className="text-lg font-semibold mb-2">Danh mục</h3>
         <div className="space-y-2">
           {categories.map((category) => (
-            <label
-              key={category.id}
-              className="flex items-center space-x-2 cursor-pointer"
-            >
+            <label key={category.idloaisanpham} className="flex items-center">
               <input
                 type="checkbox"
-                checked={filters.categories.includes(category.id)}
-                onChange={() => handleCategoryChange(category.id)}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                checked={filters.categories.includes(category.idloaisanpham)}
+                onChange={(e) => {
+                  const newCategories = e.target.checked
+                    ? [...filters.categories, category.idloaisanpham]
+                    : filters.categories.filter(
+                        (id) => id !== category.idloaisanpham
+                      );
+                  handleChange("categories", newCategories);
+                }}
+                className="mr-2"
               />
-              <span className="text-sm">{category.tenloai}</span>
+              {category.tenloai}
             </label>
           ))}
         </div>
       </div>
 
-      {/* Gender */}
       <div>
-        <h3 className="font-medium mb-3">Giới tính</h3>
+        <h3 className="text-lg font-semibold mb-2">Giới tính</h3>
         <div className="space-y-2">
-          {[
-            { id: "nam", label: "Nam" },
-            { id: "nu", label: "Nữ" },
-          ].map((gender) => (
-            <label
-              key={gender.id}
-              className="flex items-center space-x-2 cursor-pointer"
-            >
-              <input
-                type="checkbox"
-                checked={filters.gender.includes(gender.id)}
-                onChange={() => handleGenderChange(gender.id)}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span className="text-sm">{gender.label}</span>
-            </label>
-          ))}
+          <label className="flex items-center">
+            <input
+              type="checkbox"
+              checked={filters.gender.includes("nam")}
+              onChange={(e) => {
+                const newGender = e.target.checked
+                  ? [...filters.gender, "nam"]
+                  : filters.gender.filter((g) => g !== "nam");
+                handleChange("gender", newGender);
+              }}
+              className="mr-2"
+            />
+            Nam
+          </label>
+          <label className="flex items-center">
+            <input
+              type="checkbox"
+              checked={filters.gender.includes("nu")}
+              onChange={(e) => {
+                const newGender = e.target.checked
+                  ? [...filters.gender, "nu"]
+                  : filters.gender.filter((g) => g !== "nu");
+                handleChange("gender", newGender);
+              }}
+              className="mr-2"
+            />
+            Nữ
+          </label>
         </div>
       </div>
 
-      {/* Price Range */}
       <div>
-        <h3 className="font-medium mb-3">Khoảng giá</h3>
-        <div className="px-2">
+        <h3 className="text-lg font-semibold mb-2">Giá</h3>
+        <div className="space-y-2">
           <input
             type="range"
             min="0"
-            max="10000000"
-            step="100000"
+            max="1000000"
+            step="10000"
             value={filters.priceRange[1]}
-            onChange={(e) => {
-              const newFilters: FilterState = {
-                ...filters,
-                priceRange: [0, parseInt(e.target.value)],
-              };
-              setFilters(newFilters);
-              onFilterChange(newFilters);
-            }}
+            onChange={(e) =>
+              handleChange("priceRange", [0, Number(e.target.value)])
+            }
             className="w-full"
           />
-          <div className="flex justify-between mt-2 text-sm text-gray-500">
-            <span>0đ</span>
-            <span>
-              {new Intl.NumberFormat("vi-VN").format(filters.priceRange[1])}đ
-            </span>
+          <div className="text-sm text-gray-600">
+            {`0₫ - ${filters.priceRange[1].toLocaleString("vi-VN")}₫`}
           </div>
         </div>
       </div>
 
-      {/* Sizes */}
       <div>
-        <h3 className="font-medium mb-3">Kích thước</h3>
-        <div className="flex flex-wrap gap-2">
-          {sizes.map((size) => (
-            <button
-              key={size}
-              onClick={() => handleSizeChange(size)}
-              className={`px-3 py-1 text-sm border rounded-full transition-colors ${
-                filters.sizes.includes(size)
-                  ? "bg-blue-600 text-white border-blue-600"
-                  : "border-gray-300 hover:border-blue-600"
-              }`}
-            >
+        <h3 className="text-lg font-semibold mb-2">Kích thước</h3>
+        <div className="space-y-2">
+          {availableSizes.map((size) => (
+            <label key={size} className="flex items-center">
+              <input
+                type="checkbox"
+                checked={filters.sizes.includes(size)}
+                onChange={(e) => {
+                  const newSizes = e.target.checked
+                    ? [...filters.sizes, size]
+                    : filters.sizes.filter((s) => s !== size);
+                  handleChange("sizes", newSizes);
+                }}
+                className="mr-2"
+              />
               {size}
-            </button>
+            </label>
           ))}
         </div>
       </div>

@@ -1,211 +1,99 @@
-// "use client";
-// import React, { useState, useEffect } from "react";
-// import Link from "next/link";
-// import Image from "next/image";
-// import {
-//   DndContext,
-//   closestCenter,
-//   KeyboardSensor,
-//   PointerSensor,
-//   useSensor,
-//   useSensors,
-//   DragEndEvent,
-// } from "@dnd-kit/core";
-// import {
-//   arrayMove,
-//   SortableContext,
-//   sortableKeyboardCoordinates,
-//   horizontalListSortingStrategy,
-//   useSortable,
-// } from "@dnd-kit/sortable";
-// import { CSS } from "@dnd-kit/utilities";
-// // import { Decimal } from "@prisma/client";
-// import { Decimal } from "decimal.js";
-// import hinh from "@/app/image/hinh.png";
-// // Define interfaces
-// interface Product {
-//   idsanpham: number;
-//   tensanpham: string;
-//   mota: string;
-//   gia: number;
-//   hinhanh: string;
-//   idloaisanpham: number;
-//   giamgia: Decimal;
-//   loaisanpham: {
-//     tenloai: string;
-//     mota: string;
-//   };
-// }
+// import React, { useState, useEffect } from 'react';
+// import { Product, FilterState } from '@/app/component/Type';
+// import ProductCard from './ProductCard';
 
-// interface SortableProductItemProps {
-//   product: Product;
-// }
-
-// // SortableProductItem Component
-// const SortableProductItem: React.FC<SortableProductItemProps> = ({
-//   product,
-// }) => {
-//   const [isHovered, setIsHovered] = useState(false);
-//   const { attributes, listeners, setNodeRef, transform, transition } =
-//     useSortable({ id: product.idsanpham });
-
-//   const style = {
-//     transform: CSS.Transform.toString(transform),
-//     transition,
-//   };
-
-//   return (
-//     <li ref={setNodeRef} style={style} {...attributes} {...listeners}>
-//       <div
-//         className={`card bg-base-100 xl:w-72 xl:h-72 w-full md:w-72 md:h-72 ml-6 mb-5 shadow-xl relative 
-//           ${isHovered ? "animate-borderrun" : ""}`}
-//         onMouseEnter={() => setIsHovered(true)}
-//         onMouseLeave={() => setIsHovered(false)}
-//       >
-//         <div
-//           className={` bg-gradient-to-bl from-blue-600 to-blue-400 w-[303px] h-[303px] z-[-1] 
-//             -top-2 -left-2 rounded-2xl ${
-//               isHovered ? "animate-spinrun" : "hidden"
-//             }`}
-//         />
-//         <div className="w-[303px] h-[303px] ">
-//           <figure className="px-10">
-//             {/* {product.hinhanh && ( */}
-//             <Image
-//               src="https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn5042-vag-2.jpg"
-//               // alt={product.tensanpham}
-//               alt=""
-//               width={256}
-//               height={128}
-//               className="rounded-xl w-64 h-32 object-cover"
-//             />
-//             {/* )} */}
-//           </figure>
-//           <div className="card-body items-center text-center">
-//             <h2 className="card-title">{product.tensanpham}</h2>
-//             <p>Giá: {product.gia?.toLocaleString()} VND</p>
-//             <div className="card-actions">
-//               <button className="btn bg-[#1464F4] text-white hover:bg-blue-600">
-//                 Mua Ngay
-//               </button>
-//               <Link
-//                 href={`/product/${product.idsanpham}`}
-//                 className="btn btn-outline hover:bg-gray-100"
-//               >
-//                 Xem Chi Tiết
-//               </Link>
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-//     </li>
-//   );
-// };
-
-// // ProductList Component
-// interface ProductListProps {
-//   products: Product[];
-// }
-
-// const ProductList: React.FC<ProductListProps> = ({ products }) => {
-//   const [displayedProducts, setDisplayedProducts] = useState<Product[]>([]);
-//   const productsPerPage = 4;
-
-//   // Sensors for drag and drop
-//   const sensors = useSensors(
-//     useSensor(PointerSensor),
-//     useSensor(KeyboardSensor, {
-//       coordinateGetter: sortableKeyboardCoordinates,
-//     })
-//   );
+// const ProductList: React.FC = () => {
+//   const [products, setProducts] = useState<Product[]>([]);
+//   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+//   const [loading, setLoading] = useState(true);
 
 //   useEffect(() => {
-//     if (products?.length) {
-//       setDisplayedProducts(products.slice(0, productsPerPage));
-//     }
-//   }, [products]);
+//     const fetchProducts = async () => {
+//       try {
+//         const response = await fetch('/api/sanpham');
+//         if (!response.ok) throw new Error('Failed to fetch products');
+//         const data = await response.json();
+//         setProducts(data);
+//         setFilteredProducts(data);
+//       } catch (error) {
+//         console.error('Error fetching products:', error);
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
 
-//   const handleDragEnd = (event: DragEndEvent) => {
-//     const { active, over } = event;
-//     if (active.id !== over?.id) {
-//       setDisplayedProducts((items) => {
-//         const oldIndex = items.findIndex(
-//           (item) => item.idsanpham === active.id
-//         );
-//         const newIndex = items.findIndex((item) => item.idsanpham === over?.id);
-//         return arrayMove(items, oldIndex, newIndex);
-//       });
-//     }
+//     fetchProducts();
+//   }, []);
+
+//   const handleFilterChange = (filters: FilterState) => {
+//     const filtered = products.filter((product) => {
+//       // Category filter
+//       if (filters.categories.length > 0 &&
+//           !filters.categories.includes(product.idloaisanpham)) {
+//         return false;
+//       }
+
+//       // Gender filter
+//       if (filters.gender.length > 0) {
+//         const productGender = product.gioitinh ? 'nam' : 'nu';
+//         if (!filters.gender.includes(productGender)) {
+//           return false;
+//         }
+//       }
+
+//       // Price filter
+//       const discountedPrice = product.giamgia > 0
+//         ? product.gia * (1 - product.giamgia / 100)
+//         : product.gia;
+//       if (discountedPrice < filters.priceRange[0] ||
+//           discountedPrice > filters.priceRange[1]) {
+//         return false;
+//       }
+
+//       // Size filter
+//       if (filters.sizes.length > 0) {
+//         const productSizes = product.size.split(',').map(s => s.trim());
+//         if (!productSizes.some(size => filters.sizes.includes(size))) {
+//           return false;
+//         }
+//       }
+
+//       return true;
+//     });
+
+//     setFilteredProducts(filtered);
 //   };
 
-//   const loadMore = () => {
-//     const currentLength = displayedProducts.length;
-//     const nextProducts = products.slice(
-//       currentLength,
-//       currentLength + productsPerPage
-//     );
-//     setDisplayedProducts((prev) => [...prev, ...nextProducts]);
-//   };
-
-//   const showLess = () => {
-//     setDisplayedProducts(products.slice(0, productsPerPage));
-//   };
-
-//   if (!products?.length) {
+//   if (loading) {
 //     return (
-//       <div className="w-full h-64 flex items-center justify-center">
-//         <p className="text-gray-500 text-lg">Không có sản phẩm nào</p>
+//       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+//         {[...Array(6)].map((_, i) => (
+//           <div key={i} className="animate-pulse">
+//             <div className="bg-gray-200 h-48 rounded-lg mb-4"></div>
+//             <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+//             <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+//           </div>
+//         ))}
 //       </div>
 //     );
 //   }
 
 //   return (
-//     <div className="w-full h-full flex flex-col" data-theme="light">
-//       <div className="xl:mx-28 md:mx-10 mt-24">
-//         <h1 className="font-bold xl:text-5xl md:text-4xl text-3xl w-full text-slate-600 font-serif animate-appeartop">
-//           Danh sách sản phẩm
-//         </h1>
-//         <div className="border-b-4 border-blue-500 mt-5" />
-
-//         <DndContext
-//           sensors={sensors}
-//           collisionDetection={closestCenter}
-//           onDragEnd={handleDragEnd}
-//         >
-//           <SortableContext
-//             items={displayedProducts.map((p) => p.idsanpham)}
-//             strategy={horizontalListSortingStrategy}
-//           >
-//             <ul className="flex w-full mt-12 flex-wrap list-none">
-//               {displayedProducts.map((product) => (
-//                 <SortableProductItem
-//                   key={product.idsanpham}
-//                   product={product}
-//                 />
-//               ))}
-//             </ul>
-//           </SortableContext>
-//         </DndContext>
-
-//         <div className="flex justify-center gap-5 mt-8">
-//           {displayedProducts.length < products.length && (
-//             <button
-//               onClick={loadMore}
-//               className="btn bg-blue-500 text-white hover:bg-blue-600"
-//             >
-//               Xem thêm
-//             </button>
-//           )}
-//           {displayedProducts.length > productsPerPage && (
-//             <button
-//               onClick={showLess}
-//               className="btn bg-blue-500 text-white hover:bg-blue-600"
-//             >
-//               Thu gọn
-//             </button>
-//           )}
+//     <div>
+//       {filteredProducts.length === 0 ? (
+//         <div className="text-center py-8">
+//           <h3 className="text-xl font-semibold mb-2">Không tìm thấy sản phẩm</h3>
+//           <p className="text-gray-600">
+//             Không có sản phẩm nào phù hợp với bộ lọc của bạn.
+//           </p>
 //         </div>
-//       </div>
+//       ) : (
+//         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+//           {filteredProducts.map((product) => (
+//             <ProductCard key={product.idsanpham} products={product} />
+//           ))}
+//         </div>
+//       )}
 //     </div>
 //   );
 // };
