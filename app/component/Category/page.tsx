@@ -154,6 +154,16 @@
 import React, { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Header from "../Header";
+import Footer from "../Footer";
+
+// Interface for product review
+interface Review {
+  id: number;
+  username: string;
+  rating: number;
+  comment: string;
+  date: string;
+}
 
 interface Product {
   idsanpham: number;
@@ -167,12 +177,15 @@ interface Product {
     tenloai: string;
     mota: string;
   };
+  reviews?: Review[]; // Optional reviews for the product
 }
 
 const Category = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
+
+  // State management for product details and reviews
   const [sanpham, setSanpham] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -180,6 +193,14 @@ const Category = () => {
     "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn5042-vag-2.jpg"
   );
 
+  // New state for reviews
+  const [newReview, setNewReview] = useState({
+    username: "",
+    rating: 5,
+    comment: "",
+  });
+
+  // Image gallery for product
   const Images = [
     "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn5042-vag-2.jpg",
     "https://m.yodycdn.com/fit-in/filters:format(webp)/products/akn5042-vag-7.jpg",
@@ -190,13 +211,16 @@ const Category = () => {
     "https://m.yodycdn.com/videos/website/AKN/AKN5042.mp4",
   ];
 
+  // Handler for image selection in gallery
   const handleImageClick = (image: string) => {
     setCurrentImage(image);
   };
 
+  // State for product configuration
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [quantity, setQuantity] = useState<number>(1);
 
+  // Handlers for size and quantity selection
   const handleSizeSelect = (size: string) => {
     setSelectedSize(size);
   };
@@ -211,6 +235,41 @@ const Category = () => {
     }
   };
 
+  // Handler for submitting a new review
+  const submitReview = () => {
+    if (!sanpham) return;
+
+    // Create a new review object
+    const review: Review = {
+      id: (sanpham.reviews?.length || 0) + 1,
+      username: newReview.username,
+      rating: newReview.rating,
+      comment: newReview.comment,
+      date: new Date().toLocaleDateString(),
+    };
+
+    // Update product reviews (in a real app, this would be an API call)
+    setSanpham({
+      ...sanpham,
+      reviews: [...(sanpham.reviews || []), review],
+    });
+
+    // Reset review form
+    setNewReview({
+      username: "",
+      rating: 5,
+      comment: "",
+    });
+  };
+
+  // Calculate average rating
+  const calculateAverageRating = (reviews?: Review[]) => {
+    if (!reviews || reviews.length === 0) return 0;
+    const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
+    return (totalRating / reviews.length).toFixed(1);
+  };
+
+  // Fetch product details on component mount
   useEffect(() => {
     if (id) {
       fetch(`/api/sanpham/${id}`)
@@ -235,6 +294,7 @@ const Category = () => {
     }
   }, [id]);
 
+  // Loading and error states remain the same
   if (loading)
     return (
       <div
@@ -265,7 +325,9 @@ const Category = () => {
     <div>
       <Header />
       <div className="w-full h-full px-4 py-24" data-theme="light">
+        {/* Existing product detail layout */}
         <div className="w-full h-full flex flex-col">
+          {/* Back button */}
           <div className="pb-4">
             <button
               onClick={() => router.push("/")}
@@ -282,12 +344,14 @@ const Category = () => {
             </button>
           </div>
 
+          {/* Product details section */}
           <h1 className="text-3xl font-bold mb-8 text-center">
             Chi tiết sản phẩm
           </h1>
 
           <div className="shadow-xl rounded-lg overflow-hidden w-full">
             <div className="md:flex gap-8">
+              {/* Image gallery section */}
               <div className="flex flex-col gap-2 items-start">
                 {Images.map((image, index) => (
                   <img
@@ -300,6 +364,7 @@ const Category = () => {
                 ))}
               </div>
 
+              {/* Main product image */}
               <div className="xl:w-[700px] xl:h-[500px] md:mx-auto">
                 <img
                   className="xl:h-[500px] xl:w-full h-96 object-contain"
@@ -308,10 +373,21 @@ const Category = () => {
                 />
               </div>
 
+              {/* Product information section */}
               <div className="px-8 py-4 bg-gray-50">
                 <h2 className="text-xl font-bold mb-4">{sanpham.tensanpham}</h2>
                 <p className="text-gray-700 mb-4">{sanpham.mota}</p>
 
+                {/* Average Rating Display */}
+                <div className="flex items-center mb-4">
+                  <span className="text-yellow-500 mr-2">★</span>
+                  <span className="font-bold">
+                    {calculateAverageRating(sanpham.reviews)} / 5 (
+                    {sanpham.reviews?.length || 0} đánh giá)
+                  </span>
+                </div>
+
+                {/* Pricing section */}
                 <h3 className="text-xl font-semibold text-gray-800 mt-8">
                   Giá bán
                 </h3>
@@ -322,59 +398,136 @@ const Category = () => {
                   })}
                 </p>
 
+                {/* Size selection */}
                 <div className="mt-6">
                   <h4 className="text-lg font-medium">
-                    Chọn kích thước: {selectedSize || "Chưa chọn"}
+                    Chọn kích thước: {selectedSize ? selectedSize : "Chưa chọn"}
                   </h4>
-                  <div className="flex gap-4 mt-2">
+                  <div className="flex space-x-4 mt-2">
                     {["S", "M", "L", "XL"].map((size) => (
-                      <button
+                      <span
                         key={size}
-                        className={`border-2 px-4 py-2 rounded-lg ${
-                          selectedSize === size
-                            ? "border-indigo-600 bg-indigo-100"
-                            : "border-gray-300"
-                        }`}
                         onClick={() => handleSizeSelect(size)}
+                        className={`border border-gray-300 rounded px-2 py-1 cursor-pointer hover:bg-gray-200 ${
+                          selectedSize === size ? "bg-gray-200" : ""
+                        }`}
                       >
                         {size}
-                      </button>
+                      </span>
                     ))}
                   </div>
                 </div>
 
+                {/* Quantity selection */}
                 <div className="mt-6">
                   <h4 className="text-lg font-medium">Số lượng:</h4>
-                  <div className="flex items-center gap-4 mt-2">
+                  <div className="flex items-center mt-2 space-x-4">
                     <button
-                      className="px-4 py-2 bg-gray-200 rounded-lg"
                       onClick={decrementQuantity}
+                      className="px-3 py-1 border rounded hover:bg-gray-200"
                     >
                       -
                     </button>
-                    <span className="text-xl font-bold">{quantity}</span>
+                    <span>{quantity}</span>
                     <button
-                      className="px-4 py-2 bg-gray-200 rounded-lg"
                       onClick={incrementQuantity}
+                      className="px-3 py-1 border rounded hover:bg-gray-200"
                     >
                       +
                     </button>
                   </div>
                 </div>
 
-                <div className="flex gap-4 mt-6">
-                  <button className="w-48 bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition duration-300">
-                    Đặt Hàng
-                  </button>
-                  <button className="w-48 bg-slate-600 text-white py-2 rounded-md hover:bg-black transition duration-300">
+                {/* Add to Cart Button */}
+                <div className="mt-8">
+                  <button className="w-full py-3 bg-blue-500 text-white font-bold rounded hover:bg-blue-600">
                     Thêm vào giỏ hàng
                   </button>
                 </div>
               </div>
             </div>
           </div>
+
+          {/* Review Section */}
+          <div className="mt-12">
+            <h3 className="text-2xl font-bold">Đánh giá sản phẩm</h3>
+            <div className="mt-4 space-y-4">
+              {sanpham.reviews && sanpham.reviews.length > 0 ? (
+                sanpham.reviews.map((review) => (
+                  <div key={review.id} className="p-4 border rounded-lg">
+                    <h4 className="text-lg font-semibold">{review.username}</h4>
+                    <div className="flex items-center">
+                      {[...Array(5)].map((_, index) => (
+                        <span
+                          key={index}
+                          className={`mr-1 ${
+                            index < review.rating
+                              ? "text-yellow-500"
+                              : "text-gray-300"
+                          }`}
+                        >
+                          ★
+                        </span>
+                      ))}
+                      <span className="ml-2 text-sm text-gray-600">
+                        {review.date}
+                      </span>
+                    </div>
+                    <p className="text-gray-700 mt-2">{review.comment}</p>
+                  </div>
+                ))
+              ) : (
+                <p>Chưa có đánh giá nào.</p>
+              )}
+            </div>
+
+            {/* Add a New Review Form */}
+            <div className="mt-8 p-4 border rounded-lg">
+              <h4 className="text-lg font-semibold">Thêm đánh giá của bạn</h4>
+              <input
+                type="text"
+                placeholder="Tên của bạn"
+                value={newReview.username}
+                onChange={(e) =>
+                  setNewReview({ ...newReview, username: e.target.value })
+                }
+                className="w-full p-2 mt-2 border rounded"
+              />
+              <textarea
+                placeholder="Nhận xét của bạn"
+                value={newReview.comment}
+                onChange={(e) =>
+                  setNewReview({ ...newReview, comment: e.target.value })
+                }
+                className="w-full p-2 mt-2 border rounded"
+              ></textarea>
+              <div className="flex items-center mt-2">
+                <span className="mr-2">Đánh giá:</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="5"
+                  value={newReview.rating}
+                  onChange={(e) =>
+                    setNewReview({
+                      ...newReview,
+                      rating: parseInt(e.target.value) || 5,
+                    })
+                  }
+                  className="w-16 p-2 border rounded"
+                />
+              </div>
+              <button
+                onClick={submitReview}
+                className="w-full mt-4 py-2 bg-green-500 text-white font-bold rounded hover:bg-green-600"
+              >
+                Gửi đánh giá
+              </button>
+            </div>
+          </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };
