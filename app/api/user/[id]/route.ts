@@ -1,4 +1,5 @@
 import prisma from "@/prisma/client";
+import { compare, hash } from "bcryptjs";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -48,77 +49,61 @@ export async function GET(
   }
 }
 
-// PUT (Update) user by ID
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    console.log("Received PUT request with params:", params);
+    const id = parseInt(params.id);
+    const data = await request.json();
 
-    const body = await request.json();
-    console.log("Request body:", body);
+    // Prepare update data
+    const updateData: any = {
+      Tentaikhoan: data.Tentaikhoan,
+      Email: data.Email,
+      Hoten: data.Hoten,
+      Sdt: data.Sdt,
+      Diachi: data.Diachi,
+      idRole: parseInt(data.idRole),
+    };
 
-    const idUsers = parseInt(params.id);
-    console.log("Parsed idUsers:", idUsers);
-
-    if (isNaN(idUsers)) {
-      console.error("Invalid id format:", params.id);
-      return NextResponse.json({ error: "ID không hợp lệ" }, { status: 400 });
-    }
-
-    // Kiểm tra xem user có tồn tại không
-    const existingUserById = await prisma.users.findUnique({
-      where: { idUsers: idUsers },
-    });
-
-    if (!existingUserById) {
-      return NextResponse.json(
-        { error: "Không tìm thấy người dùng" },
-        { status: 404 }
-      );
-    }
-
-    // Validate input data
-    const validation = UserSchema.safeParse(body);
-
-    if (!validation.success) {
-      console.error("Validation error:", validation.error);
-      return NextResponse.json({ error: validation.error }, { status: 400 });
-    }
-
-    // Check if email exists (if email is being updated)
-    if (body.Email && body.Email !== existingUserById.Email) {
-      const existingUser = await prisma.users.findUnique({
-        where: { Email: body.Email },
-      });
-      console.log("Existing user with email:", existingUser);
-
-      if (existingUser && existingUser.idUsers !== idUsers) {
-        return NextResponse.json(
-          { error: "Email đã tồn tại" },
-          { status: 400 }
-        );
-      }
+    // Only hash and update password if it's provided and changed
+    if (data.MatKhau && data.MatKhau.trim() !== "") {
+      updateData.Matkhau = await hash(data.MatKhau, 12);
     }
 
     // Update user
     const updatedUser = await prisma.users.update({
-      where: { idUsers: idUsers },
-      data: validation.data,
+      where: {
+        idUsers: id,
+      },
+      data: updateData,
+      include: {
+        role: {
+          select: {
+            Tennguoidung: true,
+          },
+        },
+      },
     });
 
-    console.log("Updated user:", updatedUser);
-    return NextResponse.json(updatedUser);
-  } catch (error) {
-    console.error("Error in PUT /api/users/[id]:", error);
+    return NextResponse.json({ updatedUser, message: "Cập nhật thành công" });
+  } catch (error: any) {
+    console.error("Update error:", error);
+
+    if (error.code === "P2002") {
+      return NextResponse.json(
+        { error: "Username or email already exists" },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
-      { error: "Đã xảy ra lỗi khi cập nhật người dùng" },
+      { error: "Failed to update user" },
       { status: 500 }
     );
   }
 }
-
 // DELETE user by ID
 export async function DELETE(
   request: NextRequest,

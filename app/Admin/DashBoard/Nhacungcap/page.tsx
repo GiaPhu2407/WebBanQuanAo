@@ -259,7 +259,7 @@ export default function NhaCungCapManagementPage() {
           />
         )}
 
-        <div className="flex justify-evenly gap-[580px]">
+        <div className="flex justify-evenly gap-[500px]">
           <h1 className="text-2xl font-bold mb-4 whitespace-nowrap">
             Quản lý nhà cung cấp
           </h1>

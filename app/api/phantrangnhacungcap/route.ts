@@ -4,50 +4,43 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const page = Number(searchParams.get("page")) || 1;
-    const limit_size = Number(searchParams.get("limit_size")) || 10;
-    const skip = (page - 1) * limit_size;
+    // nếu trên url không cớ search page param thì gán bằng 1
+    const page: number = searchParams.get("page")
+      ? Number(searchParams.get("page"))
+      : 1;
+    const limit_size: number = searchParams.get("limit_size")
+      ? Number(searchParams.get("limit_size"))
+      : 10;
 
-    // Get total number of suppliers
+    const skip = (page - 1) * limit_size;
+    // tính tổng số trang
+    // 1. đếm xem có bao nhiêu bản ghi hiện tại trong cở sở dữ liệu
     const totalRecords = await prisma.nhacungcap.count();
 
-    // Get suppliers list with pagination
-    const nhaCungCaps = await prisma.nhacungcap.findMany({
-      skip,
+    const totalPage = Math.ceil(totalRecords / limit_size);
+
+    const data = await prisma.nhacungcap.findMany({
+      skip: skip,
       take: limit_size,
-      orderBy: {
-        idnhacungcap: "desc",
-      },
     });
 
-    // Format response to match the interface from your React component
-    const formattedData = nhaCungCaps.map((item) => ({
-      idnhacungcap: item.idnhacungcap,
-      tennhacungcap: item.tennhacungcap,
-      sodienthoai: item.sodienthoai,
-      diachi: item.diachi,
-      email: item.email,
-      trangthai: item.trangthai,
-    }));
-
-    const totalPages = Math.ceil(totalRecords / limit_size);
-
-    return NextResponse.json({
-      data: formattedData,
-      meta: {
-        page,
-        limit_size,
-        totalRecords,
-        totalPages,
-      },
-    });
-  } catch (error) {
-    console.error("Error in GET /api/nhacungcap:", error);
     return NextResponse.json(
       {
-        error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
+        data,
+        meta: {
+          totalRecords,
+          totalPage,
+          page,
+          limit_size,
+          skip,
+        },
       },
+
+      { status: 200 }
+    );
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Failed to fetch data" },
       { status: 500 }
     );
   }

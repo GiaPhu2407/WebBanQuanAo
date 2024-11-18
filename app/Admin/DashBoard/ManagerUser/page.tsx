@@ -1,47 +1,52 @@
 "use client";
+
 import React, { useState, useEffect } from "react";
 import SalesDashboard from "../NvarbarAdmin";
-import UserManagementTable from "../../TableManagerUser";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import TableUserDashboard from "../../TableManagerUser";
 
-// Base User interface
 interface User {
   idUsers: number;
   Tentaikhoan: string;
-  MatKhau: string;
-  Email: string;
+  Matkhau?: string;
   Hoten: string;
   Sdt: string;
-  DiaChi: string;
+  Diachi: string;
+  Email: string;
   idRole: number;
+  Ngaydangky: string;
 }
 
-interface ToastProps {
+interface Toast {
   message: string;
   type: "error" | "success";
-  isVisible: boolean;
-  onClose: () => void;
 }
 
-const Toast: React.FC<ToastProps> = ({ message, type, isVisible, onClose }) => {
+const Toast: React.FC<{
+  message: string;
+  type: "error" | "success";
+  onClose: () => void;
+}> = ({ message, type, onClose }) => {
   return (
-    <div
-      className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg transform transition-transform duration-300 z-50 ${
-        isVisible ? "translate-x-0" : "translate-x-full"
-      } ${
-        type === "error" ? "bg-red-500 text-white" : "bg-green-500 text-white"
+    <Alert
+      className={`fixed top-4 right-4 w-96 z-50 ${
+        type === "error" ? "bg-red-50" : "bg-green-50"
       }`}
     >
-      <div className="flex items-center">
-        <span className="mr-2">{type === "error" ? "❌" : "✅"}</span>
-        <p className="font-medium">{message}</p>
+      <AlertDescription className="flex justify-between items-center">
+        <span className="flex items-center">
+          {type === "error" ? "❌" : "✅"}
+          <span className="ml-2">{message}</span>
+        </span>
         <button
           onClick={onClose}
-          className="ml-4 text-white hover:text-gray-200 focus:outline-none"
+          className="text-gray-500 hover:text-gray-700"
+          aria-label="Close"
         >
           ✕
         </button>
-      </div>
-    </div>
+      </AlertDescription>
+    </Alert>
   );
 };
 
@@ -49,358 +54,256 @@ const UserManagementPage: React.FC = () => {
   const initialFormData: User = {
     idUsers: 0,
     Tentaikhoan: "",
-    MatKhau: "",
+    Matkhau: "",
     Email: "",
     Hoten: "",
     Sdt: "",
-    DiaChi: "",
+    Diachi: "",
     idRole: 2,
+    Ngaydangky: "",
   };
 
   const [formData, setFormData] = useState<User>(initialFormData);
-  const [error, setError] = useState<string>("");
-  const [success, setSuccess] = useState<string>("");
-  const [showToast, setShowToast] = useState(false);
+  const [toast, setToast] = useState<Toast | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
-  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    if (error || success) {
-      setShowToast(true);
+    if (toast) {
       const timer = setTimeout(() => {
-        setShowToast(false);
-        setError("");
-        setSuccess("");
+        setToast(null);
       }, 3000);
-
       return () => clearTimeout(timer);
     }
-  }, [error, success]);
+  }, [toast]);
 
-  const validateForm = (): string | null => {
-    if (!formData.Tentaikhoan.trim()) return "Vui lòng nhập tên tài khoản";
-    if (!isEditing && !formData.MatKhau.trim()) return "Vui lòng nhập mật khẩu";
-    if (!formData.Email.trim()) return "Vui lòng nhập email";
-    if (!formData.Hoten.trim()) return "Vui lòng nhập họ tên";
-    if (!formData.Sdt.trim()) return "Vui lòng nhập số điện thoại";
-    if (!formData.DiaChi.trim()) return "Vui lòng nhập địa chỉ";
-
+  const validateForm = () => {
+    const errors: string[] = [];
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.Email)) return "Email không hợp lệ";
-
     const phoneRegex = /(84|0[3|5|7|8|9])+([0-9]{8})\b/;
-    if (!phoneRegex.test(formData.Sdt)) return "Số điện thoại không hợp lệ";
 
-    return null;
+    if (!formData.Tentaikhoan.trim())
+      errors.push("Vui lòng nhập tên tài khoản");
+    if (!isEditing && !formData.Matkhau?.trim())
+      errors.push("Vui lòng nhập mật khẩu");
+    if (!formData.Email.trim()) errors.push("Vui lòng nhập email");
+    if (!emailRegex.test(formData.Email)) errors.push("Email không hợp lệ");
+    if (!formData.Hoten.trim()) errors.push("Vui lòng nhập họ tên");
+    if (!formData.Sdt.trim()) errors.push("Vui lòng nhập số điện thoại");
+    if (!phoneRegex.test(formData.Sdt))
+      errors.push("Số điện thoại không hợp lệ");
+    if (!formData.Diachi.trim()) errors.push("Vui lòng nhập địa chỉ");
+
+    return errors;
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => {
+      console.log(`Updated ${name} to ${value}`); // Log để kiểm tra
+      return {
+        ...prev,
+        [name]: value,
+      };
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
 
-    const validationError = validateForm();
-    if (validationError) {
-      setError(validationError);
+    const errors = validateForm();
+    if (errors.length > 0) {
+      setToast({ message: errors.join(", "), type: "error" });
       return;
     }
 
+    console.log("Form Data Before Submission:", formData); // Kiểm tra giá trị formData
+
     try {
-      // Prepare the data for submission
-      let submitData: any = {
-        ...formData,
-        idRole: Number(formData.idRole),
-      };
-
-      // If editing and password is empty, remove it
-      if (isEditing && !formData.MatKhau.trim()) {
-        const { MatKhau, ...dataWithoutPassword } = submitData;
-        submitData = dataWithoutPassword;
-      }
-
-      // Determine the correct URL and method
-      const url = isEditing ? `/api/user${currentUserId}` : "/api/user";
+      const endpoint = isEditing
+        ? `/api/user/${formData.idUsers}`
+        : `/api/user`;
       const method = isEditing ? "PUT" : "POST";
 
-      const response = await fetch(url, {
+      const response = await fetch(endpoint, {
         method,
         headers: {
           "Content-Type": "application/json",
-          Accept: "application/json",
         },
-        body: JSON.stringify(submitData),
-        credentials: "include", // Add this to include cookies
+        body: JSON.stringify(formData),
       });
 
+      const result = await response.json();
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.message || "Lỗi khi thêm/cập nhật người dùng"
-        );
+        throw new Error(result.error || "Có lỗi xảy ra");
       }
 
-      // Handle successful response
-      setSuccess(
-        isEditing
-          ? "Cập nhật người dùng thành công"
-          : "Thêm người dùng thành công"
-      );
+      setToast({
+        message: isEditing ? "Cập nhật thành công" : "Thêm mới thành công",
+        type: "success",
+      });
 
-      // Reset form and close modal
       resetForm();
-      const modal = document.getElementById("my_modal_3") as HTMLDialogElement;
-      if (modal) {
-        modal.close();
-      }
-
-      // Trigger table reload
-      setReloadKey((prev) => prev + 1);
-    } catch (err) {
-      console.error("Error:", err);
-      setError(err instanceof Error ? err.message : "Lỗi khi xử lý yêu cầu");
+      setReloadKey((prev) => prev + 1); // Trigger reload after successful submit
+    } catch (error) {
+      console.error("Error:", error);
+      setToast({
+        message: error instanceof Error ? error.message : "Có lỗi xảy ra",
+        type: "error",
+      });
     }
   };
 
   const handleEdit = async (user: User) => {
-    try {
-      // Fetch the current user data
-      const response = await fetch(`/api/user${user.idUsers}`);
-      if (!response.ok) {
-        throw new Error("Không thể lấy thông tin người dùng");
-      }
-
-      const userData = await response.json();
-
-      // Set the form data with the fetched user data
-      setFormData({
-        ...userData,
-        MatKhau: "", // Reset password field
-      });
-
-      setCurrentUserId(user.idUsers);
-      setIsEditing(true);
-
-      const modal = document.getElementById("my_modal_3") as HTMLDialogElement;
-      if (modal) {
-        modal.showModal();
-      }
-    } catch (err) {
-      console.error("Error fetching user data:", err);
-      setError("Không thể lấy thông tin người dùng");
-    }
+    setFormData({
+      ...user,
+      Matkhau: isEditing ? "" : user.Matkhau, // Only reset password if editing
+    });
+    setIsEditing(true);
+    setIsModalOpen(true);
   };
 
   const handleDelete = async (id: number) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa người dùng này?")) {
-      try {
-        const response = await fetch(`/api/user${id}`, {
-          method: "DELETE",
-          credentials: "include",
-        });
+    if (!window.confirm("Bạn có chắc chắn muốn xóa người dùng này?")) return;
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Không thể xóa người dùng");
-        }
+    try {
+      const response = await fetch(`/api/user/${id}`, {
+        method: "DELETE",
+      });
 
-        setSuccess("Người dùng đã được xóa thành công");
-        setReloadKey((prev) => prev + 1);
-      } catch (err) {
-        console.error("Error deleting user:", err);
-        setError(err instanceof Error ? err.message : "Lỗi khi xóa người dùng");
-      }
+      if (!response.ok) throw new Error("Không thể xóa người dùng");
+
+      setToast({ message: "Xóa người dùng thành công", type: "success" });
+      setReloadKey((prev) => prev + 1); // Trigger reload after delete
+    } catch (error) {
+      setToast({
+        message: error instanceof Error ? error.message : "Có lỗi xảy ra",
+        type: "error",
+      });
     }
   };
 
   const resetForm = () => {
     setFormData(initialFormData);
-    setCurrentUserId(null);
     setIsEditing(false);
-  };
-
-  const handleCancelEdit = () => {
-    resetForm();
-    const modal = document.getElementById("my_modal_3") as HTMLDialogElement;
-    if (modal) {
-      modal.close();
-    }
-  };
-
-  const handleAddNewClick = () => {
-    resetForm();
-    const modal = document.getElementById("my_modal_3") as HTMLDialogElement;
-    if (modal) {
-      modal.showModal();
-    }
+    setIsModalOpen(false);
   };
 
   return (
-    <div className="flex">
+    <div className="flex h-screen bg-gray-100">
       <SalesDashboard />
-      <div className="p-6 max-w-6xl mx-auto">
-        {(error || success) && (
+      <div className="flex-1 p-8">
+        {toast && (
           <Toast
-            message={error || success}
-            type={error ? "error" : "success"}
-            isVisible={showToast}
-            onClose={() => {
-              setShowToast(false);
-              setError("");
-              setSuccess("");
-            }}
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
           />
         )}
 
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Quản lý người dùng</h1>
+          <h1 className="text-2xl font-bold text-gray-800">
+            Quản lý người dùng
+          </h1>
           <button
-            onClick={handleAddNewClick}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none"
+            onClick={() => {
+              resetForm();
+              setIsModalOpen(true);
+            }}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             Thêm người dùng
           </button>
         </div>
 
-        <dialog
-          id="my_modal_3"
-          className="modal fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50"
-        >
-          <div className="bg-white shadow-xl rounded-lg p-8 w-full max-w-3xl relative">
-            <button
-              onClick={handleCancelEdit}
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-            >
-              ✕
-            </button>
-
-            <form onSubmit={handleSubmit}>
-              <h2 className="text-xl font-semibold text-gray-800 mb-6">
-                {isEditing ? "Cập nhật người dùng" : "Thêm người dùng"}
-              </h2>
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Tên tài khoản
-                  </label>
-                  <input
-                    type="text"
-                    name="Tentaikhoan"
-                    value={formData.Tentaikhoan}
-                    onChange={handleChange}
-                    className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Mật khẩu {isEditing && "(để trống nếu không thay đổi)"}
-                  </label>
-                  <input
-                    type="password"
-                    name="MatKhau"
-                    value={formData.MatKhau}
-                    onChange={handleChange}
-                    className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Họ tên
-                  </label>
-                  <input
-                    type="text"
-                    name="Hoten"
-                    value={formData.Hoten}
-                    onChange={handleChange}
-                    className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    name="Email"
-                    value={formData.Email}
-                    onChange={handleChange}
-                    className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Số điện thoại
-                  </label>
-                  <input
-                    type="text"
-                    name="Sdt"
-                    value={formData.Sdt}
-                    onChange={handleChange}
-                    className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Địa chỉ
-                  </label>
-                  <input
-                    type="text"
-                    name="DiaChi"
-                    value={formData.DiaChi}
-                    onChange={handleChange}
-                    className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Vai trò
-                  </label>
-                  <select
-                    name="idRole"
-                    value={formData.idRole}
-                    onChange={handleChange}
-                    className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm"
+        {isModalOpen && (
+          <dialog
+            open
+            className="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+          >
+            <div className="bg-white rounded-lg p-8 w-full max-w-3xl">
+              <form onSubmit={handleSubmit}>
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-semibold">
+                    {isEditing ? "Cập nhật người dùng" : "Thêm người dùng mới"}
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="text-gray-500 hover:text-gray-700"
                   >
-                    <option value={1}>Admin</option>
-                    <option value={2}>User</option>
-                  </select>
+                    ✕
+                  </button>
                 </div>
-              </div>
-              <div className="mt-8 flex justify-end space-x-4">
-                <button
-                  type="button"
-                  onClick={handleCancelEdit}
-                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  {isEditing ? "Cập nhật" : "Thêm"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </dialog>
 
-        <div className="mt-8">
-          <UserManagementTable
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            reloadKey={reloadKey}
-          />
-        </div>
+                <div className="grid grid-cols-2 gap-6">
+                  {/* Input fields */}
+                  {[
+                    {
+                      label: "Tên tài khoản",
+                      name: "Tentaikhoan",
+                      type: "text",
+                    },
+                    { label: "Mật khẩu", name: "Matkhau", type: "password" },
+                    { label: "Email", name: "Email", type: "email" },
+                    { label: "Họ tên", name: "Hoten", type: "text" },
+                    { label: "Số điện thoại", name: "Sdt", type: "text" },
+                    { label: "Địa chỉ", name: "Diachi", type: "text" },
+                  ].map(({ label, name, type }) => (
+                    <div key={name}>
+                      <label className="block font-medium text-gray-700">
+                        {label}
+                      </label>
+                      <input
+                        type={type}
+                        name={name}
+                        value={formData[name as keyof User] || ""}
+                        onChange={handleInputChange}
+                        className="mt-1 p-2 border rounded-lg w-full"
+                        required
+                        disabled={name === "Matkhau" && isEditing}
+                      />
+                    </div>
+                  ))}
+
+                  {/* Role selection */}
+                  <div>
+                    <label className="block font-medium text-gray-700">
+                      Vai trò
+                    </label>
+                    <select
+                      name="idRole"
+                      value={formData.idRole}
+                      onChange={handleInputChange}
+                      className="mt-1 p-2 border rounded-lg w-full"
+                    >
+                      <option value={1}>Admin</option>
+                      <option value={2}>User</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex justify-end mt-6">
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    {isEditing ? "Cập nhật" : "Thêm mới"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </dialog>
+        )}
+
+        <TableUserDashboard
+          reloadKey={reloadKey}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
       </div>
     </div>
   );

@@ -18,7 +18,7 @@ export interface User {
   Email: string;
   Hoten: string;
   Sdt: string;
-  DiaChi: string;
+  Diachi: string;
   idRole: number;
   Ngaydangky?: string;
   role?: {

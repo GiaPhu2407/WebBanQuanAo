@@ -1,119 +1,64 @@
-import React, { useState, useEffect } from "react";
-import { Pencil, Trash2, Loader2 } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import React, { useEffect, useState } from "react";
+import { Pencil, Trash2, Eye, EyeOff } from "lucide-react";
 
 interface User {
   idUsers: number;
   Tentaikhoan: string;
-  MatKhau?: string;
-  Email: string;
+  Matkhau: string;
   Hoten: string;
   Sdt: string;
   Diachi: string;
+  Email: string;
   idRole: number;
   Ngaydangky: string;
+  role?: {
+    tenrole: string;
+    mota: string;
+  };
 }
 
-interface PaginationMeta {
+interface Role {
+  idrole: number;
+  tenrole: string;
+  mota: string;
+}
+
+interface Meta {
   page: number;
   limit_size: number;
   totalRecords: number;
   totalPages: number;
 }
 
-interface TableDashboardProps {
-  onEdit: (product: User) => void;
+interface TableUserDashboardProps {
+  onEdit: (user: User) => void;
   onDelete: (id: number) => void;
-  reloadKey?: number;
+  reloadKey: number;
 }
 
-interface Toast {
-  message: string;
-  type: "error" | "success";
-}
-
-const Toast: React.FC<{ toast: Toast | null; onClose: () => void }> = ({
-  toast,
-  onClose,
-}) => {
-  if (!toast) return null;
-
-  return (
-    <div
-      className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg transform transition-transform duration-300 z-50 ${
-        toast.type === "error" ? "bg-red-500" : "bg-green-500"
-      } text-white`}
-    >
-      <div className="flex items-center">
-        <span className="mr-2">{toast.type === "error" ? "❌" : "✅"}</span>
-        <p className="font-medium">{toast.message}</p>
-        <button onClick={onClose} className="ml-4 hover:text-gray-200">
-          ✕
-        </button>
-      </div>
-    </div>
-  );
-};
-
-const TableDashboard: React.FC<TableDashboardProps> = ({
+const TableUserDashboard: React.FC<TableUserDashboardProps> = ({
   onEdit,
   onDelete,
   reloadKey,
 }) => {
   const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [meta, setMeta] = useState<PaginationMeta>({
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [showPasswords, setShowPasswords] = useState<{
+    [key: number]: boolean;
+  }>({});
+  const [meta, setMeta] = useState<Meta>({
     page: 1,
     limit_size: 10,
     totalRecords: 0,
     totalPages: 1,
   });
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [formData, setFormData] = useState<Partial<User>>({});
-  const [toast, setToast] = useState<Toast | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const showToast = (message: string, type: "error" | "success") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  };
-
-  const validateForm = () => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const phoneRegex = /(84|0[3|5|7|8|9])+([0-9]{8})\b/;
-
-    if (!formData.Tentaikhoan?.trim()) return "Vui lòng nhập tên tài khoản";
-    if (!selectedUser && !formData.MatKhau?.trim())
-      return "Vui lòng nhập mật khẩu";
-    if (!formData.Email?.trim() || !emailRegex.test(formData.Email))
-      return "Email không hợp lệ";
-    if (!formData.Hoten?.trim()) return "Vui lòng nhập họ tên";
-    if (!formData.Sdt?.trim() || !phoneRegex.test(formData.Sdt))
-      return "Số điện thoại không hợp lệ";
-    if (!formData.Diachi?.trim()) return "Vui lòng nhập địa chỉ";
-    return null;
+  const togglePasswordVisibility = (userId: number) => {
+    setShowPasswords((prev) => ({
+      ...prev,
+      [userId]: !prev[userId],
+    }));
   };
 
   const fetchUsers = async () => {
@@ -123,359 +68,246 @@ const TableDashboard: React.FC<TableDashboardProps> = ({
         `/api/phantranguser?page=${meta.page}&limit_size=${meta.limit_size}`
       );
       if (!response.ok) {
-        throw new Error("Failed to fetch users");
+        throw new Error("Network response was not ok");
       }
-      const data = await response.json();
-      setUsers(data.data);
-      setMeta(data.meta);
+      const result = await response.json();
+      if (result.data) {
+        setUsers(result.data);
+        setMeta({
+          page: result.meta.page,
+          limit_size: result.meta.limit_size,
+          totalRecords: result.meta.totalRecords,
+          totalPages: result.meta.totalPages,
+        });
+      }
     } catch (error) {
-      showToast("Không thể tải danh sách người dùng", "error");
       console.error("Error fetching users:", error);
+      setUsers([]);
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchRoles = async () => {
+    try {
+      const response = await fetch("/api/roles");
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+      const data = await response.json();
+      setRoles(data || []);
+    } catch (error) {
+      console.error("Error fetching roles:", error);
+      setRoles([]);
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
-  }, [meta.page, reloadKey]);
+  }, [meta.page, meta.limit_size, reloadKey]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const error = validateForm();
-    if (error) {
-      showToast(error, "error");
-      return;
-    }
-
-    try {
-      const url = selectedUser
-        ? `/api/user/${selectedUser.idUsers}`
-        : "/api/user";
-
-      const method = selectedUser ? "PUT" : "POST";
-
-      const submitData = {
-        ...formData,
-        // Chỉ gửi mật khẩu nếu là tạo mới hoặc có nhập mật khẩu khi sửa
-        ...((!selectedUser || formData.MatKhau) && {
-          MatKhau: formData.MatKhau,
-        }),
-      };
-
-      const response = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(submitData),
-      });
-
-      if (!response.ok) {
-        throw new Error("Operation failed");
-      }
-
-      showToast(
-        selectedUser ? "Cập nhật thành công" : "Thêm người dùng thành công",
-        "success"
-      );
-      setIsDialogOpen(false);
-      setSelectedUser(null);
-      setFormData({});
-      fetchUsers();
-
-      // Call callbacks if provided
-      if (selectedUser && onEdit) {
-        onEdit(selectedUser);
-      }
-    } catch (error) {
-      showToast("Thao tác không thành công", "error");
-      console.error("Error submitting form:", error);
-    }
-  };
-
-  const handleDelete = async (id: number) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa người dùng này?")) return;
-
-    try {
-      const response = await fetch(`/api/user/${id}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        throw new Error("Delete operation failed");
-      }
-
-      showToast("Xóa người dùng thành công", "success");
-      fetchUsers();
-
-      // Call callback if provided
-      if (onDelete) {
-        onDelete(id);
-      }
-    } catch (error) {
-      showToast("Không thể xóa người dùng", "error");
-      console.error("Error deleting user:", error);
-    }
-  };
+  useEffect(() => {
+    fetchRoles();
+  }, []);
 
   const handlePageChange = (newPage: number) => {
-    if (newPage >= 1 && newPage <= meta.totalPages) {
-      setMeta((prev) => ({ ...prev, page: newPage }));
-    }
+    setMeta((prev) => ({ ...prev, page: newPage }));
   };
 
-  const getPaginationRange = () => {
-    const range = [];
-    const start = Math.max(1, Math.min(meta.page - 2, meta.totalPages - 4));
-    const end = Math.min(start + 4, meta.totalPages);
+  const getRoleName = (idRole: number) => {
+    const role = roles.find((role) => role.idrole === idRole);
+    return role?.tenrole || "N/A";
+  };
+
+  const generatePaginationNumbers = () => {
+    const pageNumbers = [];
+    let start = Math.max(1, meta.page - 2);
+    let end = Math.min(meta.totalPages, meta.page + 2);
+
+    if (start > 1) {
+      pageNumbers.push(1);
+      if (start > 2) pageNumbers.push("...");
+    }
 
     for (let i = start; i <= end; i++) {
-      range.push(i);
+      pageNumbers.push(i);
     }
-    return range;
+
+    if (end < meta.totalPages) {
+      if (end < meta.totalPages - 1) pageNumbers.push("...");
+      pageNumbers.push(meta.totalPages);
+    }
+
+    return pageNumbers;
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("vi-VN");
   };
 
   return (
-    <div className="w-full space-y-4">
-      <Toast toast={toast} onClose={() => setToast(null)} />
-
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Quản lý người dùng</h2>
-        <Button
-          onClick={() => {
-            setSelectedUser(null);
-            setFormData({});
-            setIsDialogOpen(true);
-          }}
-        >
-          Thêm người dùng
-        </Button>
-      </div>
-
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-gradient-to-r from-blue-500 to-purple-500">
-              <TableHead className="text-white">ID</TableHead>
-              <TableHead className="text-white">Tên tài khoản</TableHead>
-              <TableHead className="text-white">Họ tên</TableHead>
-              <TableHead className="text-white">Email</TableHead>
-              <TableHead className="text-white">Số điện thoại</TableHead>
-              <TableHead className="text-white">Địa chỉ</TableHead>
-              <TableHead className="text-white">Vai trò</TableHead>
-              <TableHead className="text-white">Ngày đăng ký</TableHead>
-              <TableHead className="text-white">Thao tác</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+    <div className="space-y-2">
+      <div className="w-full rounded-lg ">
+        <table className="w-full overflow-x-auto  divide-gray-200 bg-gradient-to-r from-red-500 to-pink-400">
+          <thead>
+            <tr>
+              <th className="px-3 py-2 text-white">ID</th>
+              <th className="px-3 py-2 text-white">Tên tài khoản</th>
+              {/* <th className="px-3 py-2 text-white">Mật khẩu</th> */}
+              <th className="px-3 py-2 text-white">Họ tên</th>
+              <th className="px-3 py-2 text-white">SĐT</th>
+              <th className="px-3 py-2 text-white">Địa chỉ</th>
+              <th className="px-3 py-2 text-white">Email</th>
+              <th className="px-3 py-2 text-white">Vai trò</th>
+              <th className="px-3 py-2 text-white">Ngày đăng ký</th>
+              <th className="px-3 py-2 text-white">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
             {loading ? (
-              <TableRow>
-                <TableCell colSpan={9} className="text-center">
+              <tr>
+                <td colSpan={10} className="px-6 py-4 text-center">
                   <div className="flex items-center justify-center">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                    <span className="ml-2">Đang tải...</span>
+                    <div className="w-6 h-6 border-2 border-blue-600 rounded-full animate-spin border-t-transparent"></div>
+                    <span className="ml-2">Đang tải dữ liệu...</span>
                   </div>
-                </TableCell>
-              </TableRow>
-            ) : users.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={9} className="text-center">
-                  Không có người dùng nào
-                </TableCell>
-              </TableRow>
-            ) : (
-              users.map((user) => (
-                <TableRow key={user.idUsers}>
-                  <TableCell>{user.idUsers}</TableCell>
-                  <TableCell>{user.Tentaikhoan}</TableCell>
-                  <TableCell>{user.Hoten}</TableCell>
-                  <TableCell>{user.Email}</TableCell>
-                  <TableCell>{user.Sdt}</TableCell>
-                  <TableCell>{user.Diachi}</TableCell>
-                  <TableCell>{user.idRole === 1 ? "Admin" : "User"}</TableCell>
-                  <TableCell>
-                    {user.Ngaydangky
-                      ? new Date(user.Ngaydangky).toLocaleDateString("vi-VN")
-                      : "N/A"}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setFormData({ ...user, MatKhau: undefined });
-                          setIsDialogOpen(true);
-                        }}
+                </td>
+              </tr>
+            ) : users && users.length > 0 ? (
+              users.map((user, index) => (
+                <tr
+                  key={user.idUsers}
+                  className={`${
+                    index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                  } hover:bg-blue-50 transition-colors duration-200`}
+                >
+                  <td className="px-3 py-2">{user.idUsers}</td>
+                  <td className="px-3 py-2">{user.Tentaikhoan}</td>
+                  {/* <td className="px-3 py-2">
+                    <div className="flex items-center space-x-2">
+                      <span>
+                        {showPasswords[user.idUsers]
+                          ? user.Matkhau
+                          : "••••••••"}
+                      </span>
+                      <button
+                        onClick={() => togglePasswordVisibility(user.idUsers)}
+                        className="text-gray-500 hover:text-gray-700"
                       >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(user.idUsers)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                        {showPasswords[user.idUsers] ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
                     </div>
-                  </TableCell>
-                </TableRow>
+                    {user.Matkhau}
+                  </td> */}
+                  <td className="px-3 py-2">{user.Hoten}</td>
+                  <td className="px-3 py-2">{user.Sdt}</td>
+                  <td className="px-3 py-2">{user.Diachi}</td>
+                  <td className="px-3 py-2">{user.Email}</td>
+                  <td className="px-3 py-2 whitespace-nowrap text-sm">
+                    {user.idRole === 1 ? (
+                      <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                        Admin
+                      </span>
+                    ) : user.idRole === 2 ? (
+                      <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                        User
+                      </span>
+                    ) : (
+                      <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                        Chưa phân quyền
+                      </span>
+                    )}
+                  </td>{" "}
+                  <td className="px-6 py-4">{formatDate(user.Ngaydangky)}</td>
+                  <td className="px-6 py-4">
+                    <div className="flex justify-center space-x-2">
+                      <button
+                        onClick={() => onEdit(user)}
+                        className="p-1 text-blue-600 hover:text-blue-800 transition-colors duration-200"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => onDelete(user.idUsers)}
+                        className="p-1 text-red-600 hover:text-red-800 transition-colors duration-200"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
               ))
+            ) : (
+              <tr>
+                <td
+                  colSpan={10}
+                  className="px-6 py-4 text-center text-gray-500"
+                >
+                  Không có người dùng nào
+                </td>
+              </tr>
             )}
-          </TableBody>
-        </Table>
+          </tbody>
+        </table>
       </div>
 
-      <div className="flex justify-center gap-2">
-        <Button
-          variant="outline"
+      {/* Pagination */}
+      <div className="flex items-center justify-center space-x-1 mt-4">
+        <button
           onClick={() => handlePageChange(1)}
           disabled={meta.page === 1}
+          className="px-3 py-1 rounded-md bg-white border hover:bg-gray-100 disabled:opacity-50"
         >
           «
-        </Button>
-        <Button
-          variant="outline"
+        </button>
+        <button
           onClick={() => handlePageChange(meta.page - 1)}
           disabled={meta.page === 1}
+          className="px-3 py-1 rounded-md bg-white border hover:bg-gray-100 disabled:opacity-50"
         >
           ‹
-        </Button>
-        {getPaginationRange().map((pageNum) => (
-          <Button
-            key={pageNum}
-            variant={pageNum === meta.page ? "default" : "outline"}
-            onClick={() => handlePageChange(pageNum)}
+        </button>
+
+        {generatePaginationNumbers().map((number, index) => (
+          <button
+            key={index}
+            onClick={() =>
+              typeof number === "number" && handlePageChange(number)
+            }
+            disabled={number === "..."}
+            className={`px-3 py-1 rounded-md border ${
+              number === meta.page
+                ? "bg-blue-500 text-white"
+                : typeof number === "number" && number % 2 === 0
+                ? "bg-gray-200 font-semibold"
+                : "bg-white hover:bg-gray-100"
+            } ${number === "..." ? "cursor-default" : ""}`}
           >
-            {pageNum}
-          </Button>
+            {number}
+          </button>
         ))}
-        <Button
-          variant="outline"
+
+        <button
           onClick={() => handlePageChange(meta.page + 1)}
-          disabled={meta.page === meta.totalPages}
+          disabled={meta.page >= meta.totalPages}
+          className="px-3 py-1 rounded-md bg-white border hover:bg-gray-100 disabled:opacity-50"
         >
           ›
-        </Button>
-        <Button
-          variant="outline"
+        </button>
+        <button
           onClick={() => handlePageChange(meta.totalPages)}
-          disabled={meta.page === meta.totalPages}
+          disabled={meta.page >= meta.totalPages}
+          className="px-3 py-1 rounded-md bg-white border hover:bg-gray-100 disabled:opacity-50"
         >
           »
-        </Button>
+        </button>
       </div>
-
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedUser ? "Sửa người dùng" : "Thêm người dùng mới"}
-            </DialogTitle>
-          </DialogHeader>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid w-full gap-4">
-              <Input
-                placeholder="Tên tài khoản"
-                value={formData.Tentaikhoan || ""}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    Tentaikhoan: e.target.value,
-                  }))
-                }
-              />
-
-              {(!selectedUser || selectedUser) && (
-                <Input
-                  type="password"
-                  placeholder={
-                    selectedUser
-                      ? "Mật khẩu mới (để trống nếu không đổi)"
-                      : "Mật khẩu"
-                  }
-                  value={formData.MatKhau || ""}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      MatKhau: e.target.value,
-                    }))
-                  }
-                />
-              )}
-
-              <Input
-                placeholder="Email"
-                type="email"
-                value={formData.Email || ""}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, Email: e.target.value }))
-                }
-              />
-
-              <Input
-                placeholder="Họ tên"
-                value={formData.Hoten || ""}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, Hoten: e.target.value }))
-                }
-              />
-
-              <Input
-                placeholder="Số điện thoại"
-                value={formData.Sdt || ""}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, Sdt: e.target.value }))
-                }
-              />
-
-              <Input
-                placeholder="Địa chỉ"
-                value={formData.Diachi || ""}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, Diachi: e.target.value }))
-                }
-              />
-
-              <Select
-                value={String(formData.idRole || 2)}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, idRole: Number(value) }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn vai trò" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">Admin</SelectItem>
-                  <SelectItem value="2">User</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex justify-end space-x-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setIsDialogOpen(false);
-                  setFormData({});
-                  setSelectedUser(null);
-                }}
-              >
-                Hủy
-              </Button>
-              <Button type="submit">
-                {selectedUser ? "Cập nhật" : "Thêm"}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
 
-export default TableDashboard;
+export default TableUserDashboard;
