@@ -1,11 +1,11 @@
-import { getSession } from '@/lib/auth';
-import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/prisma/client';
+import { getSession } from "@/lib/auth";
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/prisma/client";
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
-    
+
     if (!session) {
       return NextResponse.json(null);
     }
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     // Fetch full user data from database
     const user = await prisma.users.findUnique({
       where: {
-        idUsers: session.idUsers
+        idUsers: session.idUsers,
       },
       select: {
         idUsers: true,
@@ -25,10 +25,10 @@ export async function GET(request: NextRequest) {
         idRole: true,
         role: {
           select: {
-            Tennguoidung: true
-          }
-        }
-      }
+            Tennguoidung: true,
+          },
+        },
+      },
     });
 
     if (!user) {
@@ -43,11 +43,10 @@ export async function GET(request: NextRequest) {
       fullName: user.Hoten,
       phone: user.Sdt,
       address: user.Diachi,
-      role: user.role
+      role: user.role,
     });
-
   } catch (error) {
-    console.error('Session error:', error);
+    console.error("Session error:", error);
     return NextResponse.json(null);
   }
 }
