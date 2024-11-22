@@ -162,11 +162,11 @@ const TableUserDashboard: React.FC<TableUserDashboardProps> = ({
                   <td className="px-3 py-2 whitespace-nowrap">
                     {user.idRole === 1 ? (
                       <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
-                        Admin
+                        User
                       </span>
                     ) : user.idRole === 2 ? (
                       <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                        User
+                        Admin
                       </span>
                     ) : (
                       <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">

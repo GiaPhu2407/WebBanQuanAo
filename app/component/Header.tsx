@@ -3,8 +3,15 @@ import Link from "next/link";
 import React, { useState, useEffect } from "react";
 import { FaBagShopping } from "react-icons/fa6";
 import { FaMars, FaVenus } from "react-icons/fa";
-import { UserAuth } from "@/app/types/auth";
-
+import { User } from "@/app/types/auth";
+import {
+  HoverCard,
+  HoverCardTrigger,
+  HoverCardContent,
+} from "@/components/ui/hover-card";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { MenuIcon } from "lucide-react";
 interface Product {
   idsanpham: number;
   tensanpham: string;
@@ -20,10 +27,26 @@ interface Product {
 const Menu = () => {
   const [showMaleDropdown, setShowMaleDropdown] = useState(false);
   const [showFemaleDropdown, setShowFemaleDropdown] = useState(false);
-  const [user, setUser] = useState<UserAuth | null>(null);
+  // const [user, setUser] = useState<User | null>(null);
+  const [userData, setUserData] = useState<any>();
+
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
 
+  // useEffect(() => {
+  //   const storedUserData = localStorage.getItem("userData");
+  //   if (storedUserData) {
+  //     setUserData(JSON.parse(storedUserData));
+  //   } else {
+  //     fetch("/api/auth/session")
+  //       .then((response) => {
+  //         if (!response.ok) throw new Error("Failed to fetch session");
+  //         return response.json();
+  //       })
+  //       .then((data) => setUserData(data))
+  //       .catch((error) => console.error("Failed to fetch session", error));
+  //   }
+  // }, []);
   useEffect(() => {
     fetch("api/auth/session")
       .then((response) => {
@@ -31,7 +54,7 @@ const Menu = () => {
         return response.json();
       })
       .then((data) => {
-        setUser(data);
+        setUserData(data);
       })
       .catch((error) => {
         console.error("Failed to fetch session", error);
@@ -41,13 +64,20 @@ const Menu = () => {
   const handleLogout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
-      setUser(null);
+      setUserData(null);
       window.location.href = "/";
     } catch (error) {
       console.error("Logout failed:", error);
     }
   };
-
+  // const [userData, setUserData] = useState<any>()
+  // useEffect(() => {
+  //   setUserData(JSON.parse(localStorage.getItem('userData') as string))
+  // },[])
+  // function onLogout() {
+  //   localStorage.removeItem('userData')
+  //   setUserData(undefined)
+  // }
   return (
     <div>
       <div className="bg-white w-full h-20 shadow fixed z-[99]">
@@ -130,69 +160,95 @@ const Menu = () => {
           </div>
 
           {/* User Avatar with Tooltip */}
-          <div className="ml-10">
-            {user ? (
-              <div className="relative">
-                <button
-                  onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  onMouseEnter={() => setShowTooltip(true)}
-                  onMouseLeave={() => setShowTooltip(false)}
-                  className="flex items-center space-x-2"
-                >
-                  <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white">
-                    {user.Hoten?.[0] || user.Tentaikhoan?.[0] || "U"}
-                  </div>
-                </button>
-
-                {/* Tooltip */}
-                {showTooltip && !isProfileOpen && (
-                  <div className="absolute -left-24 top-12 w-64 bg-black text-white p-2 rounded-md shadow-lg z-50">
-                    <div className="absolute -top-2 right-6 w-4 h-4 bg-black transform rotate-45"></div>
-                    <div className="relative z-10">
-                      <p className="font-semibold">
-                        {user.Hoten || user.Tentaikhoan}
-                      </p>
-                      <p className="text-sm text-gray-300">{user.Email}</p>
+          <div className="flex items-center gap-4">
+            {userData ? (
+              <div>
+                {/* Thẻ hover để hiển thị thông tin người dùng */}
+                <HoverCard>
+                  <HoverCardTrigger asChild>
+                    <div className="flex items-center gap-2 cursor-pointer">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage
+                          src="https://github.com/shadcn.png"
+                          alt={userData?.Hoten || "User"}
+                        />
+                        <AvatarFallback>
+                          {userData?.Hoten ? userData.Hoten[0] : "JP"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="hidden md:block text-sm font-medium">
+                        {userData?.Hoten}
+                      </div>
+                      <Button variant="destructive" onClick={handleLogout}>
+                        Logout
+                      </Button>
                     </div>
-                  </div>
-                )}
-
-                {/* Dropdown Menu */}
-                {isProfileOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
-                    <Link
-                      href="/profile"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Profile
-                    </Link>
-                    {user.role?.Tennguoidung === "Admin" && (
-                      <Link
-                        href="/Admin"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Dashboard
-                      </Link>
-                    )}
-                    <button
-                      onClick={handleLogout}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Logout
-                    </button>
-                  </div>
-                )}
+                  </HoverCardTrigger>
+                  <HoverCardContent className="w-64">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-12 w-12">
+                          <AvatarImage
+                            src="https://github.com/shadcn.png"
+                            alt={userData?.Hoten || "User"}
+                          />
+                          <AvatarFallback>
+                            {userData?.Hoten ? userData.Hoten[0] : "JP"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="grid gap-0.5">
+                          <div className="text-sm font-medium">
+                            {userData?.Hoten}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {userData?.Email}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-2">
+                        <Link
+                          href="/Show/ShowProfile"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          Profile
+                        </Link>
+                        {userData.role?.Tennguoidung === "Admin" && (
+                          <Link
+                            href="/Admin"
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          >
+                            Dashboard
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  </HoverCardContent>
+                </HoverCard>
               </div>
             ) : (
-              <div className="flex gap-5">
-                <Link
-                  href="/Login"
-                  className="btn transition-all duration-500 bg-green-400 hover:text-red-500 px-4 w-20 sm:w-28"
-                >
-                  Login
+              <div>
+                {/* Các nút cho người dùng chưa đăng nhập */}
+                <Link href={"/contact"}>
+                  <Button variant="blue" className="me-2">
+                    Contact
+                  </Button>
+                </Link>
+                <Link href={"/auth/login"}>
+                  <Button variant="green">Login</Button>
+                </Link>
+                <Link href={"/auth/register"}>
+                  <Button variant="destructive" className="ms-2">
+                    Register
+                  </Button>
                 </Link>
               </div>
             )}
+
+            {/* Nút menu dành cho màn hình nhỏ */}
+            <Button variant="ghost" size="icon" className="md:hidden">
+              <MenuIcon className="h-6 w-6" />
+              <span className="sr-only">Toggle menu</span>
+            </Button>
           </div>
         </div>
       </div>

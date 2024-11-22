@@ -26,8 +26,24 @@ model Users {
   Email       String?   @db.VarChar(45) @unique
   idRole      Int?      
   Ngaydangky  DateTime? @db.Date
-  role        Role?     @relation(fields: [idRole], references: [idrole])
   
+  Token        String?  // Trường lưu token
+
+  role        Role?     @relation(fields: [idRole], references: [idrole])
+  danhgia      Danhgia[]
+
+  
+}
+model Danhgia {
+  iddanhgia    Int       @id @default(autoincrement())
+  idsanpham    Int?      
+  idUsers      Int?      
+  sao          Int?
+  noidung      String?   @db.VarChar(45)
+  ngaydanhgia  DateTime? @db.Date 
+  sanpham      Sanpham?  @relation(fields: [idsanpham], references: [idsanpham])
+  // khachhang    Khachhang? @relation(fields: [idkhachang], references: [idkhachhang])
+  users    Users? @relation(fields: [idUsers], references: [idUsers])
 }
 
 model Khachhang {
@@ -44,7 +60,7 @@ model Khachhang {
   role            Role?     @relation(fields: [idrolekhachhang], references: [idrole])
   donhang         Donhang[]
   giohang         Giohang[]
-  danhgia         Danhgia[]
+  // danhgia         Danhgia[]
   Admin           Admin[]
   tuvanhotro      Tuvanhotro[]
 }
@@ -182,16 +198,6 @@ model Thanhtoan {
   donhang              Donhang?  @relation(fields: [iddonhang], references: [iddonhang])
 }
 
-model Danhgia {
-  iddanhgia    Int       @id @default(autoincrement())
-  idsanpham    Int?      
-  idkhachang   Int?      
-  sao          Int?
-  noidung      String?   @db.VarChar(45)
-  ngaydanhgia  DateTime? @db.Date
-  sanpham      Sanpham?  @relation(fields: [idsanpham], references: [idsanpham])
-  khachhang    Khachhang? @relation(fields: [idkhachang], references: [idkhachhang])
-}
 
 model Kho {
   idKho      Int       @id @default(autoincrement())

@@ -48,6 +48,7 @@ const LoginPage = () => {
     try {
       const res = await loginUser(usernameOrEmail, password);
       if (res?.status) {
+        localStorage.setItem("token", res.data.token);
         localStorage.setItem("userData", JSON.stringify(res.data));
         toast({
           title: "Login Successful!",

@@ -28,6 +28,6 @@
     ".next/types/**/*.ts",
     "app/(auth)/sign-in/[[...sign-in]]/page.tsx",
     "app/(auth)/sign-up/[[...sign-up]]/page.tsx"
-  ],
+, "components/ui/hover-card.rsx"  ],
   "exclude": ["node_modules"]
 }
