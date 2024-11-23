@@ -11,7 +11,7 @@ const UserSchema = z.object({
   Sdt: z.string().max(15).optional(),
   Diachi: z.string().max(45).optional(),
   Email: z.string().email().max(45).optional(),
-  idRole: z.number().optional(),
+  // idRole: z.number().optional(),
   Ngaydangky: z.string().datetime().optional(),
 });
 
@@ -64,7 +64,7 @@ export async function PUT(
       Hoten: data.Hoten,
       Sdt: data.Sdt,
       Diachi: data.Diachi,
-      idRole: parseInt(data.idRole),
+      // idRole: parseInt(data.idRole),
     };
 
     // Only hash and update password if it's provided and changed

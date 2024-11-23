@@ -1,16 +1,15 @@
 import { getSession } from "@/lib/auth";
-import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/client";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
 
     if (!session) {
-      return NextResponse.json(null);
+      return NextResponse.json({ error: "No session found" }, { status: 401 });
     }
 
-    // Fetch full user data from database
     const user = await prisma.users.findUnique({
       where: {
         idUsers: session.idUsers,
@@ -32,21 +31,24 @@ export async function GET(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json(null);
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Return user data without sensitive information
+    // Trả về đúng tên trường như trong database
     return NextResponse.json({
       idUsers: user.idUsers,
-      email: user.Email,
-      username: user.Tentaikhoan,
-      fullName: user.Hoten,
-      phone: user.Sdt,
-      address: user.Diachi,
+      Email: user.Email, // Giữ nguyên tên trường
+      Tentaikhoan: user.Tentaikhoan,
+      Hoten: user.Hoten,
+      Sdt: user.Sdt,
+      Diachi: user.Diachi,
       role: user.role,
     });
   } catch (error) {
     console.error("Session error:", error);
-    return NextResponse.json(null);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
