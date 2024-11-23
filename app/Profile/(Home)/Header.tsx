@@ -1,17 +1,18 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-
+import hinh from "@/app/image/hinhshop.png";
 // import { useAuth, UserButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { UserAuth } from "@/app/types/auth";
+import { User } from "@/app/types/auth";
+import Image from "next/image";
 const Header = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const toggleDropdown = () => {
     setIsDropdownOpen(!isDropdownOpen);
   };
   // const { userId } = useAuth();
-  const [user, setUser] = useState<UserAuth | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const router = useRouter();
@@ -63,16 +64,18 @@ const Header = () => {
         </div>
         <nav className=" border-gray-200 dark:bg-gray-900 absolute top-0 left-0 w-full text-center">
           <div className="flex flex-wrap items-center justify-between max-w-screen-xl mx-auto p-4">
-            <a
+            <Link
               href="https://flowbite.com"
               className="flex items-center space-x-3 rtl:space-x-reverse"
             >
-              <img
-                src="https://logo-suggestion.renderforest.com/suggestions-images/0008/a533/0008a533e7d0fdc0dd2cb35fb5194474.png"
-                className="h-20"
+              <Image
+                src={hinh}
                 alt="Flowbite Logo"
+                width={200}
+                height={150}
+                className="text-red-400 text-transparent shadow-lg animate-borderrun rounded-full"
               />
-            </a>
+            </Link>
             <div className="flex justify-center items-center md:order-2 space-x-1 md:space-x-2 rtl:space-x-reverse">
               <div>
                 {/* {!user ? ( */}
