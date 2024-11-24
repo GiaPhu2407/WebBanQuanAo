@@ -9,7 +9,14 @@ interface LoaiSanPham {
   tenloai: string;
   mota: string;
 }
-
+interface Image {
+  idImage: number;
+  url: string;
+  altText: string | null;
+  createdAt: string;
+  updatedAt: string;
+  idSanpham: number | null;
+}
 interface FormData {
   tensanpham: string;
   mota: string;

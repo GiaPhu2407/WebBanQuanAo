@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    // nếu trên url không cớ search page param thì gán bằng 1
+    // Default to page 1 if not specified
     const page: number = searchParams.get("page")
       ? Number(searchParams.get("page"))
       : 1;
@@ -13,15 +13,22 @@ export async function GET(request: NextRequest) {
       : 10;
 
     const skip = (page - 1) * limit_size;
-    // tính tổng số trang
-    // 1. đếm xem có bao nhiêu bản ghi hiện tại trong cở sở dữ liệu
-    const totalRecords = await prisma.users.count();
 
+    // Get total record count for pagination
+    const totalRecords = await prisma.users.count();
     const totalPage = Math.ceil(totalRecords / limit_size);
 
+    // Fetch paginated data
     const data = await prisma.users.findMany({
       skip: skip,
       take: limit_size,
+      include: {
+        role: {
+          select: {
+            Tennguoidung: true,
+          },
+        },
+      },
     });
 
     return NextResponse.json(
@@ -35,7 +42,6 @@ export async function GET(request: NextRequest) {
           skip,
         },
       },
-
       { status: 200 }
     );
   } catch (error) {

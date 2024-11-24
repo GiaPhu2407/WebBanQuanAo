@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import hinh from "@/app/image/hinhshop.png";
+import hinh from "@/app/image/hinhlogo.png";
 // import { useAuth, UserButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { User } from "@/app/types/auth";
@@ -73,23 +73,17 @@ const Header = () => {
                 alt="Flowbite Logo"
                 width={200}
                 height={150}
-                className="text-red-400 text-transparent shadow-lg animate-borderrun rounded-full"
+                className="animate-borderrun rounded-full"
               />
             </Link>
             <div className="flex justify-center items-center md:order-2 space-x-1 md:space-x-2 rtl:space-x-reverse">
               <div>
                 {/* {!user ? ( */}
                 <div className="flex gap-5">
-                  <Link
-                    href="/Login"
-                    className="btn transition-all duration-500 bg-green-400 hover:text-red-500 px-4 w-20 sm:w-28 "
-                  >
+                  <Link href="/Login" className="btn btn-outline btn-success ">
                     Login
                   </Link>
-                  <Link
-                    href="/Register"
-                    className="btn transition-all duration-500 hover:text-red-500 bg-blue-400 px-5 w-20 sm:w-28"
-                  >
+                  <Link href="/Register" className="btn btn-outline btn-info">
                     Register
                   </Link>
                 </div>

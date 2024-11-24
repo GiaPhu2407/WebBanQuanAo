@@ -229,18 +229,18 @@ const SalesDashboard: React.FC = () => {
           />
           <SidebarItem
             icon={<Truck size={16} />}
-            label="Supplier"
+            label="Provider"
             onClick={() => router.push("/Admin/DashBoard/Nhacungcap")}
           />
           <SidebarItem
             icon={<Award size={16} />}
-            label="Brand"
+            label="User"
             onClick={() => router.push("/Admin/DashBoard/ManagerUser")}
           />
           <SidebarItem
             icon={<Tags size={16} />}
             label="Season"
-            onClick={() => router.push("/season")}
+            onClick={() => router.push("/Admin/DashBoard/ManagerImage")}
           />
         </SidebarSection>
 

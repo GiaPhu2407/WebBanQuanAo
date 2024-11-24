@@ -86,7 +86,7 @@ model Loaisanpham {
 }
 
 model Sanpham {
-   idsanpham       Int              @id @default(autoincrement())
+  idsanpham       Int              @id @default(autoincrement())
   tensanpham      String?          @db.VarChar(255)
   mota            String?          @db.VarChar(255)
   gia             String?          @db.VarChar(255)
@@ -95,13 +95,25 @@ model Sanpham {
   giamgia         Decimal?         @db.Decimal(5,2)
   gioitinh        Boolean?
   size            String?         @db.VarChar(255)// Dùng mảng chuỗi để lưu nhiều kích cỡ
-  loaisanpham   Loaisanpham? @relation(fields: [idloaisanpham], references: [idloaisanpham])
-  chitietnhap   Chitietnhap[]
-  chitietdonhang ChitietDonhang[]
-  giohang       Giohang[]
-  danhgia       Danhgia[]
-  kho           Kho[]
+  loaisanpham     Loaisanpham?     @relation(fields: [idloaisanpham], references: [idloaisanpham])
+  chitietnhap     Chitietnhap[]
+  chitietdonhang  ChitietDonhang[]
+  giohang         Giohang[]
+  danhgia         Danhgia[]
+  kho             Kho[]
+  images          Image[]          // Quan hệ 1-n với bảng Image
 }
+
+model Image {
+  idImage      Int       @id @default(autoincrement())
+  url          String    @db.VarChar(255) // URL của hình ảnh
+  altText      String?   @db.VarChar(255) // Mô tả alt cho SEO và accessibility
+  createdAt    DateTime  @default(now())  // Ngày tạo
+  updatedAt    DateTime  @updatedAt       // Ngày cập nhật gần nhất
+  idSanpham    Int?                        
+  sanpham      Sanpham?  @relation(fields: [idSanpham], references: [idsanpham]) // Quan hệ với bảng Sanpham
+}
+
 
   model Nhacungcap {
     idnhacungcap  Int       @id @default(autoincrement())
