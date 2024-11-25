@@ -110,7 +110,7 @@
 
 import { login } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/prisma/client"; // Ensure this path matches your project structure
+import prisma from "@/prisma/client";
 
 export async function POST(request: NextRequest) {
   try {
@@ -118,7 +118,17 @@ export async function POST(request: NextRequest) {
     const { usernameOrEmail, password } = body;
 
     const user = await login(usernameOrEmail, password);
-    return NextResponse.json(user);
+    
+    // Make sure to return the user object with the role
+    return NextResponse.json({
+      user: {
+        id: user.idUsers,
+        email: user.email,
+        username: user.username,
+        role: user.role, // Ensure this is included
+      }
+    });
+    
   } catch (error) {
     return NextResponse.json(
       { error: "Authentication failed" },
@@ -126,7 +136,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
 // export async function GET(request: NextRequest) {
 //   try {
 //     const users = await prisma.users.findMany({
