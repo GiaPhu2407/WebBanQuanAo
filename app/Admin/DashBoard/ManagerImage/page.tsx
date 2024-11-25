@@ -8,11 +8,22 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/use-toast";
-import { Textarea } from "@headlessui/react";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Image {
   idImage: number;
@@ -47,6 +58,8 @@ const ImageManagementPage = () => {
   const [currentImageId, setCurrentImageId] = useState<number | null>(null);
   const [imageUrl, setImageUrl] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [imageToDelete, setImageToDelete] = useState<number | null>(null);
 
   // Fetch products when component mounts
   useEffect(() => {
@@ -163,32 +176,39 @@ const ImageManagementPage = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: number) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa hình ảnh này?")) {
-      try {
-        const response = await fetch(`/api/category/${id}`, {
-          method: "DELETE",
-        });
+  const handleDelete = (id: number) => {
+    setImageToDelete(id);
+    setIsDeleteDialogOpen(true);
+  };
 
-        if (!response.ok) {
-          const data = await response.json();
-          throw new Error(data.error || "Không thể xóa hình ảnh");
-        }
+  const confirmDelete = async () => {
+    if (!imageToDelete) return;
 
-        toast({
-          title: "Thành công",
-          description: "Xóa hình ảnh thành công",
-        });
+    try {
+      const response = await fetch(`/api/category/${imageToDelete}`, {
+        method: "DELETE",
+      });
 
-        setReloadKey((prev) => prev + 1);
-      } catch (error) {
-        toast({
-          title: "Lỗi",
-          description:
-            error instanceof Error ? error.message : "Lỗi khi xóa hình ảnh",
-          variant: "destructive",
-        });
+      if (!response.ok) {
+        throw new Error("Không thể xóa hình ảnh");
       }
+
+      toast({
+        title: "Thành công",
+        description: "Xóa hình ảnh thành công",
+      });
+
+      setReloadKey((prev) => prev + 1);
+    } catch (error) {
+      toast({
+        title: "Lỗi",
+        description:
+          error instanceof Error ? error.message : "Lỗi khi xóa hình ảnh",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setImageToDelete(null);
     }
   };
 
@@ -212,6 +232,7 @@ const ImageManagementPage = () => {
             />
           </div>
 
+          {/* Form Dialog */}
           <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
             <DialogContent>
               <DialogHeader>
@@ -237,13 +258,14 @@ const ImageManagementPage = () => {
                         alt="Uploaded"
                         className="max-w-xs max-h-48"
                       />
-                      <button
+                      <Button
                         type="button"
+                        variant="destructive"
                         onClick={() => setImageUrl("")}
-                        className="mt-2 px-4 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                        className="mt-2"
                       >
-                        Cancel
-                      </button>
+                        Hủy
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -276,7 +298,7 @@ const ImageManagementPage = () => {
                   />
                 </div>
 
-                <div className="flex justify-end space-x-2">
+                <DialogFooter>
                   <Button
                     type="button"
                     variant="outline"
@@ -287,10 +309,34 @@ const ImageManagementPage = () => {
                   <Button type="submit">
                     {isEditing ? "Cập nhật" : "Thêm mới"}
                   </Button>
-                </div>
+                </DialogFooter>
               </form>
             </DialogContent>
           </Dialog>
+
+          {/* Delete Confirmation Dialog */}
+          <AlertDialog
+            open={isDeleteDialogOpen}
+            onOpenChange={setIsDeleteDialogOpen}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Bạn có chắc chắn muốn xóa hình ảnh này? Hành động này không
+                  thể hoàn tác.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>
+                  Hủy
+                </AlertDialogCancel>
+                <AlertDialogAction onClick={confirmDelete}>
+                  Xóa
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
     </div>

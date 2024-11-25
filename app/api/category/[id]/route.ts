@@ -131,3 +131,76 @@ export async function GET(
     );
   }
 }
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const idImage = parseInt(params.id);
+
+    // Kiểm tra ID có hợp lệ không
+    if (isNaN(idImage)) {
+      return NextResponse.json(
+        { 
+          error: "ID không hợp lệ",
+          code: "invalid_id"
+        }, 
+        { status: 400 }
+      );
+    }
+
+    // Kiểm tra hình ảnh có tồn tại không
+    const existingImage = await prisma.image.findUnique({
+      where: { idImage },
+    });
+
+    if (!existingImage) {
+      return NextResponse.json(
+        { 
+          error: "Không tìm thấy hình ảnh",
+          code: "image_not_found"
+        }, 
+        { status: 404 }
+      );
+    }
+
+    // Thực hiện xóa hình ảnh
+    await prisma.image.delete({
+      where: { idImage },
+    });
+
+    // Trả về kết quả thành công
+    return NextResponse.json(
+      { 
+        message: "Xóa hình ảnh thành công",
+        deletedImage: existingImage
+      }, 
+      { status: 200 }
+    );
+
+  } catch (error: any) {
+    // Log lỗi để debug
+    console.error("Error in DELETE:", error);
+
+    // Xử lý các lỗi cụ thể từ Prisma nếu cần
+    if (error.code === 'P2025') {
+      return NextResponse.json(
+        { 
+          error: "Không thể xóa hình ảnh do ràng buộc dữ liệu",
+          code: "constraint_error"
+        }, 
+        { status: 400 }
+      );
+    }
+
+    // Trả về lỗi chung
+    return NextResponse.json(
+      { 
+        error: "Đã xảy ra lỗi khi xóa hình ảnh", 
+        details: error.message,
+        code: "server_error"
+      }, 
+      { status: 500 }
+    );
+  }
+}
