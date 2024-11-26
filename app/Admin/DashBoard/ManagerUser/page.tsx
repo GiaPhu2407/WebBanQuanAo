@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import SalesDashboard from "../NvarbarAdmin";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useToast } from "@/components/ui/use-toast";
+import { Toaster } from "@/components/ui/toaster";
 import TableUserDashboard from "../../TableManagerUser";
 
 interface User {
@@ -16,40 +17,6 @@ interface User {
   idRole: number;
   Ngaydangky: string;
 }
-
-interface Toast {
-  message: string;
-  type: "error" | "success";
-}
-
-// Toast component với styling được cải thiện
-const Toast: React.FC<{
-  message: string;
-  type: "error" | "success";
-  onClose: () => void;
-}> = ({ message, type, onClose }) => {
-  return (
-    <Alert
-      className={`fixed top-4 right-4 w-96 z-50 ${
-        type === "error" ? "bg-red-50" : "bg-green-50"
-      }`}
-    >
-      <AlertDescription className="flex justify-between items-center">
-        <span className="flex items-center">
-          {type === "error" ? "❌" : "✅"}
-          <span className="ml-2">{message}</span>
-        </span>
-        <button
-          onClick={onClose}
-          className="text-gray-500 hover:text-gray-700"
-          aria-label="Close"
-        >
-          ✕
-        </button>
-      </AlertDescription>
-    </Alert>
-  );
-};
 
 const UserManagementPage: React.FC = () => {
   // Initial form data với idRole mặc định là 2 (User)
@@ -66,20 +33,10 @@ const UserManagementPage: React.FC = () => {
   };
 
   const [formData, setFormData] = useState<User>(initialFormData);
-  const [toast, setToast] = useState<Toast | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // Tự động đóng toast sau 3 giây
-  useEffect(() => {
-    if (toast) {
-      const timer = setTimeout(() => {
-        setToast(null);
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [toast]);
+  const { toast } = useToast();
 
   // Validate form với regex cải thiện
   const validateForm = () => {
@@ -108,7 +65,6 @@ const UserManagementPage: React.FC = () => {
     const { name, value } = e.target;
     setFormData((prev) => {
       const updatedValue = name === "idRole" ? Number(value) : value;
-      console.log(`Updating ${name}:`, updatedValue, typeof updatedValue);
       return {
         ...prev,
         [name]: updatedValue,
@@ -119,27 +75,27 @@ const UserManagementPage: React.FC = () => {
   // Xử lý submit form với logging cải thiện
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log("Starting form submission...");
 
     const errors = validateForm();
     if (errors.length > 0) {
-      setToast({ message: errors.join(", "), type: "error" });
+      toast({
+        title: "Lỗi Xác Thực!",
+        description: errors.join(", "),
+        variant: "destructive",
+      });
       return;
     }
 
-    // Log form data trước khi gửi
     const submissionData = {
       ...formData,
       idRole: Number(formData.idRole),
     };
-    console.log("Submitting form data:", submissionData);
 
     try {
       const endpoint = isEditing
         ? `/api/user/${formData.idUsers}`
         : `/api/user`;
       const method = isEditing ? "PUT" : "POST";
-      console.log(`Making ${method} request to ${endpoint}`);
 
       const response = await fetch(endpoint, {
         method,
@@ -150,46 +106,44 @@ const UserManagementPage: React.FC = () => {
       });
 
       const result = await response.json();
-      console.log("Server response:", result);
 
       if (!response.ok) {
         throw new Error(result.error || "Có lỗi xảy ra");
       }
 
-      setToast({
-        message: isEditing ? "Cập nhật thành công" : "Thêm mới thành công",
-        type: "success",
+      toast({
+        title: "Thành Công!",
+        description: isEditing ? "Cập nhật thành công" : "Thêm mới thành công",
+        variant: "success",
       });
 
       resetForm();
       setReloadKey((prev) => prev + 1);
     } catch (error) {
-      console.error("Error in form submission:", error);
-      setToast({
-        message: error instanceof Error ? error.message : "Có lỗi xảy ra",
-        type: "error",
+      toast({
+        title: "Lỗi!",
+        description: error instanceof Error ? error.message : "Có lỗi xảy ra",
+        variant: "destructive",
       });
     }
   };
 
-  // Xử lý chỉnh sửa user với logging
+  // Xử lý chỉnh sửa user
   const handleEdit = (user: User) => {
-    console.log("Editing user:", user);
     setFormData({
       ...user,
-      idRole: Number(user.idRole), // Đảm bảo idRole là số
-      Matkhau: "", // Reset mật khẩu khi edit
+      idRole: Number(user.idRole),
+      Matkhau: "",
     });
     setIsEditing(true);
     setIsModalOpen(true);
   };
 
-  // Xử lý xóa user với confirm
+  // Xử lý xóa user
   const handleDelete = async (id: number) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa người dùng này?")) return;
 
     try {
-      console.log("Deleting user:", id);
       const response = await fetch(`/api/user/${id}`, {
         method: "DELETE",
       });
@@ -199,20 +153,23 @@ const UserManagementPage: React.FC = () => {
         throw new Error(error.message || "Không thể xóa người dùng");
       }
 
-      setToast({ message: "Xóa người dùng thành công", type: "success" });
+      toast({
+        title: "Thành Công!",
+        description: "Xóa người dùng thành công",
+        variant: "success",
+      });
       setReloadKey((prev) => prev + 1);
     } catch (error) {
-      console.error("Error deleting user:", error);
-      setToast({
-        message: error instanceof Error ? error.message : "Có lỗi xảy ra",
-        type: "error",
+      toast({
+        title: "Lỗi!",
+        description: error instanceof Error ? error.message : "Có lỗi xảy ra",
+        variant: "destructive",
       });
     }
   };
 
   // Reset form
   const resetForm = () => {
-    console.log("Resetting form...");
     setFormData(initialFormData);
     setIsEditing(false);
     setIsModalOpen(false);
@@ -223,13 +180,7 @@ const UserManagementPage: React.FC = () => {
     <div className="flex h-screen bg-gray-100">
       <SalesDashboard />
       <div className="flex-1 p-8">
-        {toast && (
-          <Toast
-            message={toast.message}
-            type={toast.type}
-            onClose={() => setToast(null)}
-          />
-        )}
+        <Toaster />
 
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-800">
