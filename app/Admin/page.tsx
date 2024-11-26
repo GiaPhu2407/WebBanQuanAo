@@ -239,7 +239,7 @@ const SalesDashboard: React.FC = () => {
           />
           <SidebarItem
             icon={<Tags size={16} />}
-            label="Season"
+            label="Image"
             onClick={() => router.push("/Admin/DashBoard/ManagerImage")}
           />
         </SidebarSection>

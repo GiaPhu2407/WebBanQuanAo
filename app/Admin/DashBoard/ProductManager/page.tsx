@@ -1,22 +1,17 @@
 "use client";
-import React, { useState, useEffect, HtmlHTMLAttributes } from "react";
+import React, { useState, useEffect } from "react";
 import SalesDashboard from "../NvarbarAdmin";
 import Tabledashboard from "../../TableProduct";
 import Fileupload from "@/components/ui/Fileupload";
+import { useToast } from "@/components/ui/use-toast";
+import { Toaster } from "@/components/ui/toaster";
 
 interface LoaiSanPham {
   idloaisanpham: number;
   tenloai: string;
   mota: string;
 }
-interface Image {
-  idImage: number;
-  url: string;
-  altText: string | null;
-  createdAt: string;
-  updatedAt: string;
-  idSanpham: number | null;
-}
+
 interface FormData {
   tensanpham: string;
   mota: string;
@@ -31,40 +26,6 @@ interface FormData {
 interface SanPham extends FormData {
   idsanpham: number;
 }
-
-// Toast Component
-const Toast = ({
-  message,
-  type,
-  isVisible,
-  onClose,
-}: {
-  message: string;
-  type: "error" | "success";
-  isVisible: boolean;
-  onClose: () => void;
-}) => {
-  return (
-    <div
-      className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg transform transition-transform duration-300 z-50 ${
-        isVisible ? "translate-x-0" : "translate-x-full"
-      } ${
-        type === "error" ? "bg-red-500 text-white" : "bg-green-500 text-white"
-      }`}
-    >
-      <div className="flex items-center">
-        <span className="mr-2">{type === "error" ? "❌" : "✅"}</span>
-        <p className="font-medium">{message}</p>
-        <button
-          onClick={onClose}
-          className="ml-4 text-white hover:text-gray-200 focus:outline-none"
-        >
-          ✕
-        </button>
-      </div>
-    </div>
-  );
-};
 
 const VALID_SIZES = ["S", "M", "L", "XL", "2XL", "3XL"];
 
@@ -81,30 +42,16 @@ export default function ProductManagementPage() {
   });
 
   const [loaisanphamList, setLoaisanphamList] = useState<LoaiSanPham[]>([]);
-  const [error, setError] = useState<string>("");
-  const [success, setSuccess] = useState<string>("");
-  const [showToast, setShowToast] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [currentProductId, setCurrentProductId] = useState<number | null>(null);
   const [imageUrl, setImageUrl] = useState("");
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchLoaiSanPham();
   }, []);
-
-  useEffect(() => {
-    if (error || success) {
-      setShowToast(true);
-      const timer = setTimeout(() => {
-        setShowToast(false);
-        setError("");
-        setSuccess("");
-      }, 3000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [error, success]);
 
   const fetchLoaiSanPham = async () => {
     try {
@@ -113,7 +60,11 @@ export default function ProductManagementPage() {
       setLoaisanphamList(data);
     } catch (err) {
       console.error("Failed to fetch loai san pham:", err);
-      setError("Không thể tải danh sách loại sản phẩm");
+      toast({
+        title: "Lỗi!",
+        description: "Không thể tải danh sách loại sản phẩm",
+        variant: "destructive",
+      });
     }
   };
 
@@ -126,6 +77,7 @@ export default function ProductManagementPage() {
     if (!formData.size) return "Vui lòng chọn ít nhất một size";
     if (formData.giamgia < 0 || formData.giamgia > 100)
       return "Giảm giá phải từ 0 đến 100";
+    if (!imageUrl) return "Vui lòng tải lên hình ảnh sản phẩm";
     return null;
   };
 
@@ -163,18 +115,20 @@ export default function ProductManagementPage() {
       } else {
         sizeSet.add(selectedSize);
       }
-      return { ...prev, size: Array.from(sizeSet).join(",") };
+      return { ...prev, size: Array.from(sizeSet).sort().join(",") };
     });
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
 
     const validationError = validateForm();
     if (validationError) {
-      setError(validationError);
+      toast({
+        title: "Lỗi Xác Thực!",
+        description: validationError,
+        variant: "destructive",
+      });
       return;
     }
 
@@ -195,19 +149,27 @@ export default function ProductManagementPage() {
         throw new Error(data.error || "Lỗi khi cập nhật sản phẩm");
       }
 
-      const data = document.getElementById("my_modal_3") as HTMLDialogElement;
-      data.close();
-      setSuccess(
-        currentProductId
+      toast({
+        title: "Thành Công!",
+        description: isEditing
           ? "Cập nhật sản phẩm thành công"
-          : "Thêm sản phẩm thành công"
-      );
+          : "Thêm sản phẩm thành công",
+        variant: "success",
+      });
+
+      const modal = document.getElementById("my_modal_3") as HTMLDialogElement;
+      modal?.close();
       resetForm();
       setReloadKey((prev) => prev + 1);
       setImageUrl("");
     } catch (err) {
       console.error("Error:", err);
-      setError(err instanceof Error ? err.message : "Lỗi khi xử lý yêu cầu");
+      toast({
+        title: "Lỗi!",
+        description:
+          err instanceof Error ? err.message : "Lỗi khi xử lý yêu cầu",
+        variant: "destructive",
+      });
     }
   };
 
@@ -215,17 +177,39 @@ export default function ProductManagementPage() {
     setFormData(product);
     setCurrentProductId(product.idsanpham);
     setIsEditing(true);
-    const data = document.getElementById("my_modal_3") as HTMLDialogElement;
-    data.showModal();
+    setImageUrl(product.hinhanh);
+    const modal = document.getElementById("my_modal_3") as HTMLDialogElement;
+    modal?.showModal();
   };
 
-  const handleAddNewClick = () => {
-    setIsEditing(false);
-    resetForm();
-    setCurrentProductId(null);
-    const data = document.getElementById("my_modal_3") as HTMLDialogElement;
-    if (data) {
-      data.showModal();
+  const handleDeleteConfirm = async () => {
+    if (deleteConfirmId) {
+      try {
+        const response = await fetch(`/api/sanpham/${deleteConfirmId}`, {
+          method: "DELETE",
+        });
+
+        if (!response.ok) {
+          throw new Error("Không thể xóa sản phẩm.");
+        }
+
+        toast({
+          title: "Thành Công!",
+          description: "Sản phẩm đã được xóa thành công",
+          variant: "success",
+        });
+
+        setReloadKey((prevKey) => prevKey + 1);
+        setDeleteConfirmId(null);
+      } catch (err) {
+        console.error("Error deleting product:", err);
+        toast({
+          title: "Lỗi!",
+          description:
+            err instanceof Error ? err.message : "Lỗi khi xóa sản phẩm",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -242,149 +226,123 @@ export default function ProductManagementPage() {
     });
     setCurrentProductId(null);
     setIsEditing(false);
-  };
-
-  const handleDelete = async (id: number) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này?")) {
-      try {
-        const response = await fetch(`/api/sanpham/${id}`, {
-          method: "DELETE",
-        });
-        if (!response.ok) {
-          const data = await response.json();
-          throw new Error(data.error || "Không thể xóa sản phẩm.");
-        }
-
-        setSuccess("Sản phẩm đã được xóa thành công.");
-        setReloadKey((prevKey) => prevKey + 1);
-      } catch (err) {
-        console.error("Error deleting product:", err);
-        setError(err instanceof Error ? err.message : "Lỗi khi xóa sản phẩm.");
-      }
-    }
-  };
-
-  const handleCancelEdit = () => {
-    resetForm();
-    const data = document.getElementById("my_modal_3") as HTMLDialogElement;
-    data.close();
+    setImageUrl("");
   };
 
   return (
     <div className="flex">
       <SalesDashboard />
-      <div className="p-6 max-w-4xl mx-auto">
-        {(error || success) && (
-          <Toast
-            message={error || success}
-            type={error ? "error" : "success"}
-            isVisible={showToast}
-            onClose={() => {
-              setShowToast(false);
-              setError("");
-              setSuccess("");
-            }}
-          />
-        )}
+      <div className="p-6 flex-1">
+        <Toaster />
 
-        <div className="flex justify-evenly gap-[580px]">
-          <h1 className="text-2xl font-bold mb-4 whitespace-nowrap">
-            Quản lý sản phẩm
-          </h1>
-          <button className="btn btn-primary" onClick={handleAddNewClick}>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Quản lý sản phẩm</h1>
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              resetForm();
+              const modal = document.getElementById(
+                "my_modal_3"
+              ) as HTMLDialogElement;
+              modal?.showModal();
+            }}
+          >
             Thêm sản phẩm
           </button>
         </div>
 
-        <dialog
-          id="my_modal_3"
-          className="modal fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50"
-        >
-          <div className="bg-white shadow-xl rounded-lg p-4 w-full max-w-3xl relative">
+        <Tabledashboard
+          key={reloadKey}
+          onEdit={handleEdit}
+          onDelete={(id) => setDeleteConfirmId(id)}
+          reloadKey={0}
+        />
+
+        {/* Delete Confirmation Modal */}
+        {deleteConfirmId && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-xl">
+              <h3 className="text-lg font-semibold mb-4">Xác nhận xóa</h3>
+              <p>Bạn có chắc chắn muốn xóa sản phẩm này?</p>
+              <div className="flex justify-end gap-4 mt-6">
+                <button
+                  className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                  onClick={() => setDeleteConfirmId(null)}
+                >
+                  Hủy
+                </button>
+                <button
+                  className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                  onClick={handleDeleteConfirm}
+                >
+                  Xóa
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add/Edit Product Modal */}
+        <dialog id="my_modal_3" className="modal modal-bottom sm:modal-middle">
+          <div className="modal-box relative">
             <button
-              onClick={() => handleCancelEdit()}
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+              onClick={() => {
+                resetForm();
+                const modal = document.getElementById(
+                  "my_modal_3"
+                ) as HTMLDialogElement;
+                modal?.close();
+              }}
+              className="btn btn-sm btn-circle absolute right-2 top-2"
             >
               ✕
             </button>
 
-            <form onSubmit={handleSubmit}>
-              <h2 className="text-xl font-semibold text-gray-800 mb-6">
-                {isEditing ? "Cập nhật sản phẩm" : "Thêm sản phẩm"}
-              </h2>
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Tên sản phẩm
+            <h3 className="font-bold text-lg mb-4">
+              {isEditing ? "Cập nhật sản phẩm" : "Thêm sản phẩm mới"}
+            </h3>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Tên sản phẩm</span>
                   </label>
                   <input
                     type="text"
                     name="tensanpham"
                     value={formData.tensanpham}
                     onChange={handleChange}
-                    className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm"
+                    className="input input-bordered w-full"
+                    required
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Mô tả
-                  </label>
-                  <textarea
-                    name="mota"
-                    value={formData.mota}
-                    onChange={handleChange}
-                    className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Giá
+
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Giá</span>
                   </label>
                   <input
                     type="number"
                     name="gia"
                     value={formData.gia}
                     onChange={handleChange}
-                    className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                    className="input input-bordered w-full"
+                    required
+                    min="0"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Hình ảnh (URL)
-                  </label>
-                  <Fileupload
-                    endpoint="imageUploader"
-                    onChange={(url) => {
-                      setImageUrl(url || "");
-                    }}
-                    showmodal={!imageUrl}
-                  />
-                  {imageUrl && (
-                    <div className="mt-2 flex flex-col items-center">
-                      <img
-                        src={imageUrl}
-                        alt="Uploaded"
-                        className="max-w-xs max-h-48"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setImageUrl("")}
-                        className="mt-2 px-4 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Loại sản phẩm
+
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Loại sản phẩm</span>
                   </label>
                   <select
                     name="idloaisanpham"
                     value={formData.idloaisanpham}
                     onChange={handleChange}
-                    className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                    className="select select-bordered w-full"
+                    required
                   >
                     <option value="">Chọn loại sản phẩm</option>
                     {loaisanphamList.map((loai) => (
@@ -397,97 +355,134 @@ export default function ProductManagementPage() {
                     ))}
                   </select>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Giảm giá (%)
+
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Giảm giá (%)</span>
                   </label>
                   <input
                     type="number"
                     name="giamgia"
                     value={formData.giamgia}
                     onChange={handleChange}
-                    className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-                    min={0}
-                    max={100}
+                    className="input input-bordered w-full"
+                    min="0"
+                    max="100"
                   />
                 </div>
-                <div>
-                  <span className="block text-sm font-medium text-gray-700">
-                    Kích thước
-                  </span>
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {VALID_SIZES.map((size) => (
-                      <label key={size} className="inline-flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={formData.size.split(",").includes(size)}
-                          onChange={() => handleSizeChange(size)}
-                          className="form-checkbox h-5 w-5 text-blue-600"
-                        />
-                        <span className="ml-2">{size}</span>
-                      </label>
-                    ))}
+              </div>
+
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Mô tả</span>
+                </label>
+                <textarea
+                  name="mota"
+                  value={formData.mota}
+                  onChange={handleChange}
+                  className="textarea textarea-bordered h-24"
+                  required
+                />
+              </div>
+
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Hình ảnh</span>
+                </label>
+                <Fileupload
+                  endpoint="imageUploader"
+                  onChange={(url) => setImageUrl(url || "")}
+                  showmodal={!imageUrl}
+                />
+                {imageUrl && (
+                  <div className="mt-2">
+                    <img
+                      src={imageUrl}
+                      alt="Preview"
+                      className="max-h-40 object-contain mx-auto"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setImageUrl("")}
+                      className="btn btn-error btn-sm mt-2"
+                    >
+                      Xóa ảnh
+                    </button>
                   </div>
-                </div>
-                <div>
-                  <span className="block text-sm font-medium text-gray-700">
-                    Giới tính
-                  </span>
-                  <div className="flex items-center mt-1">
-                    <label className="inline-flex items-center mr-4">
+                )}
+              </div>
+
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Kích thước</span>
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {VALID_SIZES.map((size) => (
+                    <label
+                      key={size}
+                      className="cursor-pointer flex items-center"
+                    >
                       <input
-                        type="radio"
-                        name="gioitinh"
-                        value="nam"
-                        checked={formData.gioitinh === true}
-                        onChange={() => handleGenderChange(true)}
-                        className="form-radio h-5 w-5 text-blue-600"
+                        type="checkbox"
+                        checked={formData.size.split(",").includes(size)}
+                        onChange={() => handleSizeChange(size)}
+                        className="checkbox checkbox-primary mr-2"
                       />
-                      <span className="ml-2">Nam</span>
+                      <span>{size}</span>
                     </label>
-                    <label className="inline-flex items-center">
-                      <input
-                        type="radio"
-                        name="gioitinh"
-                        value="nu"
-                        checked={formData.gioitinh === false}
-                        onChange={() => handleGenderChange(false)}
-                        className="form-radio h-5 w-5 text-pink-600"
-                      />
-                      <span className="ml-2">Nữ</span>
-                    </label>
-                  </div>
+                  ))}
                 </div>
               </div>
-              <div className="mt-8 flex justify-end space-x-4">
+
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Giới tính</span>
+                </label>
+                <div className="flex gap-4">
+                  <label className="cursor-pointer flex items-center">
+                    <input
+                      type="radio"
+                      name="gioitinh"
+                      checked={formData.gioitinh === true}
+                      onChange={() => handleGenderChange(true)}
+                      className="radio radio-primary mr-2"
+                    />
+                    <span>Nam</span>
+                  </label>
+                  <label className="cursor-pointer flex items-center">
+                    <input
+                      type="radio"
+                      name="gioitinh"
+                      checked={formData.gioitinh === false}
+                      onChange={() => handleGenderChange(false)}
+                      className="radio radio-primary mr-2"
+                    />
+                    <span>Nữ</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="modal-action">
                 <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => {
+                    resetForm();
+                    const modal = document.getElementById(
+                      "my_modal_3"
+                    ) as HTMLDialogElement;
+                    modal?.close();
+                  }}
                 >
-                  {isEditing ? "Cập nhật sản phẩm" : "Thêm sản phẩm"}
+                  Hủy
                 </button>
-                {isEditing && (
-                  <button
-                    type="button"
-                    onClick={handleCancelEdit}
-                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-                  >
-                    Hủy
-                  </button>
-                )}
+                <button type="submit" className="btn btn-primary">
+                  {isEditing ? "Cập nhật" : "Thêm mới"}
+                </button>
               </div>
             </form>
           </div>
         </dialog>
-
-        <div className="mt-8">
-          <Tabledashboard
-            key={reloadKey}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            reloadKey={reloadKey}
-          />
-        </div>
       </div>
     </div>
   );
