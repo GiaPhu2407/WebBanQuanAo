@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { Loader2, UserCircle2, Lock, UserCircle } from "lucide-react";
 import { loginUser } from "../api/auth/(functions)/function";
 import { Toaster } from "@/components/ui/toaster";
 
@@ -33,10 +33,10 @@ const LoginPage = () => {
 
     // Validation check
     if (!usernameOrEmail || !password) {
-      setError("Please fill in both email and password.");
+      setError("Vui lòng nhập email/tên đăng nhập và mật khẩu.");
       toast({
-        title: "Validation Error!",
-        description: "Please fill in both email and password.",
+        title: "Lỗi Xác Thực!",
+        description: "Vui lòng điền đầy đủ thông tin.",
         variant: "destructive",
       });
       return;
@@ -48,50 +48,61 @@ const LoginPage = () => {
     try {
       const res = await loginUser(usernameOrEmail, password);
       if (res?.status) {
+        // Lưu token và thông tin người dùng
         localStorage.setItem("token", res.data.token);
         localStorage.setItem("userData", JSON.stringify(res.data));
-        toast({
-          title: "Login Successful!",
-          description: "Welcome back!",
-          variant: "success",
-        });
-        router.push("/Show");
+
+        // Điều hướng dựa trên vai trò
+        if (res.data.role === "Admin") {
+          toast({
+            title: "Đăng Nhập Thành Công!",
+            description: "Chào mừng quản trị viên!",
+            variant: "success",
+          });
+          router.push("/Admin");
+        } else {
+          toast({
+            title: "Đăng Nhập Thành Công!",
+            description: "Chào mừng bạn quay trở lại!",
+            variant: "success",
+          });
+          router.push("/Show");
+        }
       } else {
-        setError("Invalid credentials");
+        setError("Thông tin đăng nhập không chính xác");
         toast({
-          title: "Login Failed",
-          description: "Please check your email and password.",
+          title: "Đăng Nhập Thất Bại",
+          description: "Vui lòng kiểm tra lại email/tên đăng nhập và mật khẩu.",
           variant: "destructive",
         });
       }
     } catch (error) {
-      setError("An error occurred during login");
+      setError("Đã xảy ra lỗi trong quá trình đăng nhập");
       toast({
-        title: "Error!",
-        description: "Login failed - Please check your email and password.",
+        title: "Lỗi!",
+        description: "Đăng nhập thất bại - Vui lòng thử lại.",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
   };
-
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-r from-pink-300 via-purple-300 to-blue-300">
+    <div className="min-h-screen w-full flex items-center justify-center bg-gray-100">
       <div className="w-full max-w-md px-4">
-        <Card className="w-full backdrop-blur-sm bg-white/90 shadow-xl">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-3xl font-bold text-center bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-              Login now!
+        <Card className="w-full bg-white shadow-lg border-0 rounded-2xl">
+          <CardHeader className="space-y-3 text-center">
+            <CardTitle className="text-4xl font-bold text-gray-800">
+              Đăng Nhập
             </CardTitle>
-            <p className="text-sm text-center text-gray-600">
-              Join us to explore our amazing products and services.
+            <p className="text-gray-600">
+              Chào mừng bạn quay trở lại! Vui lòng nhập thông tin.
             </p>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
-                <div className="p-3 text-sm text-red-500 bg-red-50 rounded-md">
+                <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md animate-pulse">
                   {error}
                 </div>
               )}
@@ -101,7 +112,7 @@ const LoginPage = () => {
                   className="text-sm font-medium text-gray-700"
                   htmlFor="usernameOrEmail"
                 >
-                  Email or Username
+                  Email hoặc Tên đăng nhập
                 </label>
                 <Input
                   id="usernameOrEmail"
@@ -109,8 +120,8 @@ const LoginPage = () => {
                   type="text"
                   required
                   disabled={isLoading}
-                  className="w-full"
-                  placeholder="Enter your email or username"
+                  className="w-full border-gray-300 focus:border-gray-500 focus:ring focus:ring-gray-200"
+                  placeholder="Nhập email hoặc tên đăng nhập"
                   value={formData.usernameOrEmail}
                   onChange={handleChange}
                 />
@@ -121,7 +132,7 @@ const LoginPage = () => {
                   className="text-sm font-medium text-gray-700"
                   htmlFor="password"
                 >
-                  Password
+                  Mật khẩu
                 </label>
                 <Input
                   id="password"
@@ -129,8 +140,8 @@ const LoginPage = () => {
                   type="password"
                   required
                   disabled={isLoading}
-                  className="w-full"
-                  placeholder="Enter your password"
+                  className="w-full border-gray-300 focus:border-gray-500 focus:ring focus:ring-gray-200"
+                  placeholder="Nhập mật khẩu"
                   value={formData.password}
                   onChange={handleChange}
                 />
@@ -139,27 +150,35 @@ const LoginPage = () => {
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium py-2 px-4 rounded-md transition-all duration-200"
+                className="w-full bg-gray-800 hover:bg-gray-900 text-white font-semibold py-2.5 px-4 rounded-lg transition-all duration-300 ease-in-out transform hover:scale-[1.02] active:scale-[0.98]"
               >
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Logging in...
+                    Đang đăng nhập...
                   </>
                 ) : (
-                  "Login"
+                  "Đăng Nhập"
                 )}
               </Button>
 
-              <p className="text-center text-sm text-gray-600">
-                Don't have an account?{" "}
+              <div className="text-center">
+                <p className="text-sm text-gray-600">
+                  Chưa có tài khoản?{" "}
+                  <Link
+                    href="/register"
+                    className="text-gray-800 hover:text-gray-900 font-semibold transition-colors"
+                  >
+                    Đăng ký ngay
+                  </Link>
+                </p>
                 <Link
-                  href="/register"
-                  className="text-purple-600 hover:text-purple-800 font-medium"
+                  href="/forgot-password"
+                  className="text-sm text-blue-500 hover:text-blue-700 mt-2 inline-block"
                 >
-                  Register Here
+                  Quên mật khẩu?
                 </Link>
-              </p>
+              </div>
             </form>
           </CardContent>
         </Card>
@@ -167,5 +186,4 @@ const LoginPage = () => {
     </div>
   );
 };
-
 export default LoginPage;
