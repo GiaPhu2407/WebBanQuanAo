@@ -5,6 +5,17 @@ import SalesDashboard from "../NvarbarAdmin";
 import { useToast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import TableUserDashboard from "../../TableManagerUser";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 
 interface User {
   idUsers: number;
@@ -37,6 +48,10 @@ const UserManagementPage: React.FC = () => {
   const [reloadKey, setReloadKey] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { toast } = useToast();
+
+  // New state for delete confirmation
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<number | null>(null);
 
   // Validate form với regex cải thiện
   const validateForm = () => {
@@ -140,11 +155,16 @@ const UserManagementPage: React.FC = () => {
   };
 
   // Xử lý xóa user
-  const handleDelete = async (id: number) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa người dùng này?")) return;
+  const handleDeleteRequest = (id: number) => {
+    setUserToDelete(id);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!userToDelete) return;
 
     try {
-      const response = await fetch(`/api/user/${id}`, {
+      const response = await fetch(`/api/user/${userToDelete}`, {
         method: "DELETE",
       });
 
@@ -165,6 +185,9 @@ const UserManagementPage: React.FC = () => {
         description: error instanceof Error ? error.message : "Có lỗi xảy ra",
         variant: "destructive",
       });
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setUserToDelete(null);
     }
   };
 
@@ -186,15 +209,14 @@ const UserManagementPage: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-800">
             Quản lý người dùng
           </h1>
-          <button
+          <Button
             onClick={() => {
               resetForm();
               setIsModalOpen(true);
             }}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             Thêm người dùng
-          </button>
+          </Button>
         </div>
 
         {isModalOpen && (
@@ -327,12 +349,9 @@ const UserManagementPage: React.FC = () => {
                 </div>
 
                 <div className="flex justify-end mt-6">
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
+                  <Button type="submit">
                     {isEditing ? "Cập nhật" : "Thêm mới"}
-                  </button>
+                  </Button>
                 </div>
               </form>
             </div>
@@ -342,8 +361,30 @@ const UserManagementPage: React.FC = () => {
         <TableUserDashboard
           reloadKey={reloadKey}
           onEdit={handleEdit}
-          onDelete={handleDelete}
+          onDelete={handleDeleteRequest}
         />
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog
+          open={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
+              <AlertDialogDescription>
+                Bạn có chắc chắn muốn xóa người dùng này? Hành động này không
+                thể hoàn tác.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>
+                Hủy
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDelete}>Xóa</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );

@@ -4,6 +4,26 @@ import SalesDashboard from "../NvarbarAdmin";
 import TableTypeProduct from "../../TableTypeProduct";
 import { useToast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 interface LoaiSanPham {
   idloaisanpham: number;
@@ -24,7 +44,9 @@ export default function LoaiSanPhamManagementPage() {
   const [currentLoaiSanPhamId, setCurrentLoaiSanPhamId] = useState<
     number | null
   >(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -98,8 +120,7 @@ export default function LoaiSanPhamManagementPage() {
       fetchLoaiSanPham();
       resetForm();
       setReloadKey((prev) => prev + 1);
-      const data = document.getElementById("my_modal_3") as HTMLDialogElement;
-      data.close();
+      handleCloseModal();
     } catch (err) {
       console.error("Error:", err);
       toast({
@@ -115,8 +136,7 @@ export default function LoaiSanPhamManagementPage() {
     setFormData(loaiSanPham);
     setCurrentLoaiSanPhamId(loaiSanPham.idloaisanpham);
     setIsEditing(true);
-    const data = document.getElementById("my_modal_3") as HTMLDialogElement;
-    data.showModal();
+    setIsModalOpen(true);
   };
 
   const resetForm = () => {
@@ -148,6 +168,7 @@ export default function LoaiSanPhamManagementPage() {
 
         setReloadKey((prevKey) => prevKey + 1);
         setDeleteConfirmId(null);
+        setIsDeleteDialogOpen(false);
       } catch (err) {
         console.error("Error deleting loai san pham:", err);
         toast({
@@ -162,141 +183,116 @@ export default function LoaiSanPhamManagementPage() {
 
   const handleDelete = (id: number) => {
     setDeleteConfirmId(id);
+    setIsDeleteDialogOpen(true);
   };
 
-  const handleCancelDelete = () => {
-    setDeleteConfirmId(null);
+  const handleCloseModal = () => {
+    resetForm();
+    setIsModalOpen(false);
   };
 
   const handleAddNewClick = () => {
     setIsEditing(false);
     resetForm();
-    const data = document.getElementById("my_modal_3") as HTMLDialogElement;
-    if (data) {
-      data.showModal();
-    }
-  };
-
-  const handleCancelEdit = () => {
-    resetForm();
-    const data = document.getElementById("my_modal_3") as HTMLDialogElement;
-    data.close();
+    setIsModalOpen(true);
   };
 
   return (
-    <div className="flex">
+    <div className="flex  bg-gray-100">
       <SalesDashboard />
-      <div className="p-6 w-full max-w-5xl mx-auto">
-        <Toaster />
+      <div className="flex-1 p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold text-gray-800">
+              Quản lý loại sản phẩm
+            </h1>
+            <Button onClick={handleAddNewClick}>Thêm loại sản phẩm</Button>
+          </div>
 
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold whitespace-nowrap">
-            Quản lý loại sản phẩm
-          </h1>
-          <button className="btn btn-primary" onClick={handleAddNewClick}>
-            Thêm loại sản phẩm
-          </button>
-        </div>
+          <div className="">
+            <TableTypeProduct
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              reloadKey={reloadKey}
+            />
+          </div>
 
-        {/* Modal thêm/sửa loại sản phẩm */}
-        <dialog
-          id="my_modal_3"
-          className="modal fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
-        >
-          <div className="modal-box bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
-            <form onSubmit={handleSubmit}>
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold">
-                  {isEditing ? "Cập nhật loại sản phẩm" : "Thêm loại sản phẩm"}
-                </h2>
-                <button
-                  type="button"
-                  onClick={handleCancelEdit}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  ✕
-                </button>
-              </div>
+          {/* Form Dialog */}
+          <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>
+                  {isEditing
+                    ? "Cập nhật loại sản phẩm"
+                    : "Thêm loại sản phẩm mới"}
+                </DialogTitle>
+              </DialogHeader>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">
                     Tên loại sản phẩm
                   </label>
-                  <input
+                  <Input
                     type="text"
                     name="tenloai"
                     value={formData.tenloai}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    placeholder="Nhập tên loại sản phẩm"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Mô tả
-                  </label>
-                  <textarea
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Mô tả</label>
+                  <Textarea
                     name="mota"
                     value={formData.mota}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                    rows={4}
+                    placeholder="Nhập mô tả loại sản phẩm"
+                    className="min-h-[100px]"
                   />
                 </div>
-              </div>
 
-              <div className="flex justify-end space-x-4 mt-6">
-                <button type="submit" className="btn btn-primary">
-                  {isEditing ? "Cập nhật" : "Thêm"}
-                </button>
-                {isEditing && (
-                  <button
+                <DialogFooter>
+                  <Button
                     type="button"
-                    onClick={handleCancelEdit}
-                    className="btn btn-ghost"
+                    variant="outline"
+                    onClick={handleCloseModal}
                   >
                     Hủy
-                  </button>
-                )}
-              </div>
-            </form>
-          </div>
-        </dialog>
+                  </Button>
+                  <Button type="submit">
+                    {isEditing ? "Cập nhật" : "Thêm mới"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
 
-        {/* Bảng danh sách loại sản phẩm */}
-        <div className="mt-4">
-          <TableTypeProduct
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            reloadKey={reloadKey}
-          />
-        </div>
-
-        {/* Modal xác nhận xóa */}
-        {deleteConfirmId && (
-          <dialog
-            open
-            className="modal fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+          {/* Delete Confirmation Dialog */}
+          <AlertDialog
+            open={isDeleteDialogOpen}
+            onOpenChange={setIsDeleteDialogOpen}
           >
-            <div className="modal-box bg-white rounded-lg shadow-xl p-6 text-center">
-              <h3 className="font-bold text-lg mb-4">Xác Nhận Xóa</h3>
-              <p className="mb-6">
-                Bạn có chắc chắn muốn xóa loại sản phẩm này không?
-              </p>
-              <div className="flex justify-center space-x-4">
-                <button
-                  onClick={handleDeleteConfirm}
-                  className="btn btn-error text-white"
-                >
-                  Xóa
-                </button>
-                <button onClick={handleCancelDelete} className="btn btn-ghost">
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Bạn có chắc chắn muốn xóa loại sản phẩm này? Hành động này
+                  không thể hoàn tác.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>
                   Hủy
-                </button>
-              </div>
-            </div>
-          </dialog>
-        )}
+                </AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteConfirm}>
+                  Xóa
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </div>
     </div>
   );
