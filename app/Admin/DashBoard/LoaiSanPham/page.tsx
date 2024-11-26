@@ -2,44 +2,15 @@
 import React, { useState, useEffect } from "react";
 import SalesDashboard from "../NvarbarAdmin";
 import TableTypeProduct from "../../TableTypeProduct";
+import { useToast } from "@/components/ui/use-toast";
+import { Toaster } from "@/components/ui/toaster";
 
 interface LoaiSanPham {
   idloaisanpham: number;
   tenloai: string;
   mota: string;
 }
-const Toast = ({
-  message,
-  type,
-  isVisible,
-  onClose,
-}: {
-  message: string;
-  type: "error" | "success";
-  isVisible: boolean;
-  onClose: () => void;
-}) => {
-  return (
-    <div
-      className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg transform transition-transform duration-300 z-50 ${
-        isVisible ? "translate-x-0" : "translate-x-full"
-      } ${
-        type === "error" ? "bg-red-500 text-white" : "bg-green-500 text-white"
-      }`}
-    >
-      <div className="flex items-center">
-        <span className="mr-2">{type === "error" ? "❌" : "✅"}</span>
-        <p className="font-medium">{message}</p>
-        <button
-          onClick={onClose}
-          className="ml-4 text-white hover:text-gray-200 focus:outline-none"
-        >
-          ✕
-        </button>
-      </div>
-    </div>
-  );
-};
+
 export default function LoaiSanPhamManagementPage() {
   const [formData, setFormData] = useState<LoaiSanPham>({
     idloaisanpham: 0,
@@ -48,32 +19,18 @@ export default function LoaiSanPhamManagementPage() {
   });
 
   const [loaisanphamList, setLoaisanphamList] = useState<LoaiSanPham[]>([]);
-  const [error, setError] = useState<string>("");
-  const [success, setSuccess] = useState<string>("");
-  const [showToast, setShowToast] = useState(false);
-
   const [isEditing, setIsEditing] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [currentLoaiSanPhamId, setCurrentLoaiSanPhamId] = useState<
     number | null
   >(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchLoaiSanPham();
   }, [reloadKey]);
 
-  useEffect(() => {
-    if (error || success) {
-      setShowToast(true);
-      const timer = setTimeout(() => {
-        setShowToast(false);
-        setError("");
-        setSuccess("");
-      }, 3000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [error, success]);
   const fetchLoaiSanPham = async () => {
     try {
       const response = await fetch("/api/loaisanpham");
@@ -81,7 +38,11 @@ export default function LoaiSanPhamManagementPage() {
       setLoaisanphamList(data);
     } catch (err) {
       console.error("Failed to fetch loai san pham:", err);
-      setError("Không thể tải danh sách loại sản phẩm");
+      toast({
+        title: "Lỗi!",
+        description: "Không thể tải danh sách loại sản phẩm",
+        variant: "destructive",
+      });
     }
   };
 
@@ -100,12 +61,14 @@ export default function LoaiSanPhamManagementPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
 
     const validationError = validateForm();
     if (validationError) {
-      setError(validationError);
+      toast({
+        title: "Lỗi Xác Thực!",
+        description: validationError,
+        variant: "destructive",
+      });
       return;
     }
 
@@ -126,19 +89,25 @@ export default function LoaiSanPhamManagementPage() {
         throw new Error(data.error || "Lỗi khi cập nhật loại sản phẩm");
       }
 
-      setSuccess(
-        currentLoaiSanPhamId
-          ? "Cập nhật loại sản phẩm thành công"
-          : "Thêm loại sản phẩm thành công"
-      );
-      fetchLoaiSanPham(); // Gọi lại danh sách mà không cần tải lại trang
+      toast({
+        title: "Thành Công!",
+        description: isEditing ? "Cập nhật thành công" : "Thêm mới thành công",
+        variant: "success",
+      });
+
+      fetchLoaiSanPham();
       resetForm();
-      setReloadKey((prev) => prev +1);
-      const data = document.getElementById("my_modal_3") as HTMLDialogElement; // Đóng modal sau khi submit thành công
+      setReloadKey((prev) => prev + 1);
+      const data = document.getElementById("my_modal_3") as HTMLDialogElement;
       data.close();
     } catch (err) {
       console.error("Error:", err);
-      setError(err instanceof Error ? err.message : "Lỗi khi xử lý yêu cầu");
+      toast({
+        title: "Lỗi!",
+        description:
+          err instanceof Error ? err.message : "Lỗi khi xử lý yêu cầu",
+        variant: "destructive",
+      });
     }
   };
 
@@ -146,7 +115,7 @@ export default function LoaiSanPhamManagementPage() {
     setFormData(loaiSanPham);
     setCurrentLoaiSanPhamId(loaiSanPham.idloaisanpham);
     setIsEditing(true);
-    const data = document.getElementById("my_modal_3") as HTMLDialogElement; // Mở modal
+    const data = document.getElementById("my_modal_3") as HTMLDialogElement;
     data.showModal();
   };
 
@@ -160,21 +129,51 @@ export default function LoaiSanPhamManagementPage() {
     setIsEditing(false);
   };
 
-  const handleDelete = async (id: number) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa loại sản phẩm này?")) {
+  const handleDeleteConfirm = async () => {
+    if (deleteConfirmId) {
       try {
-        const response = await fetch(`/api/loaisanpham/${id}`, {
+        const response = await fetch(`/api/loaisanpham/${deleteConfirmId}`, {
           method: "DELETE",
         });
-        if (!response.ok) throw new Error("Không thể xóa loại sản phẩm.");
-        setSuccess("Loại sản phẩm đã được xóa thành công.");
+
+        if (!response.ok) {
+          throw new Error("Không thể xóa loại sản phẩm.");
+        }
+
+        toast({
+          title: "Thành Công!",
+          description: "Loại sản phẩm đã được xóa thành công.",
+          variant: "success",
+        });
+
         setReloadKey((prevKey) => prevKey + 1);
+        setDeleteConfirmId(null);
       } catch (err) {
         console.error("Error deleting loai san pham:", err);
-        setError(
-          err instanceof Error ? err.message : "Lỗi khi xóa loại sản phẩm."
-        );
+        toast({
+          title: "Lỗi!",
+          description:
+            err instanceof Error ? err.message : "Lỗi khi xóa loại sản phẩm.",
+          variant: "destructive",
+        });
       }
+    }
+  };
+
+  const handleDelete = (id: number) => {
+    setDeleteConfirmId(id);
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteConfirmId(null);
+  };
+
+  const handleAddNewClick = () => {
+    setIsEditing(false);
+    resetForm();
+    const data = document.getElementById("my_modal_3") as HTMLDialogElement;
+    if (data) {
+      data.showModal();
     }
   };
 
@@ -183,34 +182,15 @@ export default function LoaiSanPhamManagementPage() {
     const data = document.getElementById("my_modal_3") as HTMLDialogElement;
     data.close();
   };
-  const handleAddNewClick = () => {
-    setIsEditing(false);
-    setFormData(formData);
-    setCurrentLoaiSanPhamId(null);
-    const data = document.getElementById("my_modal_3") as HTMLDialogElement;
-    if (data) {
-      data.showModal();
-    }
-  };
 
   return (
     <div className="flex">
       <SalesDashboard />
-      <div className="p-6 max-w-4xl mx-auto">
-        {(error || success) && (
-          <Toast
-            message={error || success}
-            type={error ? "error" : "success"}
-            isVisible={showToast}
-            onClose={() => {
-              setShowToast(false);
-              setError("");
-              setSuccess("");
-            }}
-          />
-        )}
-        <div className="flex justify-evenly gap-[580px] ">
-          <h1 className="text-2xl font-bold mb-4 whitespace-nowrap">
+      <div className="p-6 w-full max-w-5xl mx-auto">
+        <Toaster />
+
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold whitespace-nowrap">
             Quản lý loại sản phẩm
           </h1>
           <button className="btn btn-primary" onClick={handleAddNewClick}>
@@ -218,28 +198,29 @@ export default function LoaiSanPhamManagementPage() {
           </button>
         </div>
 
+        {/* Modal thêm/sửa loại sản phẩm */}
         <dialog
           id="my_modal_3"
-          className="modal fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50"
+          className="modal fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
         >
-          <div className="bg-white shadow-xl rounded-lg p-8 w-full max-w-3xl relative">
-            <button
-              onClick={() => handleCancelEdit()}
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-            >
-              ✕
-            </button>
-
-            {/* {error && <div className="text-red-500 mb-4">{error}</div>}
-            {success && <div className="text-green-500 mb-4">{success}</div>} */}
-
+          <div className="modal-box bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
             <form onSubmit={handleSubmit}>
-              <h2 className="text-xl font-semibold text-gray-800 mb-6">
-                {isEditing ? "Cập nhật loại sản phẩm" : "Thêm loại sản phẩm"}
-              </h2>
-              <div className="grid grid-cols-1 gap-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold">
+                  {isEditing ? "Cập nhật loại sản phẩm" : "Thêm loại sản phẩm"}
+                </h2>
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Tên loại sản phẩm
                   </label>
                   <input
@@ -247,33 +228,32 @@ export default function LoaiSanPhamManagementPage() {
                     name="tenloai"
                     value={formData.tenloai}
                     onChange={handleChange}
-                    className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Mô tả
                   </label>
                   <textarea
                     name="mota"
                     value={formData.mota}
                     onChange={handleChange}
-                    className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    rows={4}
                   />
                 </div>
               </div>
-              <div className="mt-8 flex justify-end space-x-4">
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                >
-                  {isEditing ? "Cập nhật loại sản phẩm" : "Thêm loại sản phẩm"}
+
+              <div className="flex justify-end space-x-4 mt-6">
+                <button type="submit" className="btn btn-primary">
+                  {isEditing ? "Cập nhật" : "Thêm"}
                 </button>
                 {isEditing && (
                   <button
                     type="button"
                     onClick={handleCancelEdit}
-                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                    className="btn btn-ghost"
                   >
                     Hủy
                   </button>
@@ -283,13 +263,40 @@ export default function LoaiSanPhamManagementPage() {
           </div>
         </dialog>
 
-        <div className="mt-8">
+        {/* Bảng danh sách loại sản phẩm */}
+        <div className="mt-4">
           <TableTypeProduct
             onEdit={handleEdit}
             onDelete={handleDelete}
             reloadKey={reloadKey}
           />
         </div>
+
+        {/* Modal xác nhận xóa */}
+        {deleteConfirmId && (
+          <dialog
+            open
+            className="modal fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+          >
+            <div className="modal-box bg-white rounded-lg shadow-xl p-6 text-center">
+              <h3 className="font-bold text-lg mb-4">Xác Nhận Xóa</h3>
+              <p className="mb-6">
+                Bạn có chắc chắn muốn xóa loại sản phẩm này không?
+              </p>
+              <div className="flex justify-center space-x-4">
+                <button
+                  onClick={handleDeleteConfirm}
+                  className="btn btn-error text-white"
+                >
+                  Xóa
+                </button>
+                <button onClick={handleCancelDelete} className="btn btn-ghost">
+                  Hủy
+                </button>
+              </div>
+            </div>
+          </dialog>
+        )}
       </div>
     </div>
   );

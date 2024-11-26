@@ -101,3 +101,59 @@ export async function PUT(
     );
   }
 }
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    // Convert id to integer
+    const idloaisanpham = parseInt(params.id);
+
+    // Check if the ID is valid
+    if (isNaN(idloaisanpham)) {
+      return NextResponse.json(
+        { error: "Invalid product category ID" },
+        { status: 400 }
+      );
+    }
+
+    // First, check if the category exists
+    const categoryExists = await prisma.loaisanpham.findUnique({
+      where: { idloaisanpham: idloaisanpham },
+    });
+
+    if (!categoryExists) {
+      return NextResponse.json(
+        { error: "Product category not found" },
+        { status: 404 }
+      );
+    }
+
+    // Delete all products in this category
+    const deletedProducts = await prisma.sanpham.deleteMany({
+      where: {
+        idloaisanpham: idloaisanpham,
+      },
+    });
+
+    // Delete the category itself
+    await prisma.loaisanpham.delete({
+      where: { idloaisanpham: idloaisanpham },
+    });
+
+    return NextResponse.json(
+      {
+        message: "Category and related products deleted successfully",
+        deletedProductCount: deletedProducts.count,
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Error deleting product category:", error);
+
+    return NextResponse.json(
+      { error: "Error deleting product category" },
+      { status: 500 }
+    );
+  }
+}
