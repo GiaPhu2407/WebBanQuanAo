@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from "react";
 import SalesDashboard from "../NvarbarAdmin";
 import TableSupplier from "../../TableSuppler";
+import { useToast } from "@/components/ui/use-toast";
+import { Toaster } from "@/components/ui/toaster";
 
 interface NhaCungCap {
   idnhacungcap: number;
@@ -11,40 +13,6 @@ interface NhaCungCap {
   email: string;
   trangthai: boolean;
 }
-
-// Toast Component
-const Toast = ({
-  message,
-  type,
-  isVisible,
-  onClose,
-}: {
-  message: string;
-  type: "error" | "success";
-  isVisible: boolean;
-  onClose: () => void;
-}) => {
-  return (
-    <div
-      className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg transform transition-transform duration-300 z-50 ${
-        isVisible ? "translate-x-0" : "translate-x-full"
-      } ${
-        type === "error" ? "bg-red-500 text-white" : "bg-green-500 text-white"
-      }`}
-    >
-      <div className="flex items-center">
-        <span className="mr-2">{type === "error" ? "❌" : "✅"}</span>
-        <p className="font-medium">{message}</p>
-        <button
-          onClick={onClose}
-          className="ml-4 text-white hover:text-gray-200 focus:outline-none"
-        >
-          ✕
-        </button>
-      </div>
-    </div>
-  );
-};
 
 export default function NhaCungCapManagementPage() {
   const [formData, setFormData] = useState<NhaCungCap>({
@@ -57,27 +25,13 @@ export default function NhaCungCapManagementPage() {
   });
 
   const [nhacungcapList, setNhacungcapList] = useState<NhaCungCap[]>([]);
-  const [error, setError] = useState<string>("");
-  const [success, setSuccess] = useState<string>("");
-  const [showToast, setShowToast] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [currentNhaCungCapId, setCurrentNhaCungCapId] = useState<number | null>(
     null
   );
-
-  useEffect(() => {
-    if (error || success) {
-      setShowToast(true);
-      const timer = setTimeout(() => {
-        setShowToast(false);
-        setError("");
-        setSuccess("");
-      }, 3000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [error, success]);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const { toast } = useToast();
 
   const fetchNhaCungCap = async () => {
     try {
@@ -86,7 +40,11 @@ export default function NhaCungCapManagementPage() {
       setNhacungcapList(data);
     } catch (err) {
       console.error("Failed to fetch nha cung cap:", err);
-      setError("Không thể tải danh sách nhà cung cấp");
+      toast({
+        title: "Lỗi!",
+        description: "Không thể tải danh sách nhà cung cấp",
+        variant: "destructive",
+      });
     }
   };
 
@@ -120,12 +78,14 @@ export default function NhaCungCapManagementPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
 
     const validationError = validateForm();
     if (validationError) {
-      setError(validationError);
+      toast({
+        title: "Lỗi Xác Thực!",
+        description: validationError,
+        variant: "destructive",
+      });
       return;
     }
 
@@ -134,23 +94,11 @@ export default function NhaCungCapManagementPage() {
       : "/api/nhacungcap";
     const method = currentNhaCungCapId ? "PUT" : "POST";
 
-    // Chuẩn bị dữ liệu gửi đi
-    const submitData = {
-      tennhacungcap: formData.tennhacungcap,
-      sodienthoai: formData.sodienthoai,
-      diachi: formData.diachi,
-      email: formData.email,
-      trangthai: Boolean(formData.trangthai),
-    };
-
     try {
       const response = await fetch(url, {
         method,
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify(submitData),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
       });
 
       if (!response.ok) {
@@ -160,50 +108,67 @@ export default function NhaCungCapManagementPage() {
         );
       }
 
-      const responseData = await response.json();
-
-      if (responseData.error) {
-        throw new Error(responseData.error);
-      }
-
-      setSuccess(
-        currentNhaCungCapId
+      toast({
+        title: "Thành Công!",
+        description: isEditing
           ? "Cập nhật nhà cung cấp thành công"
-          : "Thêm nhà cung cấp thành công"
-      );
+          : "Thêm nhà cung cấp thành công",
+        variant: "success",
+      });
 
-      // Cập nhật danh sách
-      await fetchNhaCungCap();
-
-      // Đóng modal và reset form
-      const modal = document.getElementById("my_modal_3") as HTMLDialogElement;
-      if (modal) {
-        modal.close();
-      }
+      fetchNhaCungCap();
       resetForm();
       setReloadKey((prev) => prev + 1);
+      const modal = document.getElementById("my_modal_3") as HTMLDialogElement;
+      modal.close();
     } catch (err) {
       console.error("Error:", err);
-      setError(err instanceof Error ? err.message : "Lỗi khi xử lý yêu cầu");
+      toast({
+        title: "Lỗi!",
+        description:
+          err instanceof Error ? err.message : "Lỗi khi xử lý yêu cầu",
+        variant: "destructive",
+      });
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa nhà cung cấp này?")) {
+  const handleDeleteConfirm = async () => {
+    if (deleteConfirmId) {
       try {
-        const response = await fetch(`/api/nhacungcap/${id}`, {
+        const response = await fetch(`/api/nhacungcap/${deleteConfirmId}`, {
           method: "DELETE",
         });
-        if (!response.ok) throw new Error("Không thể xóa nhà cung cấp");
-        setSuccess("Nhà cung cấp đã được xóa thành công");
+
+        if (!response.ok) {
+          throw new Error("Không thể xóa nhà cung cấp");
+        }
+
+        toast({
+          title: "Thành Công!",
+          description: "Nhà cung cấp đã được xóa thành công",
+          variant: "success",
+        });
+
         setReloadKey((prev) => prev + 1);
+        setDeleteConfirmId(null);
       } catch (err) {
         console.error("Error deleting nha cung cap:", err);
-        setError(
-          err instanceof Error ? err.message : "Lỗi khi xóa nhà cung cấp"
-        );
+        toast({
+          title: "Lỗi!",
+          description:
+            err instanceof Error ? err.message : "Lỗi khi xóa nhà cung cấp",
+          variant: "destructive",
+        });
       }
     }
+  };
+
+  const handleDelete = (id: number) => {
+    setDeleteConfirmId(id);
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteConfirmId(null);
   };
 
   const handleEdit = (nhacungcap: NhaCungCap) => {
@@ -245,22 +210,11 @@ export default function NhaCungCapManagementPage() {
   return (
     <div className="flex">
       <SalesDashboard />
-      <div className="p-6 max-w-4xl mx-auto">
-        {(error || success) && (
-          <Toast
-            message={error || success}
-            type={error ? "error" : "success"}
-            isVisible={showToast}
-            onClose={() => {
-              setShowToast(false);
-              setError("");
-              setSuccess("");
-            }}
-          />
-        )}
+      <div className="p-6 w-full max-w-5xl mx-auto">
+        <Toaster />
 
-        <div className="flex justify-evenly gap-[500px]">
-          <h1 className="text-2xl font-bold mb-4 whitespace-nowrap">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold whitespace-nowrap">
             Quản lý nhà cung cấp
           </h1>
           <button className="btn btn-primary" onClick={handleAddNewClick}>
@@ -268,25 +222,29 @@ export default function NhaCungCapManagementPage() {
           </button>
         </div>
 
+        {/* Modal thêm/sửa nhà cung cấp */}
         <dialog
           id="my_modal_3"
-          className="modal fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50"
+          className="modal fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
         >
-          <div className="bg-white shadow-xl rounded-lg p-8 w-full max-w-3xl relative">
-            <button
-              onClick={handleCancelEdit}
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-            >
-              ✕
-            </button>
-
+          <div className="modal-box bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
             <form onSubmit={handleSubmit}>
-              <h2 className="text-xl font-semibold text-gray-800 mb-6">
-                {isEditing ? "Cập nhật nhà cung cấp" : "Thêm nhà cung cấp"}
-              </h2>
-              <div className="grid grid-cols-1 gap-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold">
+                  {isEditing ? "Cập nhật nhà cung cấp" : "Thêm nhà cung cấp"}
+                </h2>
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Tên nhà cung cấp
                   </label>
                   <input
@@ -294,11 +252,11 @@ export default function NhaCungCapManagementPage() {
                     name="tennhacungcap"
                     value={formData.tennhacungcap}
                     onChange={handleChange}
-                    className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Số điện thoại
                   </label>
                   <input
@@ -306,11 +264,11 @@ export default function NhaCungCapManagementPage() {
                     name="sodienthoai"
                     value={formData.sodienthoai}
                     onChange={handleChange}
-                    className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Địa chỉ
                   </label>
                   <input
@@ -318,11 +276,11 @@ export default function NhaCungCapManagementPage() {
                     name="diachi"
                     value={formData.diachi}
                     onChange={handleChange}
-                    className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Email
                   </label>
                   <input
@@ -330,36 +288,34 @@ export default function NhaCungCapManagementPage() {
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
-                    className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Trạng thái
                   </label>
                   <select
                     name="trangthai"
                     value={formData.trangthai.toString()}
                     onChange={handleChange}
-                    className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                   >
                     <option value="true">Đang cung cấp</option>
                     <option value="false">Ngừng cung cấp</option>
                   </select>
                 </div>
               </div>
-              <div className="mt-8 flex justify-end space-x-4">
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                >
-                  {isEditing ? "Cập nhật nhà cung cấp" : "Thêm nhà cung cấp"}
+
+              <div className="flex justify-end space-x-4 mt-6">
+                <button type="submit" className="btn btn-primary">
+                  {isEditing ? "Cập nhật" : "Thêm"}
                 </button>
                 {isEditing && (
                   <button
                     type="button"
                     onClick={handleCancelEdit}
-                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                    className="btn btn-ghost"
                   >
                     Hủy
                   </button>
@@ -369,13 +325,40 @@ export default function NhaCungCapManagementPage() {
           </div>
         </dialog>
 
-        <div className="mt-8">
+        {/* Bảng danh sách nhà cung cấp */}
+        <div className="mt-4">
           <TableSupplier
             onEdit={handleEdit}
             onDelete={handleDelete}
             reloadKey={reloadKey}
           />
         </div>
+
+        {/* Modal xác nhận xóa */}
+        {deleteConfirmId && (
+          <dialog
+            open
+            className="modal fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+          >
+            <div className="modal-box bg-white rounded-lg shadow-xl p-6 text-center">
+              <h3 className="font-bold text-lg mb-4">Xác Nhận Xóa</h3>
+              <p className="mb-6">
+                Bạn có chắc chắn muốn xóa nhà cung cấp này không?
+              </p>
+              <div className="flex justify-center space-x-4">
+                <button
+                  onClick={handleDeleteConfirm}
+                  className="btn btn-error text-white"
+                >
+                  Xóa
+                </button>
+                <button onClick={handleCancelDelete} className="btn btn-ghost">
+                  Hủy
+                </button>
+              </div>
+            </div>
+          </dialog>
+        )}
       </div>
     </div>
   );

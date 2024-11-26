@@ -145,7 +145,7 @@ const TableSupplier: React.FC<TableSupplierProps> = ({
           <SearchBar />
         </div> */}
 
-      <div className="rounded-lg -ml-20 ">
+      <div className="rounded-lg -ml-10 ">
         <table className="w-full divide-y divide-gray-200">
           <thead className="bg-gradient-to-r from-red-500 to-pink-500">
             <tr>
