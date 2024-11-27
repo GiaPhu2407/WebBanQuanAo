@@ -3,7 +3,6 @@ import React, { useState, useEffect } from "react";
 import SalesDashboard from "../NvarbarAdmin";
 import TableTypeProduct from "../../TableTypeProduct";
 import { useToast } from "@/components/ui/use-toast";
-import { Toaster } from "@/components/ui/toaster";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -59,9 +58,8 @@ export default function LoaiSanPhamManagementPage() {
       const data = await response.json();
       setLoaisanphamList(data);
     } catch (err) {
-      console.error("Failed to fetch loai san pham:", err);
       toast({
-        title: "Lỗi!",
+        title: "Lỗi",
         description: "Không thể tải danh sách loại sản phẩm",
         variant: "destructive",
       });
@@ -87,7 +85,7 @@ export default function LoaiSanPhamManagementPage() {
     const validationError = validateForm();
     if (validationError) {
       toast({
-        title: "Lỗi Xác Thực!",
+        title: "Lỗi",
         description: validationError,
         variant: "destructive",
       });
@@ -112,21 +110,20 @@ export default function LoaiSanPhamManagementPage() {
       }
 
       toast({
-        title: "Thành Công!",
-        description: isEditing ? "Cập nhật thành công" : "Thêm mới thành công",
+        title: "Thành công",
         variant: "success",
+        description: isEditing
+          ? "Cập nhật loại sản phẩm thành công"
+          : "Thêm loại sản phẩm thành công",
       });
 
-      fetchLoaiSanPham();
-      resetForm();
-      setReloadKey((prev) => prev + 1);
       handleCloseModal();
-    } catch (err) {
-      console.error("Error:", err);
+      setReloadKey((prev) => prev + 1);
+    } catch (error) {
       toast({
-        title: "Lỗi!",
+        title: "Lỗi",
         description:
-          err instanceof Error ? err.message : "Lỗi khi xử lý yêu cầu",
+          error instanceof Error ? error.message : "Lỗi khi xử lý yêu cầu",
         variant: "destructive",
       });
     }
@@ -149,35 +146,34 @@ export default function LoaiSanPhamManagementPage() {
     setIsEditing(false);
   };
 
-  const handleDeleteConfirm = async () => {
-    if (deleteConfirmId) {
-      try {
-        const response = await fetch(`/api/loaisanpham/${deleteConfirmId}`, {
-          method: "DELETE",
-        });
+  const confirmDelete = async () => {
+    if (!deleteConfirmId) return;
 
-        if (!response.ok) {
-          throw new Error("Không thể xóa loại sản phẩm.");
-        }
+    try {
+      const response = await fetch(`/api/loaisanpham/${deleteConfirmId}`, {
+        method: "DELETE",
+      });
 
-        toast({
-          title: "Thành Công!",
-          description: "Loại sản phẩm đã được xóa thành công.",
-          variant: "success",
-        });
-
-        setReloadKey((prevKey) => prevKey + 1);
-        setDeleteConfirmId(null);
-        setIsDeleteDialogOpen(false);
-      } catch (err) {
-        console.error("Error deleting loai san pham:", err);
-        toast({
-          title: "Lỗi!",
-          description:
-            err instanceof Error ? err.message : "Lỗi khi xóa loại sản phẩm.",
-          variant: "destructive",
-        });
+      if (!response.ok) {
+        throw new Error("Không thể xóa loại sản phẩm");
       }
+
+      toast({
+        title: "Thành công",
+        description: "Xóa loại sản phẩm thành công",
+      });
+
+      setReloadKey((prev) => prev + 1);
+    } catch (error) {
+      toast({
+        title: "Lỗi",
+        description:
+          error instanceof Error ? error.message : "Lỗi khi xóa loại sản phẩm",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setDeleteConfirmId(null);
     }
   };
 
@@ -286,7 +282,7 @@ export default function LoaiSanPhamManagementPage() {
                 <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>
                   Hủy
                 </AlertDialogCancel>
-                <AlertDialogAction onClick={handleDeleteConfirm}>
+                <AlertDialogAction onClick={confirmDelete}>
                   Xóa
                 </AlertDialogAction>
               </AlertDialogFooter>
