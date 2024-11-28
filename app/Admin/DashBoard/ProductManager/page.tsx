@@ -5,6 +5,16 @@ import Tabledashboard from "../../TableProduct";
 import Fileupload from "@/components/ui/Fileupload";
 import { useToast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface LoaiSanPham {
   idloaisanpham: number;
@@ -258,29 +268,29 @@ export default function ProductManagementPage() {
           reloadKey={0}
         />
 
-        {/* Delete Confirmation Modal */}
-        {deleteConfirmId && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg shadow-xl">
-              <h3 className="text-lg font-semibold mb-4">Xác nhận xóa</h3>
-              <p>Bạn có chắc chắn muốn xóa sản phẩm này?</p>
-              <div className="flex justify-end gap-4 mt-6">
-                <button
-                  className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
-                  onClick={() => setDeleteConfirmId(null)}
-                >
-                  Hủy
-                </button>
-                <button
-                  className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-                  onClick={handleDeleteConfirm}
-                >
-                  Xóa
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog
+          open={!!deleteConfirmId}
+          onOpenChange={() => setDeleteConfirmId(null)}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
+              <AlertDialogDescription>
+                Bạn có chắc chắn muốn xóa sản phẩm này? Hành động này không thể
+                hoàn tác.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setDeleteConfirmId(null)}>
+                Hủy
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteConfirm}>
+                Xóa
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Add/Edit Product Modal */}
         <dialog id="my_modal_3" className="modal modal-bottom sm:modal-middle">

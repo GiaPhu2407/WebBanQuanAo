@@ -4,6 +4,17 @@ import SalesDashboard from "../NvarbarAdmin";
 import TableSupplier from "../../TableSuppler";
 import { useToast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 
 interface NhaCungCap {
   idnhacungcap: number;
@@ -47,6 +58,10 @@ export default function NhaCungCapManagementPage() {
       });
     }
   };
+
+  useEffect(() => {
+    fetchNhaCungCap();
+  }, []);
 
   const validateForm = (): string | null => {
     if (!formData.tennhacungcap.trim()) return "Vui lòng nhập tên nhà cung cấp";
@@ -167,10 +182,6 @@ export default function NhaCungCapManagementPage() {
     setDeleteConfirmId(id);
   };
 
-  const handleCancelDelete = () => {
-    setDeleteConfirmId(null);
-  };
-
   const handleEdit = (nhacungcap: NhaCungCap) => {
     setFormData(nhacungcap);
     setCurrentNhaCungCapId(nhacungcap.idnhacungcap);
@@ -217,9 +228,7 @@ export default function NhaCungCapManagementPage() {
           <h1 className="text-2xl font-bold whitespace-nowrap">
             Quản lý nhà cung cấp
           </h1>
-          <button className="btn btn-primary" onClick={handleAddNewClick}>
-            Thêm nhà cung cấp
-          </button>
+          <Button onClick={handleAddNewClick}>Thêm nhà cung cấp</Button>
         </div>
 
         {/* Modal thêm/sửa nhà cung cấp */}
@@ -308,17 +317,15 @@ export default function NhaCungCapManagementPage() {
               </div>
 
               <div className="flex justify-end space-x-4 mt-6">
-                <button type="submit" className="btn btn-primary">
-                  {isEditing ? "Cập nhật" : "Thêm"}
-                </button>
+                <Button type="submit">{isEditing ? "Cập nhật" : "Thêm"}</Button>
                 {isEditing && (
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
                     onClick={handleCancelEdit}
-                    className="btn btn-ghost"
                   >
                     Hủy
-                  </button>
+                  </Button>
                 )}
               </div>
             </form>
@@ -334,31 +341,29 @@ export default function NhaCungCapManagementPage() {
           />
         </div>
 
-        {/* Modal xác nhận xóa */}
-        {deleteConfirmId && (
-          <dialog
-            open
-            className="modal fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
-          >
-            <div className="modal-box bg-white rounded-lg shadow-xl p-6 text-center">
-              <h3 className="font-bold text-lg mb-4">Xác Nhận Xóa</h3>
-              <p className="mb-6">
-                Bạn có chắc chắn muốn xóa nhà cung cấp này không?
-              </p>
-              <div className="flex justify-center space-x-4">
-                <button
-                  onClick={handleDeleteConfirm}
-                  className="btn btn-error text-white"
-                >
-                  Xóa
-                </button>
-                <button onClick={handleCancelDelete} className="btn btn-ghost">
-                  Hủy
-                </button>
-              </div>
-            </div>
-          </dialog>
-        )}
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog
+          open={deleteConfirmId !== null}
+          onOpenChange={() => setDeleteConfirmId(null)}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
+              <AlertDialogDescription>
+                Bạn có chắc chắn muốn xóa nhà cung cấp này? Hành động này không
+                thể hoàn tác.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setDeleteConfirmId(null)}>
+                Hủy
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteConfirm}>
+                Xóa
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
