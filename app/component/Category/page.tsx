@@ -29,7 +29,7 @@ const ProductDetail = () => {
   const [product, setProduct] = useState<ProductWithImages | null>(null);
   const [selectedImage, setSelectedImage] = useState<string>("");
   const [inventory, setInventory] = useState<number>(0);
-  const [quantity, setQuantity] = useState<number>(1);
+  const [quantity, setQuantity] = useState<number>(0);
   const [size, setSize] = useState<string>("");
   const [availableSizes, setAvailableSizes] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -271,7 +271,7 @@ const ProductDetail = () => {
                 <span className="text-sm font-medium ml-4">
                   Size: <span className="font-bold">{size}</span>
                 </span>
-              </div>  
+              </div>
 
               {/* Quantity Selector */}
               <div className="flex items-center space-x-4">
