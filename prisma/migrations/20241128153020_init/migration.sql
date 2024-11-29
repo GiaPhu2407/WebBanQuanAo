@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `tang` MODIFY `idtang` INTEGER NOT NULL AUTO_INCREMENT;

@@ -229,12 +229,12 @@ const Menu = () => {
               <div>
                 {/* Các nút cho người dùng chưa đăng nhập */}
                 <Link href={"/contact"}>
-                  <Button variant="blue" className="me-2">
+                  <Button variant="outline" className="me-2">
                     Contact
                   </Button>
                 </Link>
                 <Link href={"/auth/login"}>
-                  <Button variant="green">Login</Button>
+                  <Button variant="ghost">Login</Button>
                 </Link>
                 <Link href={"/auth/register"}>
                   <Button variant="destructive" className="ms-2">
