@@ -26,14 +26,11 @@ model Users {
   Email       String?   @db.VarChar(45) @unique
   idRole      Int?      
   Ngaydangky  DateTime? @db.Date
-  
   Token        String?  // Trường lưu token
-
   role         Role?     @relation(fields: [idRole], references: [idrole])
   danhgia      Danhgia[]
   yeuthich     Yeuthich[]        // Quan hệ 1-n với bảng Image
-
-  
+  donhang       Donhang[]
 }
 model Danhgia {
   iddanhgia    Int       @id @default(autoincrement())
@@ -59,7 +56,6 @@ model Khachhang {
   matkhau         String?   @db.VarChar(45)
   idrolekhachhang Int? @unique
   role            Role?     @relation(fields: [idrolekhachhang], references: [idrole])
-  donhang         Donhang[]
   giohang         Giohang[]
   // danhgia         Danhgia[]
   Admin           Admin[]
@@ -67,15 +63,15 @@ model Khachhang {
 }
 
 model Donhang {
-  iddonhang    Int       @id @default(autoincrement())
-  tongsoluong  Int?
-  trangthai    String?  @db.VarChar(45)
-  tongsotien   Int?
-  ngaydat      String?   @db.VarChar(45)
-  idkhachhang  Int?    
-  khachhang    Khachhang? @relation(fields: [idkhachhang], references: [idkhachhang])
+  iddonhang      Int       @id @default(autoincrement())
+  tongsoluong    Int?
+  trangthai      String?   @db.VarChar(45)
+  tongsotien     Int?
+  ngaydat        String?   @db.VarChar(45)
+  idUsers        Int?      // Khóa ngoại tham chiếu đến bảng Users
+  users          Users?    @relation(fields: [idUsers], references: [idUsers])
   chitietdonhang ChitietDonhang[]
-  thanhtoan    Thanhtoan[]
+  thanhtoan      Thanhtoan[]
 }
 
 

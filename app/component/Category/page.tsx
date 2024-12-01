@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import Header from "../Header";
 import Footer from "../Footer";
 
@@ -24,16 +24,18 @@ interface ProductWithImages {
 }
 
 const ProductDetail = () => {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
   const [product, setProduct] = useState<ProductWithImages | null>(null);
   const [selectedImage, setSelectedImage] = useState<string>("");
   const [inventory, setInventory] = useState<number>(0);
-  const [quantity, setQuantity] = useState<number>(0);
+  const [quantity, setQuantity] = useState<number>(1);
   const [size, setSize] = useState<string>("");
   const [availableSizes, setAvailableSizes] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [orderLoading, setOrderLoading] = useState(false);
 
   useEffect(() => {
     const fetchProductAndInventory = async () => {
@@ -48,14 +50,15 @@ const ProductDetail = () => {
         const productData = await productResponse.json();
         setProduct(productData);
         setSelectedImage(productData.hinhanh);
-        setAvailableSizes(
-          productData.size.split(",").map((s: string) => s.trim())
-        );
-        setSize(productData.size.split(",")[0].trim());
 
-        // Fetch inventory for this specific product
+        // Parse and set available sizes
+        const sizes = productData.size.split(",").map((s: string) => s.trim());
+        setAvailableSizes(sizes);
+        setSize(sizes[0]);
+
+        // Fetch initial inventory for the first size
         const inventoryResponse = await fetch(
-          `/api/kho?idsanpham=${id}&size=${size}`
+          `/api/kho?idsanpham=${id}&size=${sizes[0]}`
         );
         if (!inventoryResponse.ok)
           throw new Error("Không thể lấy thông tin tồn kho");
@@ -74,22 +77,18 @@ const ProductDetail = () => {
     };
 
     fetchProductAndInventory();
-  }, [id, size]);
+  }, [id]);
 
   const handleQuantityChange = (newQuantity: number) => {
     if (newQuantity >= 1 && newQuantity <= inventory) {
       setQuantity(newQuantity);
-      setInventory(inventory - newQuantity + quantity);
     }
   };
 
-  const handleSizeChange = (newSize: string) => {
+  const handleSizeChange = async (newSize: string) => {
     setSize(newSize);
-    // Fetch inventory for the new size
-    fetchInventoryForSize(newSize);
-  };
+    setQuantity(1); // Reset quantity when changing size
 
-  const fetchInventoryForSize = async (newSize: string) => {
     try {
       const inventoryResponse = await fetch(
         `/api/kho?idsanpham=${product?.idsanpham}&size=${newSize}`
@@ -109,35 +108,50 @@ const ProductDetail = () => {
     }
   };
 
-  const handleAddToCart = async () => {
+  const handleOrderCreation = async (isInstantBuy: boolean) => {
     if (!product || quantity > inventory) return;
 
+    setOrderLoading(true);
+
     try {
-      // Update inventory on the server
-      const updateResponse = await fetch("/api/kho", {
-        method: "PUT",
+      const orderResponse = await fetch("/api/donhang", {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          idsanpham: product.idsanpham,
-          size: size,
-          soluong: inventory - quantity,
+          idUsers: 1, // Hardcoded user ID - replace with actual user authentication
+          chitietDonhang: [
+            {
+              idsanpham: product.idsanpham,
+              size: size,
+              soluong: quantity,
+            },
+          ],
+          diachi: "Địa chỉ mặc định", // Replace with actual user address
+          sodienthoai: "0123456789", // Replace with actual user phone number
         }),
       });
 
-      if (!updateResponse.ok) {
-        throw new Error("Không thể cập nhật số lượng");
+      const result = await orderResponse.json();
+
+      if (orderResponse.ok) {
+        // Successful order
+        alert("Đặt hàng thành công!");
+
+        // If instant buy, navigate to orders page
+        if (isInstantBuy) {
+          router.push("/component/Order");
+        }
+      } else {
+        // Handle error
+        alert(result.error || "Có lỗi xảy ra khi đặt hàng");
       }
-
-      // Reset quantity to 1
-      setQuantity(1);
-
-      // Add to cart logic would go here
-      alert(`Đã thêm ${quantity} sản phẩm vào giỏ hàng`);
     } catch (err) {
-      console.error("Lỗi khi thêm vào giỏ hàng:", err);
-      alert("Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng");
+      console.error("Lỗi khi đặt hàng:", err);
+      alert("Có lỗi xảy ra khi đặt hàng");
+    } finally {
+      setOrderLoading(false);
     }
   };
 
@@ -238,6 +252,7 @@ const ProductDetail = () => {
                 {product.gioitinh ? "Nam" : "Nữ"}
               </span>
             </div>
+
             <div className="space-y-4">
               <div className="text-sm text-gray-600">
                 Số lượng còn lại:
@@ -249,6 +264,7 @@ const ProductDetail = () => {
                   {inventory}
                 </span>
               </div>
+
               {/* Size Selector */}
               <div className="flex items-center space-x-4">
                 <span className="text-sm font-medium">Kích thước:</span>
@@ -267,7 +283,6 @@ const ProductDetail = () => {
                     </button>
                   ))}
                 </div>
-                {/* Thêm phần hiển thị size đã chọn */}
                 <span className="text-sm font-medium ml-4">
                   Size: <span className="font-bold">{size}</span>
                 </span>
@@ -299,25 +314,34 @@ const ProductDetail = () => {
             {/* Action Buttons */}
             <div className="flex gap-4 pt-4">
               <button
-                disabled={inventory === 0}
+                disabled={inventory === 0 || orderLoading}
                 className={`flex-1 px-6 py-3 text-white rounded-lg transition-colors ${
-                  inventory === 0
+                  inventory === 0 || orderLoading
                     ? "bg-gray-400 cursor-not-allowed"
                     : "bg-blue-600 hover:bg-blue-700"
                 }`}
-                onClick={handleAddToCart}
+                onClick={() => handleOrderCreation(false)}
               >
-                {inventory === 0 ? "Hết hàng" : "Thêm vào giỏ hàng"}
+                {orderLoading
+                  ? "Đang xử lý..."
+                  : inventory === 0
+                  ? "Hết hàng"
+                  : "Thêm vào giỏ hàng"}
               </button>
               <button
-                disabled={inventory === 0}
+                disabled={inventory === 0 || orderLoading}
                 className={`flex-1 px-6 py-3 rounded-lg transition-colors ${
-                  inventory === 0
+                  inventory === 0 || orderLoading
                     ? "border border-gray-300 text-gray-400 cursor-not-allowed"
                     : "border border-gray-300 hover:bg-gray-50"
                 }`}
+                onClick={() => handleOrderCreation(true)}
               >
-                {inventory === 0 ? "Hết hàng" : "Mua ngay"}
+                {orderLoading
+                  ? "Đang xử lý..."
+                  : inventory === 0
+                  ? "Hết hàng"
+                  : "Mua ngay"}
               </button>
             </div>
           </div>
