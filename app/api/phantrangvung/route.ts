@@ -22,6 +22,9 @@ export async function GET(request: NextRequest) {
     const data = await prisma.vung.findMany({
       skip: skip,
       take: limit_size,
+      include: {
+        kho: true,  
+      },
     });
 
     return NextResponse.json(

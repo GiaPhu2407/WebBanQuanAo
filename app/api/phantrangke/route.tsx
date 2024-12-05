@@ -22,6 +22,9 @@ export async function GET(request: NextRequest) {
     const data = await prisma.ke.findMany({
       skip: skip,
       take: limit_size,
+      include: {
+        vung: true, // Bao gồm thông tin vùng
+      },
     });
 
     return NextResponse.json(

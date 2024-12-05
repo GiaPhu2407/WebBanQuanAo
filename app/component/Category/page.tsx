@@ -42,7 +42,6 @@ const ProductDetail = () => {
       if (!id) return;
 
       try {
-        // Fetch product details
         const productResponse = await fetch(`/api/category/${id}`);
         if (!productResponse.ok)
           throw new Error("Không thể lấy thông tin sản phẩm");
@@ -51,12 +50,10 @@ const ProductDetail = () => {
         setProduct(productData);
         setSelectedImage(productData.hinhanh);
 
-        // Parse and set available sizes
         const sizes = productData.size.split(",").map((s: string) => s.trim());
         setAvailableSizes(sizes);
         setSize(sizes[0]);
 
-        // Fetch initial inventory for the first size
         const inventoryResponse = await fetch(
           `/api/kho?idsanpham=${id}&size=${sizes[0]}`
         );
@@ -87,7 +84,7 @@ const ProductDetail = () => {
 
   const handleSizeChange = async (newSize: string) => {
     setSize(newSize);
-    setQuantity(1); // Reset quantity when changing size
+    setQuantity(1);
 
     try {
       const inventoryResponse = await fetch(
@@ -120,7 +117,7 @@ const ProductDetail = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          idUsers: 1, // Hardcoded user ID - replace with actual user authentication
+          idUsers: 1,
           chitietDonhang: [
             {
               idsanpham: product.idsanpham,
@@ -128,23 +125,19 @@ const ProductDetail = () => {
               soluong: quantity,
             },
           ],
-          diachi: "Địa chỉ mặc định", // Replace with actual user address
-          sodienthoai: "0123456789", // Replace with actual user phone number
+          diachi: "Địa chỉ mặc định",
+          sodienthoai: "0123456789",
         }),
       });
 
       const result = await orderResponse.json();
 
       if (orderResponse.ok) {
-        // Successful order
         alert("Đặt hàng thành công!");
-
-        // If instant buy, navigate to orders page
         if (isInstantBuy) {
           router.push("/component/Order");
         }
       } else {
-        // Handle error
         alert(result.error || "Có lỗi xảy ra khi đặt hàng");
       }
     } catch (err) {
@@ -169,20 +162,12 @@ const ProductDetail = () => {
       <Header />
       <div className="container mx-auto p-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Image Gallery */}
-          <div className="space-y-4">
-            <div className="aspect-square relative overflow-hidden rounded-xl">
-              <img
-                src={selectedImage}
-                alt={product.tensanpham}
-                className="w-full h-full object-cover"
-              />
-            </div>
-
-            {/* Thumbnail Gallery */}
-            <div className="grid grid-cols-4 gap-2">
+          {/* Image Gallery with Thumbnails on Left */}
+          <div className="flex gap-4">
+            {/* Thumbnail Strip */}
+            <div className="flex flex-col gap-2">
               <div
-                className={`aspect-square cursor-pointer rounded-lg overflow-hidden border-2 ${
+                className={`w-20 aspect-square cursor-pointer rounded-lg overflow-hidden border-2 ${
                   selectedImage === product.hinhanh
                     ? "border-blue-500"
                     : "border-transparent"
@@ -198,7 +183,7 @@ const ProductDetail = () => {
               {product.images.map((image) => (
                 <div
                   key={image.idImage}
-                  className={`aspect-square cursor-pointer rounded-lg overflow-hidden border-2 ${
+                  className={`w-20 aspect-square cursor-pointer rounded-lg overflow-hidden border-2 ${
                     selectedImage === image.url
                       ? "border-blue-500"
                       : "border-transparent"
@@ -212,6 +197,17 @@ const ProductDetail = () => {
                   />
                 </div>
               ))}
+            </div>
+
+            {/* Main Image */}
+            <div className="flex-1">
+              <div className="aspect-square relative overflow-hidden rounded-xl">
+                <img
+                  src={selectedImage}
+                  alt={product.tensanpham}
+                  className="w-full h-full object-cover"
+                />
+              </div>
             </div>
           </div>
 
