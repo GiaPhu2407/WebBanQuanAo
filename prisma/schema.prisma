@@ -31,6 +31,8 @@ model Users {
   danhgia      Danhgia[]
   yeuthich     Yeuthich[]        // Quan hệ 1-n với bảng Image
   donhang       Donhang[]
+  lichgiaohang    LichGiaoHang[]   // Quan hệ 1-n với bảng Image
+giohang          Giohang[]
 }
 model Danhgia {
   iddanhgia    Int       @id @default(autoincrement())
@@ -56,7 +58,7 @@ model Khachhang {
   matkhau         String?   @db.VarChar(45)
   idrolekhachhang Int? @unique
   role            Role?     @relation(fields: [idrolekhachhang], references: [idrole])
-  giohang         Giohang[]
+  // giohang         Giohang[]
   // danhgia         Danhgia[]
   Admin           Admin[]
   tuvanhotro      Tuvanhotro[]
@@ -67,11 +69,13 @@ model Donhang {
   tongsoluong    Int?
   trangthai      String?   @db.VarChar(45)
   tongsotien     Int?
-  ngaydat        String?   @db.VarChar(45)
+  ngaydat        DateTime?   @db.Date
   idUsers        Int?      // Khóa ngoại tham chiếu đến bảng Users
   users          Users?    @relation(fields: [idUsers], references: [idUsers])
   chitietdonhang ChitietDonhang[]
   thanhtoan      Thanhtoan[]
+      lichgiaohang    LichGiaoHang[]   // Quan hệ 1-n với bảng Image
+
 }
 
 
@@ -88,6 +92,8 @@ model Loaisanpham {
     mota            String?          @db.VarChar(255)
     gia             String?          @db.VarChar(255)
     hinhanh         String?          @db.VarChar(255)
+    trangthai        String?          @db.VarChar(255)
+
     idloaisanpham   Int?            
     giamgia         Decimal?         @db.Decimal(5,2)
     gioitinh        Boolean?
@@ -99,7 +105,8 @@ model Loaisanpham {
     danhgia         Danhgia[]
     kho             Kho[]
     images          Image[]  
-    yeuthich        Yeuthich[]        // Quan hệ 1-n với bảng Image
+    yeuthich        Yeuthich[] 
+    lichgiaohang    LichGiaoHang[]   // Quan hệ 1-n với bảng Image
   }
 model Yeuthich {
   idYeuthich  Int      @id @default(autoincrement()) // Khóa chính
@@ -164,9 +171,9 @@ model ChitietDonhang {
 model Giohang {
   idgiohang   Int       @id @default(autoincrement())
   soluong     Int?
-  idkhachhang Int?      
+  idKhachHang Int?      
   idsanpham   Int?      
-  khachhang   Khachhang? @relation(fields: [idkhachhang], references: [idkhachhang])
+  khachhang   Users? @relation(fields: [idKhachHang], references: [idUsers])
   sanpham     Sanpham?  @relation(fields: [idsanpham], references: [idsanpham])
 }
 
@@ -215,7 +222,19 @@ model Thanhtoan {
   ngaythanhtoan        DateTime? @db.Date
   donhang              Donhang?  @relation(fields: [iddonhang], references: [iddonhang])
 }
-
+model LichGiaoHang {
+  idLichGiaoXe Int       @id @default(autoincrement())
+  idsanpham         Int?      
+  idKhachHang  Int?      
+  NgayGiao     DateTime? @db.Date
+  GioGiao      DateTime? @db.Time(0)
+  TrangThai    String?   @db.VarChar(225)
+  idDatCoc     Int?      
+  iddonhang    Int?      
+  sanpham       Sanpham? @relation(fields: [idsanpham], references: [idsanpham])
+  khachHang    Users?    @relation(fields: [idKhachHang], references: [idUsers])
+  donHang      Donhang?  @relation(fields: [iddonhang], references: [iddonhang])
+}
 
 model Kho {
   idKho      Int       @id @default(autoincrement())

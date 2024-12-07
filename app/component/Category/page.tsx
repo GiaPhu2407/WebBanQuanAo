@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import toast, { Toaster } from "react-hot-toast";
 import Header from "../Header";
 import Footer from "../Footer";
 
@@ -27,6 +28,7 @@ const ProductDetail = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
+  
   const [product, setProduct] = useState<ProductWithImages | null>(null);
   const [selectedImage, setSelectedImage] = useState<string>("");
   const [inventory, setInventory] = useState<number>(0);
@@ -111,43 +113,43 @@ const ProductDetail = () => {
     setOrderLoading(true);
 
     try {
-      const orderResponse = await fetch("/api/donhang", {
+      const orderResponse = await fetch("/api/giohang", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          idUsers: 1,
-          chitietDonhang: [
-            {
-              idsanpham: product.idsanpham,
-              size: size,
-              soluong: quantity,
-            },
-          ],
-          diachi: "Địa chỉ mặc định",
-          sodienthoai: "0123456789",
+          idsanpham: product.idsanpham,
+          soluong: quantity,
         }),
       });
 
       const result = await orderResponse.json();
 
       if (orderResponse.ok) {
-        alert("Đặt hàng thành công!");
+        // Hiển thị toast thành công với thông tin sản phẩm
+        toast.success(`Đã thêm ${quantity} sản phẩm ${product.tensanpham} vào giỏ hàng`);
+        
+        // Nếu là mua ngay, chuyển hướng sang giỏ hàng
         if (isInstantBuy) {
-          router.push("/component/Order");
+          // Thêm một chút delay để người dùng kịp nhìn thấy toast
+          setTimeout(() => {
+            router.push("/component/shoppingcart");
+          }, 500);
         }
       } else {
-        alert(result.error || "Có lỗi xảy ra khi đặt hàng");
+        // Hiển thị toast lỗi
+        toast.error(result.error || "Có lỗi xảy ra khi đặt hàng");
       }
     } catch (err) {
       console.error("Lỗi khi đặt hàng:", err);
-      alert("Có lỗi xảy ra khi đặt hàng");
+      toast.error("Có lỗi xảy ra khi đặt hàng");
     } finally {
       setOrderLoading(false);
     }
   };
 
+  // Phần còn lại của component giữ nguyên như cũ
   if (loading) return <div className="p-4">Đang tải...</div>;
   if (error) return <div className="p-4 text-red-500">Lỗi: {error}</div>;
   if (!product) return <div className="p-4">Không tìm thấy sản phẩm</div>;
@@ -160,9 +162,26 @@ const ProductDetail = () => {
   return (
     <div>
       <Header />
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          success: {
+            style: {
+              background: '#4CAF50',
+              color: 'white',
+            },
+          },
+          error: {
+            style: {
+              background: '#F44336',
+              color: 'white',
+            },
+          },
+        }}
+      />
       <div className="container mx-auto p-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Image Gallery with Thumbnails on Left */}
+          {/* Image Gallery */}
           <div className="flex gap-4">
             {/* Thumbnail Strip */}
             <div className="flex flex-col gap-2">
