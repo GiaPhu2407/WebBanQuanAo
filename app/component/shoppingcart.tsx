@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
 import Header from "./Header";
+import { useEffect, useState } from "react";
 
 interface CartItem {
   idgiohang: number;
@@ -23,8 +23,9 @@ interface CartItem {
 export const ShoppingCart = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [paymentMethod, setPaymentMethod] = useState<string>("");
   const [processing, setProcessing] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<string>("");
+  const [itemProcessingId, setItemProcessingId] = useState<number | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -38,7 +39,7 @@ export const ShoppingCart = () => {
         throw new Error("Failed to fetch cart items");
       }
       const data = await response.json();
-      setCartItems(data.data || []); // Đảm bảo data luôn là mảng
+      setCartItems(data.data || []);
     } catch (error) {
       console.error("Error fetching cart:", error);
       toast.error("Có lỗi xảy ra khi tải giỏ hàng");
@@ -48,21 +49,28 @@ export const ShoppingCart = () => {
   };
 
   const removeItem = async (idgiohang: number) => {
+    setItemProcessingId(idgiohang); // Hiển thị trạng thái xử lý cho sản phẩm này
     try {
       const response = await fetch(`/api/giohang/${idgiohang}`, {
         method: "DELETE",
       });
+  
       if (!response.ok) {
-        throw new Error("Failed to remove item");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Không thể xóa sản phẩm");
       }
+  
+      // Cập nhật lại danh sách giỏ hàng sau khi xóa
       setCartItems((prev) => prev.filter((item) => item.idgiohang !== idgiohang));
       toast.success("Xóa sản phẩm thành công");
-    } catch (error) {
-      console.error("Error removing item:", error);
-      toast.error("Có lỗi xảy ra khi xóa sản phẩm");
+    } catch (error: any) {
+      console.error("Lỗi khi xóa sản phẩm:", error);
+      toast.error(error.message || "Có lỗi xảy ra khi xóa sản phẩm");
+    } finally {
+      setItemProcessingId(null); // Ẩn trạng thái xử lý
     }
   };
-
+  
   const updateItemQuantity = async (idgiohang: number, newQuantity: number) => {
     if (newQuantity <= 0) {
       toast((t) => (
@@ -103,7 +111,9 @@ export const ShoppingCart = () => {
       }
       setCartItems((prev) =>
         prev.map((item) =>
-          item.idgiohang === idgiohang ? { ...item, soluong: newQuantity } : item
+          item.idgiohang === idgiohang
+            ? { ...item, soluong: newQuantity }
+            : item
         )
       );
       toast.success("Cập nhật số lượng thành công");
@@ -236,11 +246,13 @@ export const ShoppingCart = () => {
                     </button>
                   </div>
                   <button
-                    onClick={() => removeItem(item.idgiohang)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    Xóa
-                  </button>
+                  onClick={() => removeItem(item.idgiohang)}
+                  className="text-red-500 hover:text-red-700"
+                  disabled={itemProcessingId === item.idgiohang} // Disable khi đang xử lý
+                          >
+                    {itemProcessingId === item.idgiohang ? "Đang xóa..." : "Xóa"}
+                              </button>
+
                 </div>
               ))}
             </div>

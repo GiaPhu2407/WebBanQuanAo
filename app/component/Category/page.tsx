@@ -134,7 +134,7 @@ const ProductDetail = () => {
         if (isInstantBuy) {
           // Thêm một chút delay để người dùng kịp nhìn thấy toast
           setTimeout(() => {
-            router.push("/component/shoppingcart");
+            router.push("/component/shopping");
           }, 500);
         }
       } else {

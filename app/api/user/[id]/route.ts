@@ -67,16 +67,7 @@ export async function GET(
       };
 
       // Only hash and update password if it's provided and changed
-      if (data.MatKhau && data.MatKhau.trim() !== "") {
-        updateData.Matkhau = await hash(data.MatKhau, 12);
-      }
-
-      // Validate and add idRole
-      if (data.idRole && !isNaN(parseInt(data.idRole))) {
-        updateData.idRole = parseInt(data.idRole);
-      } else {
-        return NextResponse.json({ error: "Invalid idRole" }, { status: 400 });
-      }
+      
 
       // Update user
       const updatedUser = await prisma.users.update({
@@ -97,12 +88,6 @@ export async function GET(
     } catch (error: any) {
       console.error("Update error:", error);
 
-      if (error.code === "P2002") {
-        return NextResponse.json(
-          { error: "Username or email already exists" },
-          { status: 400 }
-        );
-      }
 
       return NextResponse.json(
         { error: "Failed to update user" },

@@ -7,13 +7,39 @@ import Footer from "./Footer";
 import { User } from "../types/auth";
 import Header from "./Header";
 
+// Validation function
+const validateForm = (formData: any) => {
+  const errors: { [key: string]: string } = {};
+
+  if (!formData.Tentaikhoan.trim()) {
+    errors.Tentaikhoan = "Tên tài khoản không được để trống";
+  }
+
+  if (!formData.Email.trim()) {
+    errors.Email = "Email không được để trống";
+  } else if (!/\S+@\S+\.\S+/.test(formData.Email)) {
+    errors.Email = "Email không hợp lệ";
+  }
+
+  if (!formData.Hoten.trim()) {
+    errors.Hoten = "Họ tên không được để trống";
+  }
+
+  if (!formData.Sdt.trim()) {
+    errors.Sdt = "Số điện thoại không được để trống";
+  } else if (!/^\d{10}$/.test(formData.Sdt)) {
+    errors.Sdt = "Số điện thoại không hợp lệ (phải có 10 chữ số)";
+  }
+
+  return errors;
+};
+
 const ProfilePage = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [message, setMessage] = useState("");
-  const [messageType, setMessageType] = useState<"success" | "error" | null>(
-    null
-  );
+  const [messageType, setMessageType] = useState<"success" | "error" | null>(null);
+  const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
 
@@ -23,6 +49,7 @@ const ProfilePage = () => {
     Hoten: "",
     Sdt: "",
     Diachi: "",
+    MatKhau: "", // Optional password field for changes
   });
 
   useEffect(() => {
@@ -40,7 +67,6 @@ const ProfilePage = () => {
         }
 
         const userData = await response.json();
-        console.log("Fetched user data:", userData); // For debugging
 
         if (!userData || !userData.idUsers) {
           router.push("/Login");
@@ -57,10 +83,11 @@ const ProfilePage = () => {
           Hoten: userData.Hoten || "",
           Sdt: userData.Sdt || "",
           Diachi: userData.Diachi || "",
+          MatKhau: "", // Clear password field initially
         });
       } catch (error) {
         console.error("Error fetching user data:", error);
-        setMessage("Error loading user data");
+        setMessage("Lỗi tải dữ liệu người dùng");
         setMessageType("error");
       } finally {
         setIsLoading(false);
@@ -76,12 +103,30 @@ const ProfilePage = () => {
       ...prev,
       [name]: value,
     }));
+
+    // Clear specific field error when user starts typing
+    if (formErrors[name]) {
+      setFormErrors((prev) => ({
+        ...prev,
+        [name]: "",
+      }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate form
+    const validationErrors = validateForm(formData);
+    
+    // If there are validation errors
+    if (Object.keys(validationErrors).length > 0) {
+      setFormErrors(validationErrors);
+      return;
+    }
+
     if (!user?.idUsers) {
-      setMessage("User ID not found");
+      setMessage("Không tìm thấy ID người dùng");
       setMessageType("error");
       return;
     }
@@ -95,25 +140,34 @@ const ProfilePage = () => {
         body: JSON.stringify(formData),
       });
 
+      const responseData = await response.json();
+
       if (!response.ok) {
-        throw new Error("Failed to update profile");
+        throw new Error(responseData.error || "Cập nhật hồ sơ không thành công");
       }
 
-      const data = await response.json();
-
-      setMessage("Profile updated successfully!");
+      setMessage("Cập nhật hồ sơ thành công!");
       setMessageType("success");
       setIsEditing(false);
+      
+      // Update user state with new data
       setUser((prev) => ({
         ...prev!,
         ...formData,
       }));
-    } catch (error) {
+
+      // Clear password field after successful update
+      setFormData(prev => ({
+        ...prev,
+        MatKhau: "",
+      }));
+    } catch (error: any) {
       console.error("Update error:", error);
-      setMessage("Failed to update profile");
+      setMessage(error.message || "Cập nhật hồ sơ không thành công");
       setMessageType("error");
     }
 
+    // Clear message after 3 seconds
     setTimeout(() => {
       setMessage("");
       setMessageType(null);
@@ -142,7 +196,21 @@ const ProfilePage = () => {
                 Thông tin cá nhân
               </h1>
               <button
-                onClick={() => setIsEditing(!isEditing)}
+                onClick={() => {
+                  setIsEditing(!isEditing);
+                  // Reset form when canceling edit
+                  if (isEditing) {
+                    setFormData({
+                      Tentaikhoan: user?.Tentaikhoan || "",
+                      Email: user?.Email || "",
+                      Hoten: user?.Hoten || "",
+                      Sdt: user?.Sdt || "",
+                      Diachi: user?.Diachi || "",
+                      MatKhau: "",
+                    });
+                    setFormErrors({});
+                  }
+                }}
                 className={`px-4 py-2 rounded-md ${
                   isEditing
                     ? "bg-gray-500 hover:bg-gray-600"
@@ -182,8 +250,17 @@ const ProfilePage = () => {
                     value={formData.Tentaikhoan}
                     onChange={handleInputChange}
                     disabled={!isEditing}
-                    className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100"
+                    className={`mt-1 block w-full rounded-md border ${
+                      formErrors.Tentaikhoan 
+                        ? "border-red-500" 
+                        : "border-gray-300"
+                    } bg-white px-3 py-2 text-gray-900 focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100`}
                   />
+                  {formErrors.Tentaikhoan && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {formErrors.Tentaikhoan}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -196,8 +273,17 @@ const ProfilePage = () => {
                     value={formData.Email}
                     onChange={handleInputChange}
                     disabled={!isEditing}
-                    className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100"
+                    className={`mt-1 block w-full rounded-md border ${
+                      formErrors.Email 
+                        ? "border-red-500" 
+                        : "border-gray-300"
+                    } bg-white px-3 py-2 text-gray-900 focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100`}
                   />
+                  {formErrors.Email && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {formErrors.Email}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -210,8 +296,17 @@ const ProfilePage = () => {
                     value={formData.Hoten}
                     onChange={handleInputChange}
                     disabled={!isEditing}
-                    className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100"
+                    className={`mt-1 block w-full rounded-md border ${
+                      formErrors.Hoten 
+                        ? "border-red-500" 
+                        : "border-gray-300"
+                    } bg-white px-3 py-2 text-gray-900 focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100`}
                   />
+                  {formErrors.Hoten && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {formErrors.Hoten}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -224,8 +319,17 @@ const ProfilePage = () => {
                     value={formData.Sdt}
                     onChange={handleInputChange}
                     disabled={!isEditing}
-                    className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100"
+                    className={`mt-1 block w-full rounded-md border ${
+                      formErrors.Sdt 
+                        ? "border-red-500" 
+                        : "border-gray-300"
+                    } bg-white px-3 py-2 text-gray-900 focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100`}
                   />
+                  {formErrors.Sdt && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {formErrors.Sdt}
+                    </p>
+                  )}
                 </div>
 
                 <div className="md:col-span-2">
@@ -241,6 +345,22 @@ const ProfilePage = () => {
                     className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100"
                   />
                 </div>
+
+                {isEditing && (
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Mật khẩu (để trống nếu không muốn thay đổi)
+                    </label>
+                    <input
+                      type="password"
+                      name="MatKhau"
+                      value={formData.MatKhau}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-blue-500 focus:ring-blue-500"
+                      placeholder="Nhập mật khẩu mới (nếu muốn)"
+                    />
+                  </div>
+                )}
               </div>
 
               {isEditing && (

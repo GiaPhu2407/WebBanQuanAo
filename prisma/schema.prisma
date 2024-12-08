@@ -32,7 +32,7 @@ model Users {
   yeuthich     Yeuthich[]        // Quan hệ 1-n với bảng Image
   donhang       Donhang[]
   lichgiaohang    LichGiaoHang[]   // Quan hệ 1-n với bảng Image
-giohang          Giohang[]
+  giohang          Giohang[]
 }
 model Danhgia {
   iddanhgia    Int       @id @default(autoincrement())
@@ -86,28 +86,28 @@ model Loaisanpham {
   sanpham       Sanpham[]
 }
 
-  model Sanpham {
-    idsanpham       Int              @id @default(autoincrement())
-    tensanpham      String?          @db.VarChar(255)
-    mota            String?          @db.VarChar(255)
-    gia             String?          @db.VarChar(255)
-    hinhanh         String?          @db.VarChar(255)
-    trangthai        String?          @db.VarChar(255)
-
-    idloaisanpham   Int?            
-    giamgia         Decimal?         @db.Decimal(5,2)
-    gioitinh        Boolean?
-    size            String?         @db.VarChar(255)// Dùng mảng chuỗi để lưu nhiều kích cỡ
-    loaisanpham     Loaisanpham?     @relation(fields: [idloaisanpham], references: [idloaisanpham])
-    chitietnhap     Chitietnhap[]
-    chitietdonhang  ChitietDonhang[]
-    giohang         Giohang[]
-    danhgia         Danhgia[]
-    kho             Kho[]
-    images          Image[]  
-    yeuthich        Yeuthich[] 
-    lichgiaohang    LichGiaoHang[]   // Quan hệ 1-n với bảng Image
-  }
+ model Sanpham {
+  idsanpham       Int              @id @default(autoincrement())
+  tensanpham      String?          @db.VarChar(255)
+  mota            String?          @db.VarChar(255)
+  gia             String?          @db.VarChar(255)
+  hinhanh         String?          @db.VarChar(255)
+  trangthai       String?          @db.VarChar(255)
+  idloaisanpham   Int?            
+  giamgia         Decimal?         @db.Decimal(5,2)
+  gioitinh        Boolean?
+  size            String?          @db.VarChar(255)
+  loaisanpham     Loaisanpham?     @relation(fields: [idloaisanpham], references: [idloaisanpham])
+  chitietnhap     Chitietnhap[]
+  chitietdonhang  ChitietDonhang[]
+  giohang         Giohang[]
+  danhgia         Danhgia[]
+  kho             Kho[]
+  images          Image[]  
+  yeuthich        Yeuthich[] 
+  lichgiaohang    LichGiaoHang[]
+  ProductSizes    ProductSize[]     // New relationship
+}
 model Yeuthich {
   idYeuthich  Int      @id @default(autoincrement()) // Khóa chính
   idUsers     Int      // Liên kết đến bảng Users
@@ -164,8 +164,10 @@ model ChitietDonhang {
   soluong          Int?
   dongia           Decimal?  @db.Decimal(5,2)
   idsanpham        Int?
+  idSize           Int?      // New field for size
   donhang          Donhang?  @relation(fields: [iddonhang], references: [iddonhang])
   sanpham          Sanpham?  @relation(fields: [idsanpham], references: [idsanpham])
+  size             Size?     @relation(fields: [idSize], references: [idSize])
 }
 
 model Giohang {
@@ -173,8 +175,10 @@ model Giohang {
   soluong     Int?
   idKhachHang Int?      
   idsanpham   Int?      
-  khachhang   Users? @relation(fields: [idKhachHang], references: [idUsers])
+  idSize      Int?      // New field for size
+  khachhang   Users?    @relation(fields: [idKhachHang], references: [idUsers])
   sanpham     Sanpham?  @relation(fields: [idsanpham], references: [idsanpham])
+  size        Size?     @relation(fields: [idSize], references: [idSize])
 }
 
 model Nhanvien {
@@ -302,6 +306,24 @@ model RolePermission {
   Id           Int       @id
   role         Role      @relation(fields: [IdRole], references: [idrole])
   permission   Permission @relation(fields: [idPermission], references: [idPermission])
+}
+model Size {
+  idSize       Int      @id @default(autoincrement())
+  tenSize      String   @db.VarChar(20)
+  ProductSizes ProductSize[]
+  ChitietDonhang ChitietDonhang[]
+  Giohang       Giohang[]
+}
+
+// Add ProductSize model to create many-to-many relationship
+model ProductSize {
+  idsanpham    Int
+  idSize       Int
+  soluong      Int
+  sanpham      Sanpham @relation(fields: [idsanpham], references: [idsanpham], onDelete: Cascade)
+  size         Size    @relation(fields: [idSize], references: [idSize])
+
+  @@id([idsanpham, idSize])
 }
 // Corrected Prisma Schema
 
