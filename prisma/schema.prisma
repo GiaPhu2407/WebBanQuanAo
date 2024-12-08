@@ -32,7 +32,7 @@ model Users {
   yeuthich     Yeuthich[]        // Quan hệ 1-n với bảng Image
   donhang       Donhang[]
   lichgiaohang    LichGiaoHang[]   // Quan hệ 1-n với bảng Image
-giohang          Giohang[]
+  giohang          Giohang[]
 }
 model Danhgia {
   iddanhgia    Int       @id @default(autoincrement())
@@ -74,7 +74,7 @@ model Donhang {
   users          Users?    @relation(fields: [idUsers], references: [idUsers])
   chitietdonhang ChitietDonhang[]
   thanhtoan      Thanhtoan[]
-      lichgiaohang    LichGiaoHang[]   // Quan hệ 1-n với bảng Image
+  lichgiaohang    LichGiaoHang[]   // Quan hệ 1-n với bảng Image
 
 }
 
@@ -173,6 +173,7 @@ model Giohang {
   soluong     Int?
   idKhachHang Int?      
   idsanpham   Int?      
+  
   khachhang   Users? @relation(fields: [idKhachHang], references: [idUsers])
   sanpham     Sanpham?  @relation(fields: [idsanpham], references: [idsanpham])
 }

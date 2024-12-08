@@ -95,10 +95,6 @@ const ProfilePage = () => {
         body: JSON.stringify(formData),
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to update profile");
-      }
-
       const data = await response.json();
 
       setMessage("Profile updated successfully!");
@@ -108,9 +104,9 @@ const ProfilePage = () => {
         ...prev!,
         ...formData,
       }));
-    } catch (error) {
+    } catch (error: any) {
       console.error("Update error:", error);
-      setMessage("Failed to update profile");
+      setMessage(error.message);
       setMessageType("error");
     }
 

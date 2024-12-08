@@ -440,29 +440,18 @@
 
 // export default Menu;
 
-
-
 "use client";
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { 
-  FaMars, 
-  FaVenus, 
-  FaShoppingCart, 
-  FaSearch 
-} from "react-icons/fa";
+import { FaMars, FaVenus, FaShoppingCart, FaSearch } from "react-icons/fa";
 import { MenuIcon } from "lucide-react";
-import { 
-  HoverCard, 
-  HoverCardTrigger, 
-  HoverCardContent 
+import {
+  HoverCard,
+  HoverCardTrigger,
+  HoverCardContent,
 } from "@/components/ui/hover-card";
-import { 
-  Avatar, 
-  AvatarImage, 
-  AvatarFallback 
-} from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 
 // Interfaces for type safety
@@ -536,7 +525,7 @@ const Menu: React.FC = () => {
   // Computed values
   // const cartItemCount = cartItems.length;
   // const cartSubtotal = cartItems.reduce(
-  //   (total, item) => total + (item.product.price * item.quantity), 
+  //   (total, item) => total + (item.product.price * item.quantity),
   //   0
   // );
 
@@ -560,8 +549,8 @@ const Menu: React.FC = () => {
         <div className="hidden md:flex space-x-6">
           <NavLink href="/sale">Sale</NavLink>
           <NavLink href="/new-arrivals">Mới về</NavLink>
-          
-          <div 
+
+          <div
             onMouseEnter={() => {
               setShowMaleDropdown(true);
               setShowFemaleDropdown(false);
@@ -575,7 +564,7 @@ const Menu: React.FC = () => {
             {showMaleDropdown && <MaleDropdown />}
           </div>
 
-          <div 
+          <div
             onMouseEnter={() => {
               setShowFemaleDropdown(true);
               setShowMaleDropdown(false);
@@ -597,9 +586,9 @@ const Menu: React.FC = () => {
         <div className="flex items-center space-x-4">
           {/* Search */}
           <form onSubmit={handleSearch} className="relative">
-            <input 
-              type="text" 
-              placeholder="Tìm kiếm" 
+            <input
+              type="text"
+              placeholder="Tìm kiếm"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="input input-bordered rounded-full px-4 py-2 w-48"
@@ -611,25 +600,24 @@ const Menu: React.FC = () => {
 
           {/* Shopping Cart */}
           <div className="dropdown dropdown-end">
-            <div tabIndex={0} role="button" className="btn btn-ghost btn-circle">
+            <div
+              tabIndex={0}
+              role="button"
+              className="btn btn-ghost btn-circle"
+            >
               <div className="indicator">
                 <FaShoppingCart className="w-5 h-5" />
-                
-              
               </div>
             </div>
             {/* <CartDropdown 
               items={cartItems}  */}
-              {/* // total={}  */}
+            {/* // total={}  */}
             {/* /> */}
           </div>
 
           {/* User Profile */}
           {userData ? (
-            <UserProfileMenu 
-              user={userData} 
-              onLogout={handleLogout} 
-            />
+            <UserProfileMenu user={userData} onLogout={handleLogout} />
           ) : (
             <AuthButtons />
           )}
@@ -640,12 +628,12 @@ const Menu: React.FC = () => {
 };
 
 // Sub-components
-const NavLink: React.FC<{ href: string, children: React.ReactNode }> = ({ 
-  href, 
-  children 
+const NavLink: React.FC<{ href: string; children: React.ReactNode }> = ({
+  href,
+  children,
 }) => (
-  <Link 
-    href={href} 
+  <Link
+    href={href}
     className="text-gray-700 hover:text-primary transition-colors"
   >
     {children}
@@ -661,7 +649,7 @@ const MaleDropdown: React.FC = () => (
         <ul>
           {["Áo polo", "Áo thun", "Áo sơ mi"].map((item) => (
             <li key={item} className="text-sm hover:text-primary">
-              <Link href={`/male/${item.toLowerCase().replace(' ', '-')}`}>
+              <Link href={`/male/${item.toLowerCase().replace(" ", "-")}`}>
                 {item}
               </Link>
             </li>
@@ -682,7 +670,7 @@ const FemaleDropdown: React.FC = () => (
         <ul>
           {["Áo polo", "Áo thun", "Áo sơ mi"].map((item) => (
             <li key={item} className="text-sm hover:text-primary">
-              <Link href={`/female/${item.toLowerCase().replace(' ', '-')}`}>
+              <Link href={`/female/${item.toLowerCase().replace(" ", "-")}`}>
                 {item}
               </Link>
             </li>
@@ -694,9 +682,9 @@ const FemaleDropdown: React.FC = () => (
   </div>
 );
 
-const CartDropdown: React.FC<{ 
-  items: CartItem[], 
-  total: number 
+const CartDropdown: React.FC<{
+  items: CartItem[];
+  total: number;
 }> = ({ items, total }) => (
   <div className="dropdown-content card card-compact bg-base-100 w-52 shadow z-20">
     <div className="card-body">
@@ -711,17 +699,17 @@ const CartDropdown: React.FC<{
   </div>
 );
 
-const UserProfileMenu: React.FC<{ 
-  user: User, 
-  onLogout: () => void 
+const UserProfileMenu: React.FC<{
+  user: User;
+  onLogout: () => void;
 }> = ({ user, onLogout }) => (
   <HoverCard>
     <HoverCardTrigger asChild>
       <div className="flex items-center cursor-pointer">
         <Avatar>
-          <AvatarImage 
-            src={`https://ui-avatars.com/api/?name=${user.Hoten}`} 
-            alt={user.Hoten} 
+          <AvatarImage
+            src={`https://ui-avatars.com/api/?name=${user.Hoten}`}
+            alt={user.Hoten}
           />
           <AvatarFallback>{user.Hoten[0]}</AvatarFallback>
         </Avatar>
@@ -731,9 +719,9 @@ const UserProfileMenu: React.FC<{
       <div className="space-y-4">
         <div className="flex items-center space-x-3">
           <Avatar>
-            <AvatarImage 
-              src={`https://ui-avatars.com/api/?name=${user.Hoten}`} 
-              alt={user.Hoten} 
+            <AvatarImage
+              src={`https://ui-avatars.com/api/?name=${user.Hoten}`}
+              alt={user.Hoten}
             />
             <AvatarFallback>{user.Hoten[0]}</AvatarFallback>
           </Avatar>
@@ -743,22 +731,22 @@ const UserProfileMenu: React.FC<{
           </div>
         </div>
         <div className="space-y-2">
-          <Link 
-            href="/profile" 
+          <Link
+            href="/Show/ShowProfile"
             className="block py-2 hover:bg-gray-100 rounded"
           >
             Hồ sơ của tôi
           </Link>
           {user.role?.Tennguoidung === "Admin" && (
-            <Link 
-              href="/admin" 
+            <Link
+              href="/Admin"
               className="block py-2 hover:bg-gray-100 rounded"
             >
               Quản trị
             </Link>
           )}
-          <button 
-            onClick={onLogout} 
+          <button
+            onClick={onLogout}
             className="w-full text-left py-2 hover:bg-gray-100 rounded text-red-500"
           >
             Đăng xuất

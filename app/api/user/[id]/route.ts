@@ -49,67 +49,49 @@ export async function GET(
   }
 }
 
-  export async function PUT(
-    request: NextRequest,
-    { params }: { params: { id: string } }
-  ) {
-    try {
-      const id = parseInt(params.id);
-      const data = await request.json();
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const id = parseInt(params.id);
+    const data = await request.json();
 
-      // Prepare update data
-      const updateData: any = {
-        Tentaikhoan: data.Tentaikhoan,
-        Email: data.Email,
-        Hoten: data.Hoten,
-        Sdt: data.Sdt,
-        Diachi: data.Diachi,
-      };
+    // Prepare update data
+    const updateData: any = {
+      Tentaikhoan: data.Tentaikhoan,
+      Email: data.Email,
+      Hoten: data.Hoten,
+      Sdt: data.Sdt,
+      Diachi: data.Diachi,
+    };
 
-      // Only hash and update password if it's provided and changed
-      if (data.MatKhau && data.MatKhau.trim() !== "") {
-        updateData.Matkhau = await hash(data.MatKhau, 12);
-      }
-
-      // Validate and add idRole
-      if (data.idRole && !isNaN(parseInt(data.idRole))) {
-        updateData.idRole = parseInt(data.idRole);
-      } else {
-        return NextResponse.json({ error: "Invalid idRole" }, { status: 400 });
-      }
-
-      // Update user
-      const updatedUser = await prisma.users.update({
-        where: {
-          idUsers: id,
-        },
-        data: updateData,
-        include: {
-          role: {
-            select: {
-              Tennguoidung: true,
-            },
+    // Update user
+    const updatedUser = await prisma.users.update({
+      where: {
+        idUsers: id,
+      },
+      data: updateData,
+      include: {
+        role: {
+          select: {
+            Tennguoidung: true,
           },
         },
-      });
+      },
+    });
 
-      return NextResponse.json({ updatedUser, message: "Cập nhật thành công" });
-    } catch (error: any) {
-      console.error("Update error:", error);
+    return NextResponse.json({ updatedUser, message: "Cập nhật thành công" });
+  } catch (error: any) {
+    console.error("Update error:", error);
 
-      if (error.code === "P2002") {
-        return NextResponse.json(
-          { error: "Username or email already exists" },
-          { status: 400 }
-        );
-      }
-
-      return NextResponse.json(
-        { error: "Failed to update user" },
-        { status: 500 }
-      );
-    }
+    return NextResponse.json(
+      { error: "Failed to update user" },
+      { status: 500 }
+    );
+    
   }
+}
 
 // DELETE user by ID
 export async function DELETE(

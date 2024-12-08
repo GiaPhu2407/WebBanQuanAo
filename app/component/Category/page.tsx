@@ -28,7 +28,7 @@ const ProductDetail = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
-  
+
   const [product, setProduct] = useState<ProductWithImages | null>(null);
   const [selectedImage, setSelectedImage] = useState<string>("");
   const [inventory, setInventory] = useState<number>(0);
@@ -109,6 +109,10 @@ const ProductDetail = () => {
 
   const handleOrderCreation = async (isInstantBuy: boolean) => {
     if (!product || quantity > inventory) return;
+    if (!size) {
+      toast.error("Vui lòng chọn size");
+      return;
+    }
 
     setOrderLoading(true);
 
@@ -121,24 +125,23 @@ const ProductDetail = () => {
         body: JSON.stringify({
           idsanpham: product.idsanpham,
           soluong: quantity,
+          size: size,
         }),
       });
 
       const result = await orderResponse.json();
 
       if (orderResponse.ok) {
-        // Hiển thị toast thành công với thông tin sản phẩm
-        toast.success(`Đã thêm ${quantity} sản phẩm ${product.tensanpham} vào giỏ hàng`);
-        
-        // Nếu là mua ngay, chuyển hướng sang giỏ hàng
+        toast.success(
+          `Đã thêm ${quantity} sản phẩm ${product.tensanpham} (Size ${size}) vào giỏ hàng`
+        );
+
         if (isInstantBuy) {
-          // Thêm một chút delay để người dùng kịp nhìn thấy toast
           setTimeout(() => {
             router.push("/component/shoppingcart");
           }, 500);
         }
       } else {
-        // Hiển thị toast lỗi
         toast.error(result.error || "Có lỗi xảy ra khi đặt hàng");
       }
     } catch (err) {
@@ -149,7 +152,6 @@ const ProductDetail = () => {
     }
   };
 
-  // Phần còn lại của component giữ nguyên như cũ
   if (loading) return <div className="p-4">Đang tải...</div>;
   if (error) return <div className="p-4 text-red-500">Lỗi: {error}</div>;
   if (!product) return <div className="p-4">Không tìm thấy sản phẩm</div>;
@@ -162,19 +164,19 @@ const ProductDetail = () => {
   return (
     <div>
       <Header />
-      <Toaster 
+      <Toaster
         position="top-right"
         toastOptions={{
           success: {
             style: {
-              background: '#4CAF50',
-              color: 'white',
+              background: "#4CAF50",
+              color: "white",
             },
           },
           error: {
             style: {
-              background: '#F44336',
-              color: 'white',
+              background: "#F44336",
+              color: "white",
             },
           },
         }}
@@ -183,7 +185,6 @@ const ProductDetail = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Image Gallery */}
           <div className="flex gap-4">
-            {/* Thumbnail Strip */}
             <div className="flex flex-col gap-2">
               <div
                 className={`w-20 aspect-square cursor-pointer rounded-lg overflow-hidden border-2 ${
@@ -218,7 +219,6 @@ const ProductDetail = () => {
               ))}
             </div>
 
-            {/* Main Image */}
             <div className="flex-1">
               <div className="aspect-square relative overflow-hidden rounded-xl">
                 <img
