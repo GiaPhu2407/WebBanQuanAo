@@ -26,13 +26,13 @@ model Users {
   Email       String?   @db.VarChar(45) @unique
   idRole      Int?      
   Ngaydangky  DateTime? @db.Date
-  
   Token        String?  // Trường lưu token
-
-  role        Role?     @relation(fields: [idRole], references: [idrole])
+  role         Role?     @relation(fields: [idRole], references: [idrole])
   danhgia      Danhgia[]
-
-  
+  yeuthich     Yeuthich[]        // Quan hệ 1-n với bảng Image
+  donhang       Donhang[]
+  lichgiaohang    LichGiaoHang[]   // Quan hệ 1-n với bảng Image
+giohang          Giohang[]
 }
 model Danhgia {
   iddanhgia    Int       @id @default(autoincrement())
@@ -58,23 +58,24 @@ model Khachhang {
   matkhau         String?   @db.VarChar(45)
   idrolekhachhang Int? @unique
   role            Role?     @relation(fields: [idrolekhachhang], references: [idrole])
-  donhang         Donhang[]
-  giohang         Giohang[]
+  // giohang         Giohang[]
   // danhgia         Danhgia[]
   Admin           Admin[]
   tuvanhotro      Tuvanhotro[]
 }
 
 model Donhang {
-  iddonhang    Int       @id @default(autoincrement())
-  tongsoluong  Int?
-  trangthai    String?  @db.VarChar(45)
-  tongsotien   Int?
-  ngaydat      String?   @db.VarChar(45)
-  idkhachhang  Int?    
-  khachhang    Khachhang? @relation(fields: [idkhachhang], references: [idkhachhang])
+  iddonhang      Int       @id @default(autoincrement())
+  tongsoluong    Int?
+  trangthai      String?   @db.VarChar(45)
+  tongsotien     Int?
+  ngaydat        DateTime?   @db.Date
+  idUsers        Int?      // Khóa ngoại tham chiếu đến bảng Users
+  users          Users?    @relation(fields: [idUsers], references: [idUsers])
   chitietdonhang ChitietDonhang[]
-  thanhtoan    Thanhtoan[]
+  thanhtoan      Thanhtoan[]
+      lichgiaohang    LichGiaoHang[]   // Quan hệ 1-n với bảng Image
+
 }
 
 
@@ -85,34 +86,46 @@ model Loaisanpham {
   sanpham       Sanpham[]
 }
 
-model Sanpham {
-  idsanpham       Int              @id @default(autoincrement())
-  tensanpham      String?          @db.VarChar(255)
-  mota            String?          @db.VarChar(255)
-  gia             String?          @db.VarChar(255)
-  hinhanh         String?          @db.VarChar(255)
-  idloaisanpham   Int?            
-  giamgia         Decimal?         @db.Decimal(5,2)
-  gioitinh        Boolean?
-  size            String?         @db.VarChar(255)// Dùng mảng chuỗi để lưu nhiều kích cỡ
-  loaisanpham     Loaisanpham?     @relation(fields: [idloaisanpham], references: [idloaisanpham])
-  chitietnhap     Chitietnhap[]
-  chitietdonhang  ChitietDonhang[]
-  giohang         Giohang[]
-  danhgia         Danhgia[]
-  kho             Kho[]
-  images          Image[]          // Quan hệ 1-n với bảng Image
+  model Sanpham {
+    idsanpham       Int              @id @default(autoincrement())
+    tensanpham      String?          @db.VarChar(255)
+    mota            String?          @db.VarChar(255)
+    gia             String?          @db.VarChar(255)
+    hinhanh         String?          @db.VarChar(255)
+    trangthai        String?          @db.VarChar(255)
+
+    idloaisanpham   Int?            
+    giamgia         Decimal?         @db.Decimal(5,2)
+    gioitinh        Boolean?
+    size            String?         @db.VarChar(255)// Dùng mảng chuỗi để lưu nhiều kích cỡ
+    loaisanpham     Loaisanpham?     @relation(fields: [idloaisanpham], references: [idloaisanpham])
+    chitietnhap     Chitietnhap[]
+    chitietdonhang  ChitietDonhang[]
+    giohang         Giohang[]
+    danhgia         Danhgia[]
+    kho             Kho[]
+    images          Image[]  
+    yeuthich        Yeuthich[] 
+    lichgiaohang    LichGiaoHang[]   // Quan hệ 1-n với bảng Image
+  }
+model Yeuthich {
+  idYeuthich  Int      @id @default(autoincrement()) // Khóa chính
+  idUsers     Int      // Liên kết đến bảng Users
+  idSanpham   Int      // Liên kết đến bảng Sanpham
+  createdAt   DateTime @default(now())              // Ngày thêm vào danh sách yêu thích
+  users       Users    @relation(fields: [idUsers], references: [idUsers])
+  sanpham     Sanpham  @relation(fields: [idSanpham], references: [idsanpham])
 }
 
-model Image {
-  idImage      Int       @id @default(autoincrement())
-  url          String    @db.VarChar(255) // URL của hình ảnh
-  altText      String?   @db.VarChar(255) // Mô tả alt cho SEO và accessibility
-  createdAt    DateTime  @default(now())  // Ngày tạo
-  updatedAt    DateTime  @updatedAt       // Ngày cập nhật gần nhất
-  idSanpham    Int?                        
-  sanpham      Sanpham?  @relation(fields: [idSanpham], references: [idsanpham]) // Quan hệ với bảng Sanpham
-}
+  model Image {
+    idImage      Int       @id @default(autoincrement())
+    url          String    @db.VarChar(255) // URL của hình ảnh
+    altText      String?   @db.VarChar(255) // Mô tả alt cho SEO và accessibility
+    createdAt    DateTime  @default(now())  // Ngày tạo
+    updatedAt    DateTime  @updatedAt       // Ngày cập nhật gần nhất
+    idSanpham    Int?                        
+    sanpham      Sanpham?  @relation(fields: [idSanpham], references: [idsanpham]) // Quan hệ với bảng Sanpham
+  }
 
 
   model Nhacungcap {
@@ -158,9 +171,9 @@ model ChitietDonhang {
 model Giohang {
   idgiohang   Int       @id @default(autoincrement())
   soluong     Int?
-  idkhachhang Int?      
+  idKhachHang Int?      
   idsanpham   Int?      
-  khachhang   Khachhang? @relation(fields: [idkhachhang], references: [idkhachhang])
+  khachhang   Users? @relation(fields: [idKhachHang], references: [idUsers])
   sanpham     Sanpham?  @relation(fields: [idsanpham], references: [idsanpham])
 }
 
@@ -209,7 +222,19 @@ model Thanhtoan {
   ngaythanhtoan        DateTime? @db.Date
   donhang              Donhang?  @relation(fields: [iddonhang], references: [iddonhang])
 }
-
+model LichGiaoHang {
+  idLichGiaoXe Int       @id @default(autoincrement())
+  idsanpham         Int?      
+  idKhachHang  Int?      
+  NgayGiao     DateTime? @db.Date
+  GioGiao      DateTime? @db.Time(0)
+  TrangThai    String?   @db.VarChar(225)
+  idDatCoc     Int?      
+  iddonhang    Int?      
+  sanpham       Sanpham? @relation(fields: [idsanpham], references: [idsanpham])
+  khachHang    Users?    @relation(fields: [idKhachHang], references: [idUsers])
+  donHang      Donhang?  @relation(fields: [iddonhang], references: [iddonhang])
+}
 
 model Kho {
   idKho      Int       @id @default(autoincrement())
@@ -236,7 +261,7 @@ model Ke {
 }
 
 model Tang {
-  idtang   Int     @id
+  idtang   Int     @id @default(autoincrement())
   idke     Int?
   tentang  String? @db.VarChar(255)
   ke       Ke?     @relation(fields: [idke], references: [idke])
