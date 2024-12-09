@@ -162,7 +162,7 @@ model ChitietDonhang {
   idchitietdathang Int       @id @default(autoincrement())
   iddonhang        Int?      
   soluong          Int?
-  dongia           Decimal?  @db.Decimal(5,2)
+  dongia           Decimal?  @db.Decimal(15,2)
   idsanpham        Int?
   idSize           Int?      // New field for size
   donhang          Donhang?  @relation(fields: [iddonhang], references: [iddonhang])
@@ -243,8 +243,11 @@ model LichGiaoHang {
 model Kho {
   idKho      Int       @id @default(autoincrement())
   idsanpham  Int?      @unique
+  idSize     Int?
   soluong    Int?
   sanpham    Sanpham?  @relation(fields: [idsanpham], references: [idsanpham])
+  size       Size?    @relation(fields: [idSize], references: [idSize])
+
   vung       Vung[]
 }
 
@@ -313,6 +316,7 @@ model Size {
   ProductSizes ProductSize[]
   ChitietDonhang ChitietDonhang[]
   Giohang       Giohang[]
+  kho           Kho[]
 }
 
 // Add ProductSize model to create many-to-many relationship

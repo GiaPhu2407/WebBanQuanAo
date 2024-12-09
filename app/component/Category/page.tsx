@@ -5,12 +5,6 @@ import toast, { Toaster } from "react-hot-toast";
 import Header from "../Header";
 import Footer from "../Footer";
 
-interface Image {
-  idImage: number;
-  url: string;
-  altText: string | null;
-}
-
 interface ProductWithImages {
   idsanpham: number;
   tensanpham: string;
@@ -21,52 +15,53 @@ interface ProductWithImages {
   giamgia: number;
   gioitinh: boolean;
   size: string;
-  images: Image[];
+  images: { idImage: number; url: string; altText: string | null }[];
+}
+
+interface Size {
+  idSize: number; // Changed to number to match database
+  tenSize: string;
 }
 
 const ProductDetail = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
-  
+
   const [product, setProduct] = useState<ProductWithImages | null>(null);
   const [selectedImage, setSelectedImage] = useState<string>("");
-  const [inventory, setInventory] = useState<number>(0);
+  const [availableSizes, setAvailableSizes] = useState<Size[]>([]);
+  const [selectedSize, setSelectedSize] = useState<number | null>(null); // Changed to number
   const [quantity, setQuantity] = useState<number>(1);
-  const [size, setSize] = useState<string>("");
-  const [availableSizes, setAvailableSizes] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [orderLoading, setOrderLoading] = useState(false);
 
   useEffect(() => {
-    const fetchProductAndInventory = async () => {
+    const fetchProductAndSizes = async () => {
       if (!id) return;
 
       try {
-        const productResponse = await fetch(`/api/category/${id}`);
+        const [productResponse, sizeResponse] = await Promise.all([
+          fetch(`/api/category/${id}`),
+          fetch(`/api/size`),
+        ]);
+
         if (!productResponse.ok)
           throw new Error("Không thể lấy thông tin sản phẩm");
+        if (!sizeResponse.ok)
+          throw new Error("Không thể lấy thông tin kích thước");
 
         const productData = await productResponse.json();
+        const sizeData = await sizeResponse.json();
+
         setProduct(productData);
         setSelectedImage(productData.hinhanh);
+        setAvailableSizes(sizeData.size);
 
-        const sizes = productData.size.split(",").map((s: string) => s.trim());
-        setAvailableSizes(sizes);
-        setSize(sizes[0]);
-
-        const inventoryResponse = await fetch(
-          `/api/kho?idsanpham=${id}&size=${sizes[0]}`
-        );
-        if (!inventoryResponse.ok)
-          throw new Error("Không thể lấy thông tin tồn kho");
-
-        const inventoryData = await inventoryResponse.json();
-        if (inventoryData.kho && inventoryData.kho.length > 0) {
-          setInventory(inventoryData.kho[0].soluong);
-        } else {
-          setInventory(0);
+        // Set default size to first available size
+        if (sizeData.size.length > 0) {
+          setSelectedSize(sizeData.size[0].idSize);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Đã có lỗi xảy ra");
@@ -75,40 +70,25 @@ const ProductDetail = () => {
       }
     };
 
-    fetchProductAndInventory();
+    fetchProductAndSizes();
   }, [id]);
 
   const handleQuantityChange = (newQuantity: number) => {
-    if (newQuantity >= 1 && newQuantity <= inventory) {
+    if (newQuantity >= 1) {
       setQuantity(newQuantity);
     }
   };
 
-  const handleSizeChange = async (newSize: string) => {
-    setSize(newSize);
+  const handleSizeChange = (newSize: string) => {
+    setSelectedSize(parseInt(newSize));
     setQuantity(1);
-
-    try {
-      const inventoryResponse = await fetch(
-        `/api/kho?idsanpham=${product?.idsanpham}&size=${newSize}`
-      );
-      if (!inventoryResponse.ok)
-        throw new Error("Không thể lấy thông tin tồn kho");
-
-      const inventoryData = await inventoryResponse.json();
-      if (inventoryData.kho && inventoryData.kho.length > 0) {
-        setInventory(inventoryData.kho[0].soluong);
-      } else {
-        setInventory(0);
-      }
-    } catch (err) {
-      console.error("Lỗi khi lấy tồn kho theo size:", err);
-      setInventory(0);
-    }
   };
 
   const handleOrderCreation = async (isInstantBuy: boolean) => {
-    if (!product || quantity > inventory) return;
+    if (!product || !selectedSize || quantity <= 0) {
+      toast.error("Vui lòng chọn size và số lượng");
+      return;
+    }
 
     setOrderLoading(true);
 
@@ -121,35 +101,40 @@ const ProductDetail = () => {
         body: JSON.stringify({
           idsanpham: product.idsanpham,
           soluong: quantity,
+          sizeId: selectedSize,
         }),
       });
 
       const result = await orderResponse.json();
 
       if (orderResponse.ok) {
-        // Hiển thị toast thành công với thông tin sản phẩm
-        toast.success(`Đã thêm ${quantity} sản phẩm ${product.tensanpham} vào giỏ hàng`);
-        
-        // Nếu là mua ngay, chuyển hướng sang giỏ hàng
+        // Tìm tên size để hiển thị trong thông báo
+        const selectedSizeObj = availableSizes.find(
+          (s) => s.idSize === selectedSize
+        );
+        const sizeName = selectedSizeObj
+          ? selectedSizeObj.tenSize
+          : selectedSize;
+
+        toast.success(
+          `Đã thêm ${quantity} sản phẩm ${product.tensanpham} size ${sizeName} vào giỏ hàng`
+        );
+
         if (isInstantBuy) {
-          // Thêm một chút delay để người dùng kịp nhìn thấy toast
           setTimeout(() => {
             router.push("/component/shopping");
           }, 500);
         }
       } else {
-        // Hiển thị toast lỗi
         toast.error(result.error || "Có lỗi xảy ra khi đặt hàng");
       }
     } catch (err) {
-      console.error("Lỗi khi đặt hàng:", err);
       toast.error("Có lỗi xảy ra khi đặt hàng");
     } finally {
       setOrderLoading(false);
     }
   };
 
-  // Phần còn lại của component giữ nguyên như cũ
   if (loading) return <div className="p-4">Đang tải...</div>;
   if (error) return <div className="p-4 text-red-500">Lỗi: {error}</div>;
   if (!product) return <div className="p-4">Không tìm thấy sản phẩm</div>;
@@ -162,19 +147,19 @@ const ProductDetail = () => {
   return (
     <div>
       <Header />
-      <Toaster 
+      <Toaster
         position="top-right"
         toastOptions={{
           success: {
             style: {
-              background: '#4CAF50',
-              color: 'white',
+              background: "#4CAF50",
+              color: "white",
             },
           },
           error: {
             style: {
-              background: '#F44336',
-              color: 'white',
+              background: "#F44336",
+              color: "white",
             },
           },
         }}
@@ -183,7 +168,6 @@ const ProductDetail = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Image Gallery */}
           <div className="flex gap-4">
-            {/* Thumbnail Strip */}
             <div className="flex flex-col gap-2">
               <div
                 className={`w-20 aspect-square cursor-pointer rounded-lg overflow-hidden border-2 ${
@@ -268,57 +252,46 @@ const ProductDetail = () => {
               </span>
             </div>
 
+            {/* Size Selector */}
             <div className="space-y-4">
-              <div className="text-sm text-gray-600">
-                Số lượng còn lại:
-                <span
-                  className={`ml-2 font-semibold ${
-                    inventory === 0 ? "text-red-500" : "text-green-600"
-                  }`}
-                >
-                  {inventory}
-                </span>
-              </div>
-
-              {/* Size Selector */}
               <div className="flex items-center space-x-4">
                 <span className="text-sm font-medium">Kích thước:</span>
-                <div className="flex items-center space-x-2">
-                  {availableSizes.map((s) => (
-                    <button
-                      key={s}
-                      className={`px-3 py-1 text-sm border rounded-full transition-colors ${
-                        size === s
-                          ? "bg-blue-600 text-white"
-                          : "border-gray-300 hover:bg-gray-50"
-                      }`}
-                      onClick={() => handleSizeChange(s)}
-                    >
-                      {s}
-                    </button>
+                <select
+                  value={selectedSize || ""}
+                  onChange={(e) => handleSizeChange(e.target.value)}
+                  className="border border-gray-300 rounded-lg py-2 px-3"
+                >
+                  {availableSizes.map((sizeOption) => (
+                    <option key={sizeOption.idSize} value={sizeOption.idSize}>
+                      {sizeOption.tenSize}
+                    </option>
                   ))}
-                </div>
-                <span className="text-sm font-medium ml-4">
-                  Size: <span className="font-bold">{size}</span>
-                </span>
+                </select>
               </div>
 
               {/* Quantity Selector */}
               <div className="flex items-center space-x-4">
                 <span className="text-sm font-medium">Số lượng:</span>
-                <div className="flex items-center border rounded-lg">
+                <div className="flex items-center border border-gray-300 rounded-lg">
                   <button
                     onClick={() => handleQuantityChange(quantity - 1)}
+                    className="px-3 py-2 hover:bg-gray-100"
                     disabled={quantity <= 1}
-                    className="px-3 py-1 disabled:opacity-50"
                   >
                     -
                   </button>
-                  <span className="px-4 py-1">{quantity}</span>
+                  <input
+                    type="number"
+                    min="1"
+                    value={quantity}
+                    onChange={(e) =>
+                      handleQuantityChange(parseInt(e.target.value) || 1)
+                    }
+                    className="w-16 text-center border-x border-gray-300"
+                  />
                   <button
                     onClick={() => handleQuantityChange(quantity + 1)}
-                    disabled={quantity >= inventory}
-                    className="px-3 py-1 disabled:opacity-50"
+                    className="px-3 py-2 hover:bg-gray-100"
                   >
                     +
                   </button>
@@ -327,36 +300,20 @@ const ProductDetail = () => {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-4 pt-4">
+            <div className="flex gap-4">
               <button
-                disabled={inventory === 0 || orderLoading}
-                className={`flex-1 px-6 py-3 text-white rounded-lg transition-colors ${
-                  inventory === 0 || orderLoading
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-blue-600 hover:bg-blue-700"
-                }`}
                 onClick={() => handleOrderCreation(false)}
+                disabled={orderLoading}
+                className="flex-1 px-6 py-3 text-sm font-medium text-blue-600 bg-white border border-blue-600 rounded-lg hover:bg-blue-50"
               >
-                {orderLoading
-                  ? "Đang xử lý..."
-                  : inventory === 0
-                  ? "Hết hàng"
-                  : "Thêm vào giỏ hàng"}
+                {orderLoading ? "Đang xử lý..." : "Thêm vào giỏ hàng"}
               </button>
               <button
-                disabled={inventory === 0 || orderLoading}
-                className={`flex-1 px-6 py-3 rounded-lg transition-colors ${
-                  inventory === 0 || orderLoading
-                    ? "border border-gray-300 text-gray-400 cursor-not-allowed"
-                    : "border border-gray-300 hover:bg-gray-50"
-                }`}
                 onClick={() => handleOrderCreation(true)}
+                disabled={orderLoading}
+                className="flex-1 px-6 py-3 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
               >
-                {orderLoading
-                  ? "Đang xử lý..."
-                  : inventory === 0
-                  ? "Hết hàng"
-                  : "Mua ngay"}
+                {orderLoading ? "Đang xử lý..." : "Mua ngay"}
               </button>
             </div>
           </div>

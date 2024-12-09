@@ -1,70 +1,82 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast, Toaster } from "react-hot-toast";
-import { Loader2 } from "lucide-react";
+import Header from "../Header";
 import Footer from "../Footer";
 
-interface ChiTietDonHang {
-  idchitietdonhang: number;
-  SoLuong: number;
-  DonGia: number;
-  sanpham: {
-    tensanpham: string;
-    mota: string;
-    gia: number;
-    hinhanh: string;
-    giamgia: number;
-    gioitinh: boolean; // true for "Nam", false for "Nữ"
-    size: string;
-  };
-}
-
-interface LichGiaoHang {
-  NgayGiao: string;
-  TrangThai: string;
-}
-
-interface DonHang {
+interface OrderItem {
   iddonhang: number;
+  ngaydat: string;
   trangthai: string;
   tongsotien: number;
-  ngaydat: string;
-  ChiTietDonHang: ChiTietDonHang[];
-  LichGiaoXe: LichGiaoHang[];
+  chitietDonhang: {
+    idsanpham: number;
+    soluong: number;
+    dongia: number;
+    sanpham: {
+      tensanpham: string;
+      hinhanh: string;
+      mota: string;
+      kichthuoc: string;
+      gioitinh?: boolean;
+    };
+  }[];
+  lichGiaoHang?: {
+    NgayGiao: string;
+    TrangThai: string;
+  }[];
+  thanhtoan: {
+    phuongthucthanhtoan: string;
+    ngaythanhtoan: string;
+  }[];
 }
 
-const OrderPage = () => {
-  const [donHangs, setDonHangs] = useState<DonHang[]>([]);
-  const [error, setError] = useState<string | null>(null);
+const OrderPage: React.FC = () => {
+  const [orders, setOrders] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
-    fetchDonHangs();
+    fetchOrders();
+
+    // Optional: WebSocket for real-time updates
+    const ws = new WebSocket("ws://your-websocket-url");
+
+    ws.onmessage = (event) => {
+      const updatedOrder: OrderItem = JSON.parse(event.data);
+      setOrders((prevOrders) =>
+        prevOrders.map((order) =>
+          order.iddonhang === updatedOrder.iddonhang ? updatedOrder : order
+        )
+      );
+      toast.success("Đơn hàng đã được cập nhật");
+    };
+
+    return () => {
+      ws.close();
+    };
   }, []);
 
-  const fetchDonHangs = async () => {
+  const fetchOrders = async () => {
     try {
-      const response = await fetch("/api/donhang");
+      const response = await fetch("/api/thanhtoan");
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error("Không thể tải đơn hàng");
       }
       const data = await response.json();
-
-      // Kiểm tra dữ liệu trả về có phải là mảng không
-      if (Array.isArray(data)) {
-        setDonHangs(data);
-      } else {
-        setError("Dữ liệu không hợp lệ.");
-      }
+      setOrders(data.data || []);
     } catch (error) {
-      console.error("Error fetching data:", error);
-      setError("Không thể tải danh sách đơn hàng");
+      console.error("Error fetching orders:", error);
+      setError("Có lỗi xảy ra khi tải đơn hàng");
+      toast.error("Không thể tải đơn hàng");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleCancelOrder = async (orderId: number) => {
     const confirmed = await new Promise((resolve) => {
       toast.custom(
         (t) => (
@@ -94,25 +106,22 @@ const OrderPage = () => {
             </div>
           </div>
         ),
-        {
-          duration: Infinity,
-        }
+        { duration: Infinity }
       );
     });
 
     if (confirmed) {
       try {
-        const response = await fetch(`/api/donhang/${id}`, {
+        const response = await fetch(`/api/donhang/${orderId}`, {
           method: "DELETE",
         });
 
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          throw new Error(`Không thể hủy đơn hàng`);
         }
 
-        // Update local state by filtering out the deleted order
-        setDonHangs((prevDonHangs) =>
-          prevDonHangs.filter((donHang) => donHang.iddonhang !== id)
+        setOrders((prevOrders) =>
+          prevOrders.filter((order) => order.iddonhang !== orderId)
         );
 
         toast.success("Đã hủy đơn hàng thành công");
@@ -124,128 +133,181 @@ const OrderPage = () => {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "đang xử lý":
-        return "bg-yellow-100 text-yellow-800";
-      case "đã xác nhận":
-        return "bg-blue-100 text-blue-800";
-      case "đang giao":
-        return "bg-purple-100 text-purple-800";
-      case "đã giao":
-        return "bg-green-100 text-green-800";
-      case "đã hủy":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
+    const statusColors: { [key: string]: string } = {
+      "Chờ xác nhận": "bg-yellow-100 text-yellow-800",
+      "Đã xác nhận": "bg-blue-100 text-blue-800",
+      "Đang giao": "bg-purple-100 text-purple-800",
+      "Đã giao": "bg-green-100 text-green-800",
+      "Đã hủy": "bg-red-100 text-red-800",
+    };
+    return statusColors[status] || "bg-gray-100 text-gray-800";
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("vi-VN", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   if (loading) {
     return (
-      <div
-        className="flex justify-center items-center h-screen"
-        data-theme="light"
-      >
-        <span className="loading loading-spinner text-blue-600 loading-lg"></span>
+      <div className="min-h-screen flex justify-center items-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-red-500">{error}</div>
+      <div className="min-h-screen flex justify-center items-center text-red-500">
+        {error}
       </div>
     );
   }
 
   return (
-    <div data-theme="light">
-      <Toaster position="top-center" />
-      <div className="container mx-auto px-36 py-28 ml-9 ">
-        <h1 className="text-2xl font-bold mb-6">Đơn hàng của tôi</h1>
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+      <Toaster position="top-right" />
 
-        {donHangs.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            Bạn chưa có đơn hàng nào
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-2xl font-bold text-gray-900">Đơn hàng của bạn</h1>
+          <button
+            onClick={() => router.push("/")}
+            className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded transition duration-200"
+          >
+            Tiếp tục mua sắm
+          </button>
+        </div>
+
+        {orders.length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-lg shadow-sm">
+            <p className="text-gray-500 text-xl mb-4">
+              Bạn chưa có đơn hàng nào
+            </p>
+            <button
+              onClick={() => router.push("/")}
+              className="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 transition duration-200"
+            >
+              Bắt đầu mua sắm
+            </button>
           </div>
         ) : (
-          <div className="flex flex-wrap flex-shrink justify-stretch gap-12">
-            {donHangs.map((donHang) => (
+          <div className="space-y-6">
+            {orders.map((order) => (
               <div
-                key={donHang.iddonhang}
-                className="bg-white rounded-2xl shadow-xl p-6 space-y-4"
+                key={order.iddonhang}
+                className="bg-white rounded-lg shadow-sm p-6"
               >
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-start mb-4">
                   <div>
-                    <span className="text-gray-600">Mã đơn hàng: </span>
-                    <span className="font-semibold">#{donHang.iddonhang}</span>
+                    <h2 className="text-lg font-semibold text-gray-900">
+                      Đơn hàng #{order.iddonhang}
+                    </h2>
+                    <p className="text-sm text-gray-500">
+                      Đặt ngày: {formatDate(order.ngaydat)}
+                    </p>
                   </div>
                   <span
                     className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-                      donHang.trangthai
+                      order.trangthai
                     )}`}
                   >
-                    {donHang.trangthai}
+                    {order.trangthai}
                   </span>
                 </div>
 
-                {donHang.ChiTietDonHang && donHang.ChiTietDonHang.length > 0 ? (
-                  donHang.ChiTietDonHang.map((chiTiet) => (
+                {order.chitietDonhang && order.chitietDonhang.length > 0 ? (
+                  order.chitietDonhang.map((item, index) => (
                     <div
-                      key={chiTiet.idchitietdonhang}
-                      className="flex items-center gap-4 border-t pt-4"
+                      key={index}
+                      className="flex items-start gap-4 border-t border-gray-200 py-4"
                     >
-                      <div className="w-24 h-24 flex-shrink-0">
-                        <img
-                          src={chiTiet.sanpham.hinhanh.split("|")[0]}
-                          alt={chiTiet.sanpham.tensanpham}
-                          className="w-full h-full object-cover rounded-lg"
-                        />
-                      </div>
+                      <img
+                        src={item.sanpham.hinhanh}
+                        alt={item.sanpham.tensanpham}
+                        className="w-20 h-20 object-cover rounded-lg"
+                      />
                       <div className="flex-1">
-                        <h3 className="font-semibold text-lg mb-1">
-                          {chiTiet.sanpham.tensanpham}
+                        <h3 className="text-gray-800 font-medium">
+                          {item.sanpham.tensanpham}
                         </h3>
-                        <p className="text-gray-600 mb-1">
-                          Giới tính: <span>{chiTiet.sanpham.gioitinh ? "Nam" : "Nữ"}</span>
+                        {item.sanpham.gioitinh !== undefined && (
+                          <p className="text-gray-500 text-sm">
+                            Giới tính: {item.sanpham.gioitinh ? "Nam" : "Nữ"}
+                          </p>
+                        )}
+                        <p className="text-gray-500 text-sm">
+                          {item.sanpham.mota}
                         </p>
-                        <p className="text-gray-600">
-                          Đơn giá:{" "}
-                          {new Intl.NumberFormat("vi-VN", {
-                            style: "currency",
-                            currency: "VND",
-                          }).format(chiTiet.DonGia)}
+                        <p className="text-gray-700 font-semibold">
+                          {item.soluong} x {item.dongia.toLocaleString("vi-VN")}{" "}
+                          đ
                         </p>
-                        <p className="text-sm text-gray-600">
-                          Số lượng: {chiTiet.SoLuong}
-                        </p>
+                        {item.sanpham.kichthuoc && (
+                          <p className="text-gray-500 text-sm">
+                            Kích thước: {item.sanpham.kichthuoc}
+                          </p>
+                        )}
                       </div>
                     </div>
                   ))
                 ) : (
-                  <div className="text-center text-gray-500">Không có chi tiết đơn hàng</div>
+                  <p className="text-sm text-gray-500">
+                    Không có sản phẩm nào trong đơn hàng này
+                  </p>
                 )}
 
-                <div className="flex justify-between items-center border-t pt-4">
+                <div className="mt-4 flex justify-between items-center border-t pt-4">
+                  <span className="text-gray-700 font-semibold">
+                    Tổng tiền: {order.tongsotien.toLocaleString("vi-VN")} đ
+                  </span>
                   <div>
-                    <span className="text-gray-600">Tổng tiền: </span>
-                    <span className="font-bold text-lg">
-                      {new Intl.NumberFormat("vi-VN", {
-                        style: "currency",
-                        currency: "VND",
-                      }).format(donHang.tongsotien)}
-                    </span>
+                    {order.thanhtoan.map((payment, index) => (
+                      <p key={index} className="text-sm text-gray-500">
+                        Thanh toán bằng: {payment.phuongthucthanhtoan} vào{" "}
+                        {formatDate(payment.ngaythanhtoan)}
+                      </p>
+                    ))}
                   </div>
-                  {donHang.trangthai === "Chờ xác nhận" && (
-                    <button
-                      onClick={() => handleDelete(donHang.iddonhang)}
-                      className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition duration-200"
-                    >
-                      Hủy đơn
-                    </button>
-                  )}
                 </div>
+
+                <div className="mt-4">
+                  {order.lichGiaoHang?.map((schedule, index) => (
+                    <div
+                      key={index}
+                      className="flex justify-between items-center mb-2"
+                    >
+                      <span className="text-sm text-gray-500">
+                        Dự kiến giao vào {formatDate(schedule.NgayGiao)}
+                      </span>
+                      <span
+                        className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+                          schedule.TrangThai
+                        )}`}
+                      >
+                        {schedule.TrangThai}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {order.trangthai !== "Đã hủy" &&
+                  order.trangthai !== "Đã giao" && (
+                    <div className="flex justify-end mt-4">
+                      <button
+                        className="btn btn-danger btn-sm text-red-500 hover:bg-red-100"
+                        onClick={() => handleCancelOrder(order.iddonhang)}
+                      >
+                        Hủy đơn
+                      </button>
+                    </div>
+                  )}
               </div>
             ))}
           </div>

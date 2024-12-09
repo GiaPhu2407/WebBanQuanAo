@@ -1,18 +1,21 @@
-import { getSession } from '@/lib/auth';
-import prisma from '@/prisma/client';
-import { getServerSession } from 'next-auth/next';
-import { NextResponse } from 'next/server';
+import prisma from "@/prisma/client";
+import { getSession } from "@/lib/auth";
+import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
     const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { cartItems, paymentMethod } = await req.json();
 
     const result = await prisma.$transaction(async (prisma) => {
-      const allOrders: any[] = [];
-      const allPayments: any[] = [];
-      const allDeliverySchedules: any[] = [];
-      const allOrderDetails: any[] = [];
+      const allOrders = [];
+      const allOrderDetails = [];
+      const allPayments = [];
+      const allDeliverySchedules = [];
 
       for (const item of cartItems) {
         // 1. Tạo đơn hàng mới
@@ -20,8 +23,9 @@ export async function POST(req: Request) {
           data: {
             idUsers: session.idUsers,
             ngaydat: new Date(),
-            trangthai: 'Chờ xác nhận',
-            tongsotien: Number(item.sanpham.gia) * item.SoLuong,
+            trangthai: "Chờ xác nhận",
+            tongsotien: item.sanpham.gia * item.soluong,
+            tongsoluong: item.soluong,
           },
         });
         allOrders.push(order);
@@ -31,17 +35,20 @@ export async function POST(req: Request) {
           data: {
             iddonhang: order.iddonhang,
             idsanpham: item.idsanpham,
+            idSize: item.idSize,
             soluong: item.soluong,
-            dongia: item.sanpham?.gia || 0,
+            dongia: item.sanpham.gia,
           },
         });
         allOrderDetails.push(orderDetail);
 
-        // 3. Tạo bản ghi thanh toán
+        // 3. Tạo thanh toán
         const payment = await prisma.thanhtoan.create({
           data: {
             iddonhang: order.iddonhang,
             phuongthucthanhtoan: paymentMethod,
+            sotien: item.sanpham.gia * item.soluong,
+            trangthai: "Đang xử lý",
             ngaythanhtoan: new Date(),
           },
         });
@@ -54,14 +61,10 @@ export async function POST(req: Request) {
           },
         });
 
-        // 5. Cập nhật trạng thái xe
+        // 5. Cập nhật trạng thái sản phẩm
         await prisma.sanpham.update({
-          where: {
-            idsanpham: item.idXe,
-          },
-          data: {
-            trangthai: 'Đã đặt hàng',
-          },
+          where: { idsanpham: item.idsanpham },
+          data: { trangthai: "Đã đặt hàng" },
         });
 
         // 6. Tạo lịch giao hàng
@@ -71,7 +74,7 @@ export async function POST(req: Request) {
             idsanpham: item.idsanpham,
             idKhachHang: session.idUsers,
             NgayGiao: await calculateDeliveryDate(),
-            TrangThai: 'Chờ giao',
+            TrangThai: "Chờ giao",
           },
         });
         allDeliverySchedules.push(deliverySchedule);
@@ -87,29 +90,48 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
-    console.error('Checkout error:', error);
+    console.error("Checkout error:", error);
     return NextResponse.json(
-      { error: 'Internal server error during checkout' },
+      { error: "Internal Server Error" },
       { status: 500 }
     );
   }
 }
 
 async function calculateDeliveryDate(): Promise<Date> {
-  // Logic để tính ngày giao hàng dự kiến
   const orderDate = new Date();
-  const earliestDeliveryDate = new Date(orderDate);
-  earliestDeliveryDate.setDate(orderDate.getDate() + 3);
-
-  const maxDeliveryDate = new Date(orderDate);
-  maxDeliveryDate.setDate(orderDate.getDate() + 6);
-
-  const deliveryDate = new Date(
-    earliestDeliveryDate.getTime() +
-      Math.random() * (maxDeliveryDate.getTime() - earliestDeliveryDate.getTime())
-  );
-
-  deliveryDate.setHours(8 + Math.floor(Math.random() * 10), Math.floor(Math.random() * 60), 0, 0);
-
+  const deliveryDate = new Date(orderDate);
+  deliveryDate.setDate(orderDate.getDate() + Math.floor(Math.random() * 4) + 3);
+  deliveryDate.setHours(8 + Math.floor(Math.random() * 4), 0, 0, 0);
   return deliveryDate;
+}
+export async function GET(req: Request) {
+  try {
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const orders = await prisma.donhang.findMany({
+      where: { idUsers: session.idUsers },
+      include: {
+        chitietdonhang: {
+          include: {
+            sanpham: true,
+          },
+        },
+        thanhtoan: true,
+        lichgiaohang: true,
+      },
+      orderBy: { ngaydat: "desc" },
+    });
+
+    return NextResponse.json({ success: true, data: orders });
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
+  }
 }

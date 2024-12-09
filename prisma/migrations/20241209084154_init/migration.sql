@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE `kho` ADD COLUMN `idSize` INTEGER NULL;
+
+-- AddForeignKey
+ALTER TABLE `Kho` ADD CONSTRAINT `Kho_idSize_fkey` FOREIGN KEY (`idSize`) REFERENCES `Size`(`idSize`) ON DELETE SET NULL ON UPDATE CASCADE;
