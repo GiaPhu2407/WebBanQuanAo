@@ -10,7 +10,7 @@ interface OrderItem {
   ngaydat: string;
   trangthai: string;
   tongsotien: number;
-  chitietDonhang: {
+  chitietdonhang: {
     idsanpham: number;
     soluong: number;
     dongia: number;
@@ -222,8 +222,8 @@ const OrderPage: React.FC = () => {
                   </span>
                 </div>
 
-                {order.chitietDonhang && order.chitietDonhang.length > 0 ? (
-                  order.chitietDonhang.map((item, index) => (
+                {order.chitietdonhang && order.chitietdonhang.length > 0 ? (
+                  order.chitietdonhang.map((item, index) => (
                     <div
                       key={index}
                       className="flex items-start gap-4 border-t border-gray-200 py-4"

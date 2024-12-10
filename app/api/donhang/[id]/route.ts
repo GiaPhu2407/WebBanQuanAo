@@ -62,11 +62,29 @@ export async function GET(request: NextRequest) {
   const donhang = await prisma.donhang.findUnique({
     where: { iddonhang },
     include: {
-      chitietdonhang: true, // Bao gồm các chi tiết đơn hàng
-      thanhtoan: true, // Bao gồm thông tin thanh toán
+      chitietdonhang: {
+        include: {
+          sanpham: {
+            select: {
+              tensanpham: true,
+              gioitinh: true,
+              mota: true,
+              idsanpham:true,
+              hinhanh:true,
+              images: {
+                select: {
+                  idImage: true,
+                  idSanpham: true,
+                  url: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      thanhtoan: true,
     },
   });
-
   if (!donhang) {
     return NextResponse.json(
       { message: "Đơn hàng không tồn tại" },
@@ -77,11 +95,12 @@ export async function GET(request: NextRequest) {
   return NextResponse.json(donhang, { status: 200 });
 }
 
-export async function DELETE(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const iddonhang = parseInt(searchParams.get("iddonhang") || "");
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const iddonhang = parseInt(params.id, 10);
 
-  // Kiểm tra iddonhang hợp lệ
   if (isNaN(iddonhang)) {
     return NextResponse.json(
       { message: "ID đơn hàng không hợp lệ" },
@@ -89,25 +108,29 @@ export async function DELETE(request: NextRequest) {
     );
   }
 
-  // Kiểm tra xem đơn hàng có tồn tại không
-  const existingDonHang = await prisma.donhang.findUnique({
-    where: { iddonhang },
-  });
+  try {
+    const existingDonHang = await prisma.donhang.findUnique({
+      where: { iddonhang },
+    });
 
-  if (!existingDonHang) {
+    if (!existingDonHang) {
+      return NextResponse.json(
+        { message: "Đơn hàng không tồn tại" },
+        { status: 404 }
+      );
+    }
+
+    await prisma.donhang.delete({ where: { iddonhang } });
+
     return NextResponse.json(
-      { message: "Đơn hàng không tồn tại" },
-      { status: 404 }
+      { message: "Đơn hàng đã được xóa" },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json(
+      { message: "Có lỗi xảy ra khi xóa đơn hàng" },
+      { status: 500 }
     );
   }
-
-  // Xóa đơn hàng
-  await prisma.donhang.delete({
-    where: { iddonhang },
-  });
-
-  return NextResponse.json(
-    { message: "Đơn hàng đã được xóa" },
-    { status: 200 }
-  );
 }

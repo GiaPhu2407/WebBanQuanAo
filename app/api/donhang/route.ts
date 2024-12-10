@@ -1,3 +1,4 @@
+import { getSession } from "@/lib/auth";
 import prisma from "@/prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -81,13 +82,40 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-export async function GET(request: NextRequest, response: NextResponse) {
-  const iddonhang = await prisma.donhang.findMany();
-  return NextResponse.json(
-    { iddonhang, message: "Hiện tất cả các id" },
-    { status: 200 }
-  );
+export async function GET() {
+  try {
+      const session = await getSession();
+      const donhang = await prisma.donhang.findMany({
+          where:{
+              idUsers: session.idUsers
+          },
+          include: {
+              chitietdonhang:{
+                  include: {
+                      sanpham: {
+                          select: {
+                              tensanpham: true,
+                              gia: true,
+                              hinhanh: true,
+                              gioitinh: true,
+                          }
+                      }
+                  }
+              },
+              lichgiaohang:{
+                  select: {
+                      NgayGiao: true,
+                      TrangThai: true,
+                  }
+              }
+          }
+      })
+      return NextResponse.json(donhang)
+  } catch (error: any) {
+      return NextResponse.json({ error: error.message})
+  }
 }
+
 export async function DELETE(request: NextRequest, response: NextResponse) {
   const iddonhang = await prisma.donhang.deleteMany();
   return NextResponse.json(

@@ -134,10 +134,12 @@ export const ShoppingCart = () => {
       toast.error("Vui lòng chọn phương thức thanh toán");
       return;
     }
-
+  
     try {
       setProcessing(true);
-
+  
+      const totalAmount = calculateTotal(); // Sử dụng số tiền đã giảm giá
+  
       const response = await fetch("/api/thanhtoan", {
         method: "POST",
         headers: {
@@ -146,19 +148,20 @@ export const ShoppingCart = () => {
         body: JSON.stringify({
           cartItems,
           paymentMethod,
+          totalAmount, // Gửi tổng số tiền đã giảm giá
         }),
       });
-
+  
       if (!response.ok) {
         throw new Error("Thanh toán thất bại");
       }
-
+  
       // Hiển thị toast và chuyển hướng
       await toast.promise(new Promise((resolve) => setTimeout(resolve, 1500)), {
         loading: "Đang xử lý đơn hàng...",
         success: () => {
           setTimeout(() => {
-            router.push("/Orders");
+            router.push("/component/Order");
           }, 500);
           return "Đặt hàng thành công! Đang chuyển đến trang đơn hàng...";
         },
@@ -171,6 +174,7 @@ export const ShoppingCart = () => {
       setProcessing(false);
     }
   };
+  
 
   const calculateTotal = () => {
     return cartItems.reduce((total, item) => {
@@ -250,7 +254,7 @@ export const ShoppingCart = () => {
                         <p className="text-gray-500 text-sm">
                           Size:{" "}
                           <span className="font-medium">
-                            {item.size.tenSize}
+                            {item.size?.tenSize}
                           </span>
                         </p>
                         <p className="text-gray-500 text-sm">
