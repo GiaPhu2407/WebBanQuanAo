@@ -1108,33 +1108,125 @@ const Menu: React.FC = () => {
       </div>
 
       {/* Spacer to push content down */}
-      <div className="h-20"></div>
+          {/* Spacer to push content down */}
+          <div className="h-20"></div>
 
-      {/* Male Dropdown */}
-      <div
-        onMouseLeave={() => setShowMaleDropdown(false)}
-        className={`${
-          showMaleDropdown
-            ? "opacity-100 translate-y-0"
-            : "opacity-0 -translate-y-full"
-        } bg-white w-full h-[300px] shadow fixed top-20 transition-all duration-300 ease-in-out transform z-20`}
-      >
-        {/* Male dropdown content (unchanged from previous code) */}
-      </div>
-
-      {/* Female Dropdown */}
-      <div
-        onMouseLeave={() => setShowFemaleDropdown(false)}
-        className={`${
-          showFemaleDropdown
-            ? "opacity-100 translate-y-0 "
-            : "opacity-0 -translate-y-full"
-        } bg-white w-full h-[300px] shadow fixed top-20 transition-all duration-300 ease-in-out transform z-20`}
-      >
-        {/* Female dropdown content (unchanged from previous code) */}
-      </div>
+{/* Dropdown for "Nam" */}
+<div
+  onMouseLeave={() => setShowMaleDropdown(false)}
+  className={`${
+    showMaleDropdown
+      ? "opacity-100 translate-y-0"
+      : "opacity-0 -translate-y-full"
+  } bg-white w-full h-[300px] shadow fixed top-20 transition-all duration-300 ease-in-out transform z-20`}
+>
+  <div className="flex gap-11 justify-center items-start mt-4">
+    <div className="flex flex-col items-center border-r h-48 pr-4">
+      <p className="mb-2 font-semibold">Áo</p>
+      <ul>
+        <li>Áo polo</li>
+        <li>Áo thun</li>
+        <li>Áo sơ mi</li>
+        <li>Áo khoác</li>
+        <li>Áo hoodie - Áo nỉ</li>
+      </ul>
     </div>
-  );
+    <div className="flex flex-col items-center border-r h-48 pr-4">
+      <p className="mb-2 font-semibold">Quần</p>
+      <ul>
+        <li>Quần jeans</li>
+        <li>Quần âu</li>
+        <li>Quần kaki</li>
+        <li>Quần dài</li>
+        <li>Quần short</li>
+        <li>Quần nỉ</li>
+      </ul>
+    </div>
+    <div className="flex flex-col items-center border-r h-48 pr-4">
+      <p className="mb-2 font-semibold">Đồ Bộ</p>
+      <ul>
+        <li>Đồ bộ ngắn tay</li>
+        <li>Đồ bộ dài tay</li>
+      </ul>
+      <p className="mb-2 font-semibold mt-10">Đồ mặc trong</p>
+      <ul>
+        <li>Áo ba lỗ</li>
+        <li>Quần lót</li>
+      </ul>
+    </div>
+    <div className="flex flex-col items-center border-r h-48 pr-4">
+      <p className="mb-2 font-semibold">Đồ Thể Thao Nam</p>
+      <ul>
+        <li>Áo thun thể thao</li>
+        <li>Áo polo thể thao</li>
+        <li>Quần Thể Thao</li>
+        <li>Bộ Thể Thao</li>
+      </ul>
+    </div>
+    <div>
+      <img
+        src="https://yody.vn/images/menu-desktop/menu_man.png"
+        alt=""
+        className="w-56 h-32"
+      />
+    </div>
+  </div>
+</div>
+
+{/* Dropdown for "Nữ" */}
+<div
+  onMouseLeave={() => setShowFemaleDropdown(false)}
+  className={`${
+    showFemaleDropdown
+      ? "opacity-100 translate-y-0 "
+      : "opacity-0 -translate-y-full"
+  } bg-white w-full h-[300px] shadow fixed top-20 transition-all duration-300 ease-in-out transform z-20`}
+>
+  <div className="flex gap-11 justify-center items-start mt-4">
+    <div className="flex flex-col items-center border-r h-48 pr-4">
+      <p className="mb-2 font-semibold">Áo</p>
+      <ul>
+        <li>Áo polo</li>
+        <li>Áo thun</li>
+        <li>Áo sơ mi</li>
+        <li>Áo khoác</li>
+        <li>Áo hoodie - Áo nỉ</li>
+      </ul>
+    </div>
+    <div className="flex flex-col items-center border-r h-48 pr-4">
+      <p className="mb-2 font-semibold">Quần</p>
+      <ul>
+        <li>Quần jeans</li>
+        <li>Quần âu</li>
+        <li>Quần kaki</li>
+        <li>Quần dài</li>
+        <li>Quần short</li>
+        <li>Quần nỉ</li>
+      </ul>
+    </div>
+    <div className="flex flex-col items-center border-r h-48 pr-4">
+      <p className="mb-2 font-semibold">Đồ Bộ</p>
+      <ul>
+        <li>Đồ bộ ngắn tay</li>
+        <li>Đồ bộ dài tay</li>
+      </ul>
+      <p className="mb-2 font-semibold mt-10">Đồ mặc trong</p>
+      <ul>
+        <li>Áo ba lỗ</li>
+        <li>Quần lót</li>
+      </ul>
+    </div>
+    <div>
+      <img
+        src="https://yody.vn/images/menu-desktop/menu_woman.png"
+        alt=""
+        className="w-56 h-32"
+      />
+    </div>
+  </div>
+</div>
+</div>
+);
 };
 
 export default Menu;
