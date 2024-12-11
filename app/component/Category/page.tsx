@@ -4,6 +4,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
 import Header from "../Header";
 import Footer from "../Footer";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface ProductWithImages {
   idsanpham: number;
@@ -19,8 +20,14 @@ interface ProductWithImages {
 }
 
 interface Size {
-  idSize: number; // Changed to number to match database
+  idSize: number;
   tenSize: string;
+}
+
+interface CartItem {
+  productId: number;
+  quantity: number;
+  sizeId: number;
 }
 
 const ProductDetail = () => {
@@ -31,11 +38,15 @@ const ProductDetail = () => {
   const [product, setProduct] = useState<ProductWithImages | null>(null);
   const [selectedImage, setSelectedImage] = useState<string>("");
   const [availableSizes, setAvailableSizes] = useState<Size[]>([]);
-  const [selectedSize, setSelectedSize] = useState<number | null>(null); // Changed to number
+  const [selectedSize, setSelectedSize] = useState<number | null>(null);
   const [quantity, setQuantity] = useState<number>(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [orderLoading, setOrderLoading] = useState(false);
+
+  // New states for cart animation
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
 
   useEffect(() => {
     const fetchProductAndSizes = async () => {
@@ -70,8 +81,21 @@ const ProductDetail = () => {
       }
     };
 
+    // Load cart items from local storage on component mount
+    const savedCartItems = localStorage.getItem("cartItems");
+    if (savedCartItems) {
+      setCartItems(JSON.parse(savedCartItems));
+    }
+
     fetchProductAndSizes();
   }, [id]);
+
+  useEffect(() => {
+    // Save cart items to local storage whenever they change
+    if (cartItems.length > 0) {
+      localStorage.setItem("cartItems", JSON.stringify(cartItems));
+    }
+  }, [cartItems]);
 
   const handleQuantityChange = (newQuantity: number) => {
     if (newQuantity >= 1) {
@@ -91,6 +115,7 @@ const ProductDetail = () => {
     }
 
     setOrderLoading(true);
+    setIsAddingToCart(true);
 
     try {
       const orderResponse = await fetch("/api/giohang", {
@@ -108,7 +133,7 @@ const ProductDetail = () => {
       const result = await orderResponse.json();
 
       if (orderResponse.ok) {
-        // Tìm tên size để hiển thị trong thông báo
+        // Find the selected size name
         const selectedSizeObj = availableSizes.find(
           (s) => s.idSize === selectedSize
         );
@@ -116,20 +141,53 @@ const ProductDetail = () => {
           ? selectedSizeObj.tenSize
           : selectedSize;
 
+        // Update cart items
+        const newCartItem: CartItem = {
+          productId: product.idsanpham,
+          quantity,
+          sizeId: selectedSize,
+        };
+
+        setCartItems((prevItems) => {
+          // Check if product with same size already exists
+          const existingItemIndex = prevItems.findIndex(
+            (item) =>
+              item.productId === newCartItem.productId &&
+              item.sizeId === newCartItem.sizeId
+          );
+
+          if (existingItemIndex > -1) {
+            // Update quantity if item exists
+            const updatedItems = [...prevItems];
+            updatedItems[existingItemIndex] = {
+              ...updatedItems[existingItemIndex],
+              quantity: updatedItems[existingItemIndex].quantity + quantity,
+            };
+            return updatedItems;
+          }
+
+          // Add new item if not exists
+          return [...prevItems, newCartItem];
+        });
+
         toast.success(
           `Đã thêm ${quantity} sản phẩm ${product.tensanpham} size ${sizeName} vào giỏ hàng`
         );
 
-        if (isInstantBuy) {
-          setTimeout(() => {
+        // Reset adding to cart state after animation
+        setTimeout(() => {
+          setIsAddingToCart(false);
+          if (isInstantBuy) {
             router.push("/component/shopping");
-          }, 500);
-        }
+          }
+        }, 1000);
       } else {
         toast.error(result.error || "Có lỗi xảy ra khi đặt hàng");
+        setIsAddingToCart(false);
       }
     } catch (err) {
       toast.error("Có lỗi xảy ra khi đặt hàng");
+      setIsAddingToCart(false);
     } finally {
       setOrderLoading(false);
     }
@@ -164,6 +222,64 @@ const ProductDetail = () => {
           },
         }}
       />
+
+      {/* Cart Icon with Item Count */}
+      <div className="fixed top-4 right-4 z-50">
+        <div
+          tabIndex={0}
+          role="button"
+          className="btn btn-ghost btn-circle"
+          onClick={() => router.push("/component/shopping")}
+        >
+          <div className="indicator">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+              />
+            </svg>
+            {cartItems.length > 0 && (
+              <span className="badge badge-sm indicator-item">
+                {cartItems.reduce((total, item) => total + item.quantity, 0)}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Animated product when adding to cart */}
+      <AnimatePresence>
+        {isAddingToCart && product && (
+          <motion.div
+            initial={{ scale: 1, opacity: 1 }}
+            animate={{
+              scale: [1, 1.2, 0.5],
+              opacity: [1, 0.8, 0],
+              x: [0, 100, window.innerWidth],
+            }}
+            transition={{
+              duration: 1,
+              ease: "easeInOut",
+            }}
+            className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50"
+          >
+            <img
+              src={selectedImage}
+              alt={product.tensanpham}
+              className="w-24 h-24 object-cover rounded-lg"
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="container mx-auto p-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Image Gallery */}
