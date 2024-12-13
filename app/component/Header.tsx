@@ -972,14 +972,14 @@ const Menu: React.FC = () => {
               />
             </svg>
           </label>
-
+       
           {/* Shopping Cart */}
           <div className="dropdown dropdown-end">
-            <div
+          <Link href={"/component/shopping"}>
+          <div
               tabIndex={0}
               role="button"
-              className="btn btn-ghost btn-circle"
-            >
+              className="btn btn-ghost btn-circle">
               <div className="indicator">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -999,7 +999,10 @@ const Menu: React.FC = () => {
                   {orderCount}
                 </span>
               </div>
-            </div>
+              </div>
+              </Link>
+           
+           
 
             {/* Cart Dropdown */}
             <div
@@ -1210,7 +1213,7 @@ const Menu: React.FC = () => {
         <li>Đồ bộ ngắn tay</li>
         <li>Đồ bộ dài tay</li>
       </ul>
-      <p className="mb-2 font-semibold mt-10">Đồ mặc trong</p>
+      <p className="mb-2 font-semibold mt-10 re">Đồ mặc trong</p>
       <ul>
         <li>Áo ba lỗ</li>
         <li>Quần lót</li>

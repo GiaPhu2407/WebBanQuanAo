@@ -264,9 +264,9 @@ const OrderPage: React.FC = () => {
                 )}
 
                 <div className="mt-4 flex justify-between items-center border-t pt-4">
-                  <span className="text-gray-700 font-semibold">
-                    Tổng tiền: {order.tongsotien.toLocaleString("vi-VN")} đ
-                  </span>
+                <span className="text-gray-700 font-semibold">
+  Tổng tiền: {order.tongsotien ? order.tongsotien.toLocaleString("vi-VN") : "0"} đ
+</span>
                   <div>
                     {order.thanhtoan.map((payment, index) => (
                       <p key={index} className="text-sm text-gray-500">

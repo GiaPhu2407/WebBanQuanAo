@@ -2,49 +2,22 @@ import prisma from "@/prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-export async function PUT(request: NextRequest) {
-  const body = await request.json();
-
-  const DonHangSchema = z.object({
-    iddonhang: z.number(),
-    tongsoluong: z.number().optional(),
-    trangthai: z.string().optional(),
-    tongsotien: z.number().optional(),
-    ngaydat: z.string().optional(),
-  });
-
-  const validation = DonHangSchema.safeParse(body);
-  if (!validation.success) {
-    return NextResponse.json(validation.error.errors, { status: 400 });
+export async function PUT(req: NextRequest, {params}:{params: {id: string}}){
+  try {
+      const body = await req.json();
+      const idDonHang = parseInt(params.id);
+      const putDonHang = await prisma.donhang.update({
+          where: {iddonhang: idDonHang},
+          data: {
+              trangthai: body.TrangThaiDonHang,
+              tongsotien: parseFloat(body.TongTien),
+          },
+          
+      })
+      return NextResponse.json({putDonHang, message:"Cập nhật đơn hàng thành công"})
+  } catch (error: any) {
+      return NextResponse.json({error: error.message})
   }
-
-  // Kiểm tra xem đơn hàng có tồn tại không
-  const existingDonHang = await prisma.donhang.findUnique({
-    where: { iddonhang: body.iddonhang },
-  });
-
-  if (!existingDonHang) {
-    return NextResponse.json(
-      { message: "Đơn hàng không tồn tại" },
-      { status: 404 }
-    );
-  }
-
-  // Cập nhật đơn hàng
-  const updatedDonHang = await prisma.donhang.update({
-    where: { iddonhang: body.iddonhang },
-    data: {
-      tongsoluong: body.tongsoluong,
-      trangthai: body.trangthai,
-      tongsotien: body.tongsotien,
-      ngaydat: body.ngaydat,
-    },
-  });
-
-  return NextResponse.json(
-    { message: "Cập nhật đơn hàng thành công", updatedDonHang },
-    { status: 200 }
-  );
 }
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
