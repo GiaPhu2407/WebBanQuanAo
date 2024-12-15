@@ -1,77 +1,104 @@
-// AppContext.tsx
-import React, { createContext, useState, useContext, useEffect } from 'react';
+// // contexts/CartContext.tsx
+// import React, { createContext, useState, useContext, useEffect } from 'react';
 
-interface FavoriteContextType {
-  favorites: number[];
-  toggleFavorite: (productId: number) => Promise<void>;
-  favoritesCount: number;
-}
+// interface CartItem {
+//   productId: number;
+//   quantity: number;
+//   sizeId: number;
+// }
 
-const FavoriteContext = createContext<FavoriteContextType | undefined>(undefined);
+// interface CartContextType {
+//   cartItems: CartItem[];
+//   addToCart: (item: CartItem) => void;
+//   updateCartItem: (productId: number, sizeId: number, quantity: number) => void;
+//   removeFromCart: (productId: number, sizeId: number) => void;
+//   clearCart: () => void;
+// }
 
-export const FavoriteProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [favorites, setFavorites] = useState<number[]>([]);
-  const [userData, setUserData] = useState<any>(null);
+// const CartContext = createContext<CartContextType | undefined>(undefined);
 
-  useEffect(() => {
-    // Fetch user session
-    fetch("/api/auth/session")
-      .then(res => res.json())
-      .then(data => {
-        setUserData(data);
-        if (data?.id) {
-          // Fetch user's favorites
-          fetch(`/api/favorites?userId=${data.id}`)
-            .then(res => res.json())
-            .then(favoritesData => {
-              setFavorites(favoritesData.map((f: any) => f.idSanpham));
-            });
-        }
-      });
-  }, []);
+// export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+//   const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
-  const toggleFavorite = async (productId: number) => {
-    if (!userData?.id) return;
+//   // Load cart from localStorage on initial load
+//   useEffect(() => {
+//     const savedCartItems = localStorage.getItem('cartItems');
+//     if (savedCartItems) {
+//       setCartItems(JSON.parse(savedCartItems));
+//     }
+//   }, []);
 
-    try {
-      const response = await fetch('/api/favorites', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          idUsers: userData.id,
-          idSanpham: productId,
-        }),
-      });
+//   // Save cart to localStorage whenever it changes
+//   useEffect(() => {
+//     localStorage.setItem('cartItems', JSON.stringify(cartItems));
+//   }, [cartItems]);
 
-      if (response.ok) {
-        setFavorites(prev => 
-          prev.includes(productId) 
-            ? prev.filter(id => id !== productId)
-            : [...prev, productId]
-        );
-      }
-    } catch (error) {
-      console.error('Error toggling favorite:', error);
-    }
-  };
+//   const addToCart = (newItem: CartItem) => {
+//     setCartItems((prevItems) => {
+//       // Check if product with same size already exists
+//       const existingItemIndex = prevItems.findIndex(
+//         (item) =>
+//           item.productId === newItem.productId &&
+//           item.sizeId === newItem.sizeId
+//       );
 
-  return (
-    <FavoriteContext.Provider value={{ 
-      favorites, 
-      toggleFavorite,
-      favoritesCount: favorites.length 
-    }}>
-      {children}
-    </FavoriteContext.Provider>
-  );
-};
+//       if (existingItemIndex > -1) {
+//         // Update quantity if item exists
+//         const updatedItems = [...prevItems];
+//         updatedItems[existingItemIndex] = {
+//           ...updatedItems[existingItemIndex],
+//           quantity: updatedItems[existingItemIndex].quantity + newItem.quantity,
+//         };
+//         return updatedItems;
+//       }
 
-export const useFavorites = () => {
-  const context = useContext(FavoriteContext);
-  if (!context) {
-    throw new Error('useFavorites must be used within a FavoriteProvider');
-  }
-  return context;
-};
+//       // Add new item if not exists
+//       return [...prevItems, newItem];
+//     });
+//   };
+
+//   const updateCartItem = (productId: number, sizeId: number, quantity: number) => {
+//     setCartItems((prevItems) => 
+//       prevItems.map((item) => 
+//         item.productId === productId && item.sizeId === sizeId 
+//           ? { ...item, quantity }
+//           : item
+//       )
+//     );
+//   };
+
+//   const removeFromCart = (productId: number, sizeId: number) => {
+//     setCartItems((prevItems) => 
+//       prevItems.filter((item) => 
+//         !(item.productId === productId && item.sizeId === sizeId)
+//       )
+//     );
+//   };
+
+//   const clearCart = () => {
+//     setCartItems([]);
+//   };
+
+//   return (
+//     <CartContext.Provider 
+//       value={{ 
+//         cartItems, 
+//         addToCart, 
+//         updateCartItem, 
+//         removeFromCart, 
+//         clearCart 
+//       }}
+//     >
+//       {children}
+//     </CartContext.Provider>
+//   );
+// };
+
+// // Custom hook to use cart context
+// export const useCart = () => {
+//   const context = useContext(CartContext);
+//   if (context === undefined) {
+//     throw new Error('useCart must be used within a CartProvider');
+//   }
+//   return context;
+// };

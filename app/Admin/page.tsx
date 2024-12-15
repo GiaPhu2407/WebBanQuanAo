@@ -254,12 +254,12 @@ const SalesDashboard: React.FC = () => {
           <SidebarItem
             icon={<User size={16} />}
             label="Customer"
-            onClick={() => router.push("/customer")}
+            onClick={() => router.push("/")}
           />
           <SidebarItem
             icon={<ShoppingCart size={16} />}
             label="Cart"
-            onClick={() => router.push("/cart")}
+            onClick={() => router.push("/Admin/DashBoard/ManagerDonhang")}
           />
           <SidebarItem
             icon={<Heart size={16} />}
