@@ -9,6 +9,7 @@ interface CartItem {
   idgiohang: number;
   idsanpham: number;
   soluong: number;
+  isSelected: boolean; // New property for selection
   size: {
     idSize: number;
     tenSize: string;
@@ -29,6 +30,7 @@ export const ShoppingCart = () => {
   const [processing, setProcessing] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<string>("");
   const [itemProcessingId, setItemProcessingId] = useState<number | null>(null);
+  const [isAllSelected, setIsAllSelected] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -42,7 +44,13 @@ export const ShoppingCart = () => {
         throw new Error("Failed to fetch cart items");
       }
       const data = await response.json();
-      setCartItems(data.data || []);
+      // Initialize with all items selected
+      const itemsWithSelection = (data.data || []).map((item: CartItem) => ({
+        ...item,
+        isSelected: true,
+      }));
+      setCartItems(itemsWithSelection);
+      setIsAllSelected(true);
     } catch (error) {
       console.error("Error fetching cart:", error);
       toast.error("Có lỗi xảy ra khi tải giỏ hàng");
@@ -51,6 +59,34 @@ export const ShoppingCart = () => {
     }
   };
 
+  // Toggle selection for a single item
+  const toggleItemSelection = (idgiohang: number) => {
+    const updatedCartItems = cartItems.map((item) =>
+      item.idgiohang === idgiohang
+        ? { ...item, isSelected: !item.isSelected }
+        : item
+    );
+
+    setCartItems(updatedCartItems);
+
+    // Check if all items are selected
+    const allSelected = updatedCartItems.every((item) => item.isSelected);
+    setIsAllSelected(allSelected);
+  };
+
+  // Toggle selection for all items
+  const toggleSelectAll = () => {
+    const newSelectedState = !isAllSelected;
+    const updatedCartItems = cartItems.map((item) => ({
+      ...item,
+      isSelected: newSelectedState,
+    }));
+
+    setCartItems(updatedCartItems);
+    setIsAllSelected(newSelectedState);
+  };
+
+  // Rest of the previous methods remain the same...
   const removeItem = async (idgiohang: number) => {
     setItemProcessingId(idgiohang);
     try {
@@ -130,32 +166,40 @@ export const ShoppingCart = () => {
   };
 
   const handleCheckout = async () => {
+    // Filter only selected items for checkout
+    const selectedItems = cartItems.filter((item) => item.isSelected);
+
+    if (selectedItems.length === 0) {
+      toast.error("Vui lòng chọn ít nhất một sản phẩm");
+      return;
+    }
+
     if (!paymentMethod) {
       toast.error("Vui lòng chọn phương thức thanh toán");
       return;
     }
-  
+
     try {
       setProcessing(true);
-  
-      const totalAmount = calculateTotal(); // Sử dụng số tiền đã giảm giá
-  
+
+      const totalAmount = calculateTotal(); // Only calculates selected items
+
       const response = await fetch("/api/thanhtoan", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          cartItems,
+          cartItems: selectedItems,
           paymentMethod,
-          totalAmount, // Gửi tổng số tiền đã giảm giá
+          totalAmount,
         }),
       });
-  
+
       if (!response.ok) {
         throw new Error("Thanh toán thất bại");
       }
-  
+
       // Hiển thị toast và chuyển hướng
       await toast.promise(new Promise((resolve) => setTimeout(resolve, 1500)), {
         loading: "Đang xử lý đơn hàng...",
@@ -174,16 +218,17 @@ export const ShoppingCart = () => {
       setProcessing(false);
     }
   };
-  
 
   const calculateTotal = () => {
-    return cartItems.reduce((total, item) => {
-      const discountedPrice =
-        item.sanpham.giamgia > 0
-          ? item.sanpham.gia * (1 - item.sanpham.giamgia / 100)
-          : item.sanpham.gia;
-      return total + discountedPrice * item.soluong;
-    }, 0);
+    return cartItems
+      .filter((item) => item.isSelected)
+      .reduce((total, item) => {
+        const discountedPrice =
+          item.sanpham.giamgia > 0
+            ? item.sanpham.gia * (1 - item.sanpham.giamgia / 100)
+            : item.sanpham.gia;
+        return total + discountedPrice * item.soluong;
+      }, 0);
   };
 
   if (loading) {
@@ -224,6 +269,25 @@ export const ShoppingCart = () => {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 bg-white rounded-lg shadow-sm p-6">
+              {/* Select All Checkbox */}
+              <div className="flex items-center mb-4 border-b pb-4">
+                <input
+                  type="checkbox"
+                  id="select-all"
+                  checked={isAllSelected}
+                  onChange={toggleSelectAll}
+                  className="mr-2 h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                />
+                <label
+                  htmlFor="select-all"
+                  className="font-medium text-gray-700"
+                >
+                  Chọn tất cả (
+                  {cartItems.filter((item) => item.isSelected).length}/
+                  {cartItems.length})
+                </label>
+              </div>
+
               {cartItems.map((item) => {
                 const discountedPrice =
                   item.sanpham.giamgia > 0
@@ -236,12 +300,23 @@ export const ShoppingCart = () => {
                     key={item.idgiohang}
                     className="flex flex-col md:flex-row items-start md:items-center gap-4 border-b border-gray-200 py-6 last:border-0"
                   >
+                    {/* Checkbox for individual item */}
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={item.isSelected}
+                        onChange={() => toggleItemSelection(item.idgiohang)}
+                        className="mr-2 h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                      />
+                    </div>
+
                     <img
                       src={item.sanpham.hinhanh}
                       alt={item.sanpham.tensanpham}
                       className="w-24 h-24 object-cover rounded-lg"
                     />
 
+                    {/* Rest of the item details remain the same */}
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-lg text-gray-900 mb-1">
                         {item.sanpham.tensanpham}
@@ -318,7 +393,6 @@ export const ShoppingCart = () => {
                           currency: "VND",
                         }).format(itemTotal)}
                       </p>
-
                       <button
                         onClick={() => removeItem(item.idgiohang)}
                         className="text-red-500 hover:text-red-700 text-sm transition duration-200"
@@ -341,6 +415,14 @@ export const ShoppingCart = () => {
                 </h2>
 
                 <div className="space-y-4">
+                  <div className="flex justify-between text-gray-600">
+                    <span>Số sản phẩm đã chọn:</span>
+                    <span>
+                      {cartItems.filter((item) => item.isSelected).length}/
+                      {cartItems.length}
+                    </span>
+                  </div>
+
                   <div className="flex justify-between text-gray-600">
                     <span>Tạm tính:</span>
                     <span>
@@ -386,11 +468,15 @@ export const ShoppingCart = () => {
                   <button
                     onClick={handleCheckout}
                     className={`w-full py-3 px-4 rounded-lg font-medium text-white transition duration-200 ${
-                      processing
+                      processing ||
+                      cartItems.filter((item) => item.isSelected).length === 0
                         ? "bg-gray-400 cursor-not-allowed"
                         : "bg-blue-600 hover:bg-blue-700"
                     }`}
-                    disabled={processing}
+                    disabled={
+                      processing ||
+                      cartItems.filter((item) => item.isSelected).length === 0
+                    }
                   >
                     {processing ? "Đang xử lý..." : "Tiến hành thanh toán"}
                   </button>

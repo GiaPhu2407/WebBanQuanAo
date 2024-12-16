@@ -278,7 +278,7 @@ const SalesDashboard: React.FC = () => {
           <SidebarItem
             icon={<ShoppingBag size={16} />}
             label="Order"
-            onClick={() => router.push("/order")}
+            onClick={() => router.push("/Admin/DashBoard/ManagerDonhang")}
           />
           <SidebarItem
             icon={<CreditCard size={16} />}
