@@ -31,6 +31,7 @@ import {
   DollarSign,
   Loader2,
 } from "lucide-react";
+import Globe from "./Footer/Globe";
 
 // Types
 interface StatsCardProps {
@@ -117,7 +118,7 @@ const StatsCard: React.FC<StatsCardProps> = ({
 const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, onClick }) => (
   <button
     onClick={onClick}
-    className="w-full flex items-center space-x-2 px-4 py-2 text-gray-300 hover:bg-gray-800 rounded-lg transition-colors"
+    className="w-full flex items-center space-x-2 px-4 py-2  hover:bg-gray-800 hover:text-white rounded-lg transition-colors"
   >
     {icon}
     <span>{label}</span>
@@ -135,7 +136,7 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({
   <div className="space-y-2">
     <button
       onClick={onToggle}
-      className="w-full flex items-center justify-between px-4 py-2 text-gray-300 hover:bg-gray-800 rounded-lg transition-colors"
+      className="w-full flex items-center justify-between px-4 py-2 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
     >
       <div className="flex items-center space-x-2">
         {icon}
@@ -236,9 +237,9 @@ const SalesDashboard: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen  ">
       {/* Sidebar */}
-      <nav className="w-72 bg-gray-900 p-4 space-y-2">
+      <nav className="w-72 font-semibold p-4 space-y-2">
         <SidebarSection
           title="Quản Lý Sản Phẩm"
           icon={<Package size={18} />}
@@ -325,8 +326,13 @@ const SalesDashboard: React.FC = () => {
       </nav>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-auto">
-        <div className="p-8">
+      <div className="flex-1 overflow-auto relative ">
+       
+       
+        <div className="p-8 relative z-10 top-0">
+          <div  className="absolute -z-10 top-0 left-[600px]"> 
+          <Globe/>
+          </div>
           <h1 className="text-2xl font-bold text-gray-800 mb-6">Dashboard</h1>
 
           {error ? (

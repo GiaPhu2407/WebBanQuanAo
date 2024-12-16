@@ -25,29 +25,7 @@ export async function PUT(
 }
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-<<<<<<< HEAD
-    // Chuyển đổi ID sang số nguyên
-    const idgiohang = parseInt(params.id);
-
-    // Kiểm tra nếu ID không hợp lệ
-    if (isNaN(idgiohang)) {
-      return NextResponse.json({ error: "ID không hợp lệ" }, { status: 400 });
-    }
-
-    // Xóa item trong giỏ hàng
-    const cartItem = await prisma.giohang.delete({
-      where: {
-        idgiohang, // Đổi thành tên trường viết thường
-      },
-    });
-
-    // Trả về kết quả thành công
-    return NextResponse.json({ cartItem, message: "Item deleted successfully" });
-  } catch (error) {
-    console.error("Delete cart item error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-=======
-    // const session = await getServerSession();
+   // const session = await getServerSession();
     // if (!session) {
     //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     // }
@@ -64,6 +42,6 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       { error: "Internal server error" },
       { status: 500 }
     );
->>>>>>> 436fbf8a04b53b7b51ad2de737575fe85f12ed82
+
   }
 } 
