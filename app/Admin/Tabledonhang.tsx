@@ -8,6 +8,21 @@ interface DonHang {
   tongsotien: number;
   ngaydat: string;
   idUsers: number;
+  ChitietDonhang:{
+    idchitietdonhang: number;
+    iddonhang: number;
+    idsanpham: number;
+    tensanpham: string;
+    dongia: number;
+    soluong: number;
+    sanpham:{
+      idsanpham: number;
+      tensanpham: string;
+      gia: number;
+      hinhanh:string;
+    }
+   
+  }
   users?: {
     Hoten: string;
     Email: string;
@@ -177,13 +192,11 @@ const TableDonHang: React.FC<TableDonHangProps> = ({
                     {donhang.tongsoluong || 0}
                   </td>
                   <td className="px-4 py-4 text-center">
-                    <img
-                      src={
-                        chiTietDonHang.find(
-                          (item) => item.iddonhang === donhang.iddonhang
-                        )?.sanpham?.hinhanh || "/no-image.jpg"
-                      }
-                      alt="Hình sản phẩm"
+                  <img
+                     src={donhang.ChitietDonhang?.sanpham?.hinhanh || "/no-image.jpg"}
+                     alt="Product Image"
+
+
                       className="w-16 h-16 object-cover rounded-lg"
                     />
                   </td>

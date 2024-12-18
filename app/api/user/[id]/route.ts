@@ -49,53 +49,54 @@ export async function GET(
   }
 }
 
-  export async function PUT(
-    request: NextRequest,
-    { params }: { params: { id: string } }
-  ) {
-    try {
-      const id = parseInt(params.id);
-      const data = await request.json();
-
-      // Prepare update data
-      const updateData: any = {
-        Tentaikhoan: data.Tentaikhoan,
-        Email: data.Email,
-        Hoten: data.Hoten,
-        Sdt: data.Sdt,
-        Diachi: data.Diachi,
-      };
-
-      // Only hash and update password if it's provided and changed
-      
-
-      // Update user
-      const updatedUser = await prisma.users.update({
-        where: {
-          idUsers: id,
-        },
-        data: updateData,
-        include: {
-          role: {
-            select: {
-              Tennguoidung: true,
-            },
-          },
-        },
-      });
-
-      return NextResponse.json({ updatedUser, message: "Cập nhật thành công" });
-    } catch (error: any) {
-      console.error("Update error:", error);
-
-
-      return NextResponse.json(
-        { error: "Failed to update user" },
-        { status: 500 }
-      );
+  
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const id = parseInt(params.id);
+    if (isNaN(id)) {
+      return NextResponse.json({ error: "ID không hợp lệ" }, { status: 400 });
     }
-  }
 
+    const data = await request.json();
+
+    // Chuẩn bị dữ liệu cập nhật
+    const updateData: any = {
+      Tentaikhoan: data.Tentaikhoan,
+      Email: data.Email,
+      Hoten: data.Hoten,
+      Sdt: data.Sdt,
+      Diachi: data.Diachi,
+    };
+
+    // Thêm idRole nếu có
+    if (data.idRole && typeof data.idRole === "number") {
+      updateData.idRole = data.idRole;
+    }
+
+    // Thực hiện cập nhật
+    const updatedUser = await prisma.users.update({
+      where: { idUsers: id },
+      data: updateData,
+      include: {
+        role: { select: { Tennguoidung: true } },
+      },
+    });
+
+    return NextResponse.json({
+      updatedUser,
+      message: "Cập nhật thành công",
+    });
+  } catch (error: any) {
+    console.error("Lỗi khi cập nhật user:", error);
+    return NextResponse.json(
+      { error: "Cập nhật thất bại" },
+      { status: 500 }
+    );
+  }
+}
 // DELETE user by ID
 export async function DELETE(
   request: NextRequest,

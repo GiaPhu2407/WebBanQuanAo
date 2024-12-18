@@ -88,7 +88,7 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({
     <div className="text-white">
       <button
         onClick={onToggle}
-        className="w-full flex items-center px-4 py-2 hover:bg-gray-800 transition-colors rounded-md"
+        className="w-full flex items-center px-4 py-2 text-black hover:bg-gray-800 hover:text-white transition-colors rounded-md"
       >
         {icon}
         <span className="ml-2 flex-1 text-sm font-medium">{title}</span>
@@ -112,7 +112,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, onClick }) => {
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center px-4 py-2 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors rounded-md text-sm"
+      className="w-full flex items-center px-4 py-2 text-black hover:bg-gray-800 hover:text-white transition-colors rounded-md text-sm"
     >
       {icon}
       <span className="ml-2">{label}</span>
@@ -204,7 +204,7 @@ const SalesDashboard: React.FC = () => {
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar Navigation */}
-      <nav className="w-64 bg-gray-900 p-4 space-y-2">
+      <nav className="w-64 p-4 space-y-2">
         {/* Product Management Section */}
         <SidebarSection
           title="Quản Lý Sản Phẩm"
@@ -283,7 +283,7 @@ const SalesDashboard: React.FC = () => {
           <SidebarItem
             icon={<CreditCard size={16} />}
             label="Payment"
-            onClick={() => router.push("/payment")}
+            onClick={() => router.push("/Admin/DashBoard/Managerpayment")}
           />
           <SidebarItem
             icon={<RotateCcw size={16} />}

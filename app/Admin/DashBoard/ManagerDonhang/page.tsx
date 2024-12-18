@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
-
 interface DonHang {
   iddonhang: number;
   tongsoluong: number;
@@ -22,6 +21,21 @@ interface DonHang {
   tongsotien: number;
   ngaydat: string;
   idUsers: number;
+  ChitietDonhang:{
+    idchitietdonhang: number;
+    iddonhang: number;
+    idsanpham: number;
+    tensanpham: string;
+    dongia: number;
+    soluong: number;
+    sanpham:{
+      idsanpham: number;
+      tensanpham: string;
+      gia: number;
+      hinhanh:string;
+    }
+   
+  }
   users?: {
     Hoten: string;
     Email: string;
