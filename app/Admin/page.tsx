@@ -32,6 +32,7 @@ import {
   Loader2,
 } from "lucide-react";
 import Globe from "./Footer/Globe";
+import Menu from "./DashBoard/HeaderDashboard";
 
 // Types
 interface StatsCardProps {
@@ -237,6 +238,8 @@ const SalesDashboard: React.FC = () => {
   };
 
   return (
+    <div>
+      <Menu/>
     <div className="flex min-h-screen  ">
       {/* Sidebar */}
       <nav className="w-72 font-semibold p-4 space-y-2">
@@ -421,6 +424,7 @@ const SalesDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 };

@@ -32,6 +32,7 @@ import {
   DollarSign,
   TrendingUp,
 } from "lucide-react";
+import Menu from "./HeaderDashboard";
 
 // Interfaces
 interface SidebarSectionProps {
@@ -202,6 +203,8 @@ const SalesDashboard: React.FC = () => {
   };
 
   return (
+    <div>
+      <Menu/>
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar Navigation */}
       <nav className="w-64 p-4 space-y-2">
@@ -293,6 +296,7 @@ const SalesDashboard: React.FC = () => {
         </SidebarSection>
       </nav>
       {/* Main Content */}{" "}
+    </div>
     </div>
   );
 };
