@@ -157,7 +157,7 @@ const SalesDashboard: React.FC = () => {
   // State for metrics
   const [metrics, setMetrics] = useState({
     // totalReservations: 0,
-    // pendingReservations: 0,
+    pendingReservations: 0,
     totalOrders: 0,
     pendingOrders: 0,
     totalUsers: 0,
@@ -198,13 +198,13 @@ const SalesDashboard: React.FC = () => {
 
         const [
           // totalReservations,
-          // pendingReservations,
+          pendingReservations,
           totalOrders,
           pendingOrders,
           totalUsers,
         ] = await Promise.all([
           // fetchAndValidate("/api/tongdondatcoccxn"),
-          // fetchAndValidate("/api/tongdoanhtru"),
+          fetchAndValidate("/api/tongdoanhthu"),
           fetchAndValidate("/api/tongdonhang"),
           fetchAndValidate("/api/tongdonhangcxn"),
           fetchAndValidate("/api/tongkhachhang"),
@@ -212,7 +212,7 @@ const SalesDashboard: React.FC = () => {
 
         setMetrics({
           // totalReservations,
-          // pendingReservations,
+          pendingReservations,
           totalOrders,
           pendingOrders,
           totalUsers,
@@ -340,21 +340,21 @@ const SalesDashboard: React.FC = () => {
               {error}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              {/* <StatsCard
+            <div className="grid grid-cols-2 gap-6 mb-8 w-[500px]">
+               {/* <StatsCard
                 title="Tổng Đơn Đặt Cọc"
                 // value={metrics.totalReservations.toString()}
                 icon={<DollarSign size={24} className="text-green-500" />}
                 trend="up"
                 trendValue="12%"
                 isLoading={isLoading}
-              />
+              /> */}
               <StatsCard
-                title="Tổng Đơn Đặt Cọc Pending"
-                // value={metrics.pendingReservations.toString()}
+                title="Tổng đơn đã thanh toán"
+                value={metrics.pendingReservations.toString()}
                 icon={<DollarSign size={24} className="text-yellow-500" />}
                 isLoading={isLoading}
-              /> */}
+              /> 
               <StatsCard
                 title="Tổng Đơn Hàng"
                 value={metrics.totalOrders.toString()}

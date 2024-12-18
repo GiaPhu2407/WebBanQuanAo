@@ -1,8 +1,19 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import * as XLSX from 'xlsx';
 import SalesDashboard from "../NvarbarAdmin";
 import TableTypeProduct from "../../TableTypeProduct";
 import { useToast } from "@/components/ui/use-toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,16 +24,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 
 interface LoaiSanPham {
   idloaisanpham: number;
@@ -40,12 +41,11 @@ export default function LoaiSanPhamManagementPage() {
   const [loaisanphamList, setLoaisanphamList] = useState<LoaiSanPham[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
-  const [currentLoaiSanPhamId, setCurrentLoaiSanPhamId] = useState<
-    number | null
-  >(null);
+  const [currentLoaiSanPhamId, setCurrentLoaiSanPhamId] = useState<number | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
   const { toast } = useToast();
 
   useEffect(() => {
@@ -193,8 +193,82 @@ export default function LoaiSanPhamManagementPage() {
     setIsModalOpen(true);
   };
 
+  // Excel Export Functionality
+  const exportLoaiSanPhamToExcel = () => {
+    const exportData = loaisanphamList.map(item => ({
+      'Mã Loại': item.idloaisanpham,
+      'Tên Loại': item.tenloai,
+      'Mô Tả': item.mota
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Loại Sản Phẩm');
+
+    XLSX.writeFile(workbook, `loai_san_pham_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  // Excel Import Functionality
+  const handleImportExcel = async (data: Omit<LoaiSanPham, 'idloaisanpham'>[]) => {
+    try {
+      const response = await fetch('/api/loaisanpham/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      if (!response.ok) {
+        throw new Error('Không thể nhập loại sản phẩm');
+      }
+
+      setReloadKey(prev => prev + 1);
+      toast({
+        title: 'Thành công',
+        description: 'Nhập loại sản phẩm từ Excel thành công',
+        variant: 'success'
+      });
+    } catch (error) {
+      toast({
+        title: 'Lỗi',
+        description: error instanceof Error ? error.message : 'Lỗi nhập Excel',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const fileReader = new FileReader();
+      fileReader.onload = async (e) => {
+        const bufferArray = e.target?.result;
+        const workbook = XLSX.read(bufferArray, { type: 'buffer' });
+        
+        const worksheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[worksheetName];
+        
+        const data: any[] = XLSX.utils.sheet_to_json(worksheet);
+        
+        const validatedData = data.map(row => {
+          if (!row['Tên Loại'] || !row['Mô Tả']) {
+            throw new Error('Invalid Excel format. Ensure columns "Tên Loại" and "Mô Tả" exist.');
+          }
+          
+          return {
+            tenloai: row['Tên Loại'],
+            mota: row['Mô Tả']
+          };
+        });
+        
+        await handleImportExcel(validatedData);
+      };
+      
+      fileReader.readAsArrayBuffer(file);
+    }
+  };
+
   return (
-    <div className="flex  bg-gray-100">
+    <div className="flex bg-gray-100">
       <SalesDashboard />
       <div className="flex-1 p-8">
         <div className="max-w-7xl mx-auto">
@@ -202,7 +276,23 @@ export default function LoaiSanPhamManagementPage() {
             <h1 className="text-2xl font-bold text-gray-800">
               Quản lý loại sản phẩm
             </h1>
-            <Button onClick={handleAddNewClick}>Thêm loại sản phẩm</Button>
+            <div className="flex space-x-2">
+              <Button onClick={handleAddNewClick}>Thêm loại sản phẩm</Button>
+              <Button variant="outline" onClick={exportLoaiSanPhamToExcel}>
+                Xuất Excel
+              </Button>
+              <label className="cursor-pointer">
+                <Button variant="secondary" asChild>
+                  <span>Nhập Excel</span>
+                </Button>
+                <input 
+                  type="file" 
+                  accept=".xlsx, .xls" 
+                  className="hidden" 
+                  onChange={handleFileUpload}
+                />
+              </label>
+            </div>
           </div>
 
           <div className="">
