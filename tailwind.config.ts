@@ -173,6 +173,9 @@ const config: Config = {
         "50%": { opacity: "0.5", transform: "translateX(50px)" },
         "100%": { opacity: "1", transform: "translateX(0px)" },
       },
+      fontFamily:{
+        'Giaphu':['Roboto', 'Helvetica', 'Arial', 'sans-serif']
+      }
     },
   },
   plugins: [require("daisyui")],

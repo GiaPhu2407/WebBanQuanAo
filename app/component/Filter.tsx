@@ -14,7 +14,7 @@ const Filter: React.FC<FilterProps> = ({ onFilterChange }) => {
   const [filters, setFilters] = React.useState<FilterState>({
     categories: [],
     gender: [],
-    priceRange: [0, 1000000],
+    priceRange: [0, 10000000],
     sizes: [],
   });
 
@@ -108,7 +108,7 @@ const Filter: React.FC<FilterProps> = ({ onFilterChange }) => {
           <input
             type="range"
             min="0"
-            max="1000000"
+            max="10000000"
             step="10000"
             value={filters.priceRange[1]}
             onChange={(e) =>

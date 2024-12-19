@@ -117,7 +117,7 @@ const Menu: React.FC = () => {
       <div className="bg-white w-full h-20 shadow fixed">
         <div className="flex items-center justify-center h-full gap-[1000px]">
           {/* Main Navigation */}
-         <h1>
+         <h1 className="font-Giaphu">
             DASHBOARD
          </h1>
 
