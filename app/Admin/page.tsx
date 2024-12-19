@@ -65,7 +65,12 @@ interface SidebarItemProps {
   onClick: () => void;
 }
 
-// StatsCard Component
+interface ApiResponse {
+  error?: string;
+  count?: number;
+}
+
+// StatsCard Component remains the same
 const StatsCard: React.FC<StatsCardProps> = ({
   title,
   value,
@@ -115,18 +120,17 @@ const StatsCard: React.FC<StatsCardProps> = ({
   </div>
 );
 
-// Sidebar Item Component
+// Sidebar components remain the same
 const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, onClick }) => (
   <button
     onClick={onClick}
-    className="w-full flex items-center space-x-2 px-4 py-2  hover:bg-gray-800 hover:text-white rounded-lg transition-colors"
+    className="w-full flex items-center space-x-2 px-4 py-2 hover:bg-gray-800 hover:text-white rounded-lg transition-colors"
   >
     {icon}
     <span>{label}</span>
   </button>
 );
 
-// Sidebar Section Component
 const SidebarSection: React.FC<SidebarSectionProps> = ({
   title,
   icon,
@@ -157,7 +161,7 @@ const SalesDashboard: React.FC = () => {
 
   // State for metrics
   const [metrics, setMetrics] = useState({
-    // totalReservations: 0,
+    totalReservations: 0,
     pendingReservations: 0,
     totalOrders: 0,
     pendingOrders: 0,
@@ -188,38 +192,48 @@ const SalesDashboard: React.FC = () => {
       setIsLoading(true);
       setError(null);
       try {
-        const fetchAndValidate = async (url: string) => {
+        // Helper function to fetch and process API responses
+        const fetchAndValidate = async (url: string): Promise<number> => {
+          console.log(`Fetching from ${url}...`); // Log URL đang fetch
           const response = await fetch(url);
+          
           if (!response.ok) {
+            console.error(`Error with ${url}:`, response.statusText);
             throw new Error(`HTTP error! status: ${response.status}`);
           }
+          
           const data = await response.json();
-          return Number(data);
+          console.log(`Data received from ${url}:`, data); // Log data nhận được
+          
+          if (typeof data === 'number') {
+            return data;
+          } else if (data && typeof data.count === 'number') {
+            return data.count;
+          } else {
+            console.error(`Invalid data format from ${url}:`, data);
+            return 0;
+          }
         };
-
-        const [
-          // totalReservations,
-          pendingReservations,
-          totalOrders,
-          pendingOrders,
-          totalUsers,
-        ] = await Promise.all([
-          // fetchAndValidate("/api/tongdondatcoccxn"),
+    
+        const results = await Promise.all([
+          fetchAndValidate("/api/tongthanhtoancxn"),
           fetchAndValidate("/api/tongdoanhthu"),
           fetchAndValidate("/api/tongdonhang"),
           fetchAndValidate("/api/tongdonhangcxn"),
-          fetchAndValidate("/api/tongkhachhang"),
+          fetchAndValidate("/api/tongkhachhang")
         ]);
-
+    
+        console.log('All results:', results); // Log tất cả kết quả
+    
         setMetrics({
-          // totalReservations,
-          pendingReservations,
-          totalOrders,
-          pendingOrders,
-          totalUsers,
+          totalReservations: results[0],
+          pendingReservations: results[1],
+          totalOrders: results[2],
+          pendingOrders: results[3],
+          totalUsers: results[4]
         });
       } catch (error) {
-        console.error("Error fetching dashboard data:", error);
+        console.error("Detailed error:", error); // Log chi tiết lỗi
         setError("Failed to load dashboard data");
       } finally {
         setIsLoading(false);
@@ -239,192 +253,190 @@ const SalesDashboard: React.FC = () => {
 
   return (
     <div>
-      <Menu/>
-    <div className="flex min-h-screen  ">
-      {/* Sidebar */}
-      <nav className="w-72 font-semibold p-4 space-y-2">
-        <SidebarSection
-          title="Quản Lý Sản Phẩm"
-          icon={<Package size={18} />}
-          isOpen={openSections.products}
-          onToggle={() => toggleSection("products")}
-        >
-          <SidebarItem
-            icon={<Tags size={16} />}
-            label="Category"
-            onClick={() => router.push("/category")}
-          />
-          <SidebarItem
-            icon={<Tags size={16} />}
-            label="Product Type"
-            onClick={() => router.push("/Admin/DashBoard/LoaiSanPham")}
-          />
-          <SidebarItem
-            icon={<ShoppingBag size={16} />}
-            label="Product"
-            onClick={() => router.push("/Admin/DashBoard/ProductManager")}
-          />
-          <SidebarItem
-            icon={<Truck size={16} />}
-            label="Supplier"
-            onClick={() => router.push("/Admin/DashBoard/Nhacungcap")}
-          />
-          <SidebarItem
-            icon={<Award size={16} />}
-            label="User"
-            onClick={() => router.push("/Admin/DashBoard/ManagerUser")}
-          />
-          <SidebarItem
-            icon={<Tags size={16} />}
-            label="Image"
-            onClick={() => router.push("/Admin/DashBoard/ManagerImage")}
-          />
-        </SidebarSection>
+      <Menu />
+      <div className="flex min-h-screen">
+        {/* Sidebar */}
+        <nav className="w-72 font-semibold p-4 space-y-2">
+          <SidebarSection
+            title="Quản Lý Sản Phẩm"
+            icon={<Package size={18} />}
+            isOpen={openSections.products}
+            onToggle={() => toggleSection("products")}
+          >
+            <SidebarItem
+              icon={<Tags size={16} />}
+              label="Category"
+              onClick={() => router.push("/category")}
+            />
+            <SidebarItem
+              icon={<Tags size={16} />}
+              label="Product Type"
+              onClick={() => router.push("/Admin/DashBoard/LoaiSanPham")}
+            />
+            <SidebarItem
+              icon={<ShoppingBag size={16} />}
+              label="Product"
+              onClick={() => router.push("/Admin/DashBoard/ProductManager")}
+            />
+            <SidebarItem
+              icon={<Truck size={16} />}
+              label="Supplier"
+              onClick={() => router.push("/Admin/DashBoard/Nhacungcap")}
+            />
+            <SidebarItem
+              icon={<Award size={16} />}
+              label="User"
+              onClick={() => router.push("/Admin/DashBoard/ManagerUser")}
+            />
+            <SidebarItem
+              icon={<Tags size={16} />}
+              label="Image"
+              onClick={() => router.push("/Admin/DashBoard/ManagerImage")}
+            />
+          </SidebarSection>
 
-        <SidebarSection
-          title="Quản Lý Khách Hàng"
-          icon={<Users size={18} />}
-          isOpen={openSections.customers}
-          onToggle={() => toggleSection("customers")}
-        >
-          <SidebarItem
-            icon={<User size={16} />}
-            label="Customer"
-            onClick={() => router.push("/customer")}
-          />
-          <SidebarItem
-            icon={<ShoppingCart size={16} />}
-            label="Cart"
-            onClick={() => router.push("/cart")}
-          />
-          <SidebarItem
-            icon={<Heart size={16} />}
-            label="Wishlist"
-            onClick={() => router.push("/wishlist")}
-          />
-        </SidebarSection>
+          <SidebarSection
+            title="Quản Lý Khách Hàng"
+            icon={<Users size={18} />}
+            isOpen={openSections.customers}
+            onToggle={() => toggleSection("customers")}
+          >
+            <SidebarItem
+              icon={<User size={16} />}
+              label="Customer"
+              onClick={() => router.push("/customer")}
+            />
+            <SidebarItem
+              icon={<ShoppingCart size={16} />}
+              label="Cart"
+              onClick={() => router.push("/cart")}
+            />
+            <SidebarItem
+              icon={<Heart size={16} />}
+              label="Wishlist"
+              onClick={() => router.push("/wishlist")}
+            />
+          </SidebarSection>
 
-        <SidebarSection
-          title="Quản Lý Đơn Hàng"
-          icon={<ShoppingBag size={18} />}
-          isOpen={openSections.orders}
-          onToggle={() => toggleSection("orders")}
-        >
-          <SidebarItem
-            icon={<ShoppingBag size={16} />}
-            label="Order"
-            onClick={() => router.push("/order")}
-          />
-          <SidebarItem
-            icon={<CreditCard size={16} />}
-            label="Payment"
-            onClick={() => router.push("/payment")}
-          />
-          <SidebarItem
-            icon={<RotateCcw size={16} />}
-            label="Return"
-            onClick={() => router.push("/return")}
-          />
-        </SidebarSection>
-      </nav>
+          <SidebarSection
+            title="Quản Lý Đơn Hàng"
+            icon={<ShoppingBag size={18} />}
+            isOpen={openSections.orders}
+            onToggle={() => toggleSection("orders")}
+          >
+            <SidebarItem
+              icon={<ShoppingBag size={16} />}
+              label="Order"
+              onClick={() => router.push("/order")}
+            />
+            <SidebarItem
+              icon={<CreditCard size={16} />}
+              label="Payment"
+              onClick={() => router.push("/payment")}
+            />
+            <SidebarItem
+              icon={<RotateCcw size={16} />}
+              label="Return"
+              onClick={() => router.push("/return")}
+            />
+          </SidebarSection>
+        </nav>
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-auto relative ">
-       
-       
-        <div className="p-8 relative z-10 top-0">
-          <div  className="absolute -z-10 top-0 left-[600px]"> 
-          <Globe/>
-          </div>
-          <h1 className="text-2xl font-bold text-gray-800 mb-6">Dashboard</h1>
-
-          {error ? (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative mb-6">
-              {error}
+        {/* Main Content */}
+        <div className="flex-1 overflow-auto relative">
+          <div className="p-8 relative z-10 top-0">
+            <div className="absolute -z-10 top-0 left-[600px]">
+              <Globe />
             </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-6 mb-8 w-[500px]">
-               {/* <StatsCard
-                title="Tổng Đơn Đặt Cọc"
-                // value={metrics.totalReservations.toString()}
-                icon={<DollarSign size={24} className="text-green-500" />}
-                trend="up"
-                trendValue="12%"
-                isLoading={isLoading}
-              /> */}
-              <StatsCard
-                title="Tổng đơn đã thanh toán"
-                value={metrics.pendingReservations.toString()}
-                icon={<DollarSign size={24} className="text-yellow-500" />}
-                isLoading={isLoading}
-              /> 
-              <StatsCard
-                title="Tổng Đơn Hàng"
-                value={metrics.totalOrders.toString()}
-                icon={<ShoppingCart size={24} className="text-blue-500" />}
-                trend="up"
-                trendValue="8%"
-                isLoading={isLoading}
-              />
-              <StatsCard
-                title="Tổng Đơn Hàng Pending"
-                value={metrics.pendingOrders.toString()}
-                icon={<ShoppingCart size={24} className="text-orange-500" />}
-                isLoading={isLoading}
-              />
-              <StatsCard
-                title="Tổng Users"
-                value={metrics.totalUsers.toString()}
-                icon={<Users size={24} className="text-purple-500" />}
-                trend="up"
-                trendValue="15%"
-                isLoading={isLoading}
-              />
-            </div>
-          )}
+            <h1 className="text-2xl font-bold text-gray-800 mb-6">Dashboard</h1>
 
-          {/* Charts */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>Sales Trends</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[400px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={salesData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Line
-                        type="monotone"
-                        dataKey="sales"
-                        stroke="#8884d8"
-                        name="Sales"
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="revenue"
-                        stroke="#82ca9d"
-                        name="Revenue"
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="profit"
-                        stroke="#ffc658"
-                        name="Profit"
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
+            {error ? (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative mb-6">
+                {error}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-6 mb-8 w-[500px]">
+                <StatsCard
+                  title="Tổng Thanh toán Đang xử lý"
+                  value={metrics.totalReservations.toString()}
+                  icon={<DollarSign size={24} className="text-green-500" />}
+                  trend="up"
+                  trendValue="12%"
+                  isLoading={isLoading}
+                />
+                <StatsCard
+                  title="Tổng đơn đã thanh toán"
+                  value={metrics.pendingReservations.toString()}
+                  icon={<DollarSign size={24} className="text-yellow-500" />}
+                  isLoading={isLoading}
+                />
+                <StatsCard
+                  title="Tổng Đơn Hàng"
+                  value={metrics.totalOrders.toString()}
+                  icon={<ShoppingCart size={24} className="text-blue-500" />}
+                  trend="up"
+                  trendValue="8%"
+                  isLoading={isLoading}
+                />
+                <StatsCard
+                  title="Tổng Đơn Hàng Pending"
+                  value={metrics.pendingOrders.toString()}
+                  icon={<ShoppingCart size={24} className="text-orange-500" />}
+                  isLoading={isLoading}
+                />
+                <StatsCard
+                  title="Tổng Users"
+                  value={metrics.totalUsers.toString()}
+                  icon={<Users size={24} className="text-purple-500" />}
+                  trend="up"
+                  trendValue="15%"
+                  isLoading={isLoading}
+                />
+              </div>
+            )}
+
+            {/* Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Sales Trends</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[400px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={salesData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Line
+                          type="monotone"
+                          dataKey="sales"
+                          stroke="#8884d8"
+                          name="Sales"
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="revenue"
+                          stroke="#82ca9d"
+                          name="Revenue"
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="profit"
+                          stroke="#ffc658"
+                          name="Profit"
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </div>
-    </div>
     </div>
   );
 };
