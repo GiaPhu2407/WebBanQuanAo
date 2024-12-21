@@ -184,7 +184,7 @@ const Categories = () => {
   ];
 
   return (
-    <div className="container mx-auto p-4 mb-5 ">
+    <div className="container mx-auto p-4 mb-10 mt-64 ">
       <h1
         className="text-2xl font-sans font-bold mb-4 text-center"
         data-aos="fade-down"

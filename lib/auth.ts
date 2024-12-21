@@ -171,3 +171,46 @@ export async function getSession() {
     return null;
   }
 }
+
+// import bcryptjs from "bcryptjs";
+
+// const compare = bcryptjs.compare;
+// const hash = bcryptjs.hash;
+
+// import prisma from "@/prisma/client";
+
+export async function changePassword(userId: number, oldPassword: string, newPassword: string) {
+  try {
+    // 1. Tìm người dùng dựa trên `userId`
+    const user = await prisma.users.findUnique({
+      where: { idUsers: userId },
+    });
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // 2. Kiểm tra mật khẩu cũ
+    const isOldPasswordValid = compare(oldPassword, user.Matkhau!);
+    if (!isOldPasswordValid) {
+      throw new Error("Old password is incorrect");
+    }
+
+    // 3. Mã hóa mật khẩu mới
+    const hashedNewPassword = await hash(newPassword, 12);
+
+    // 4. Cập nhật mật khẩu mới
+    await prisma.users.update({
+      where: { idUsers: userId },
+      data: { Matkhau: hashedNewPassword },
+    });
+
+    return {
+      success: true,
+      message: "Password changed successfully",
+    };
+  } catch (error: any) {
+    console.error("Change password error:", error);
+    throw new Error(error.message || "Failed to change password");
+  }
+}

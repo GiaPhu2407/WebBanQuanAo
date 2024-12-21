@@ -224,7 +224,7 @@ export default function NhaCungCapManagementPage() {
       <div className="p-6 w-full max-w-5xl mx-auto">
         <Toaster />
 
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 mt-16">
           <h1 className="text-2xl font-bold whitespace-nowrap">
             Quản lý nhà cung cấp
           </h1>

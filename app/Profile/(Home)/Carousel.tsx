@@ -16,7 +16,7 @@ export default function Carousel() {
   }, []);
   return (
     <div
-      className="w-full h-[300px] md:h-[400px] mb-10 -mt-36"
+      className="w-full h-[300px] md:h-[400px] mb-10 mt-72"
       data-aos="fade-down"
     >
       {" "}
@@ -42,8 +42,8 @@ export default function Carousel() {
             style={{ backgroundImage: "url(/images/slide1.jpg)" }}
           >
             <img
-              className="w-full max-h-[400px] object-cover" // Set a max height
-              src="https://i.pinimg.com/564x/f3/3d/48/f33d4847eb962358dd1f0408fa436be7.jpg  "
+              className="w-full max-h-[600px] object-cover" // Set a max height
+              src="https://m.yodycdn.com/fit-in/filters:format(webp)/fit-in/filters:format(webp)/products/m40pezoh9j22rf0z4lf1800x833.jpg "
               alt="Beautiful Landscape 1"
             />
           </div>
@@ -55,8 +55,8 @@ export default function Carousel() {
             style={{ backgroundImage: "url(/images/slide2.jpg)" }}
           >
             <img
-              className="w-full max-h-[400px] object-cover" // Set a max height
-              src="https://i.pinimg.com/564x/bd/d0/94/bdd09439260b11313694e9301a11574b.jpg"
+              className="w-full max-h-[600px] object-cover" // Set a max height
+              src="https://m.yodycdn.com/fit-in/filters:format(webp)/fit-in/filters:format(webp)/products/m4un33tko3kz0fuyxqra%20mat%20le%20hoi%201800x833.jpg"
               alt="Beautiful Landscape 2"
             />
           </div>
@@ -68,8 +68,8 @@ export default function Carousel() {
             style={{ backgroundImage: "url(/images/slide3.jpg)" }}
           >
             <img
-              className="w-full max-h-[400px] object-cover" // Set a max height
-              src="https://i.pinimg.com/564x/58/60/c4/5860c4e5dcb86475e04e746806861070.jpg"
+              className="w-full max-h-[600px] object-cover" // Set a max height
+              src="https://m.yodycdn.com/fit-in/filters:format(webp)/fit-in/filters:format(webp)/products/m3znur9zvuebk2kiqxk3110_1800x833%20copy.png"
               alt="Beautiful Landscape 3"
             />
           </div>
@@ -81,8 +81,8 @@ export default function Carousel() {
             style={{ backgroundImage: "url(/images/slide4.jpg)" }}
           >
             <img
-              className="w-full max-h-[400px] object-cover" // Set a max height
-              src="https://i.pinimg.com/564x/64/19/7e/64197e5711ba22aed676053aaa6546e3.jpg"
+              className="w-full max-h-[600px] object-cover" // Set a max height
+              src="https://m.yodycdn.com/fit-in/filters:format(webp)/fit-in/filters:format(webp)/products/m3znuyyryyggerzrlgl3110_1800x833-07.png"
               alt="Beautiful Landscape 4"
             />
           </div>
@@ -94,7 +94,7 @@ export default function Carousel() {
             style={{ backgroundImage: "url(/images/slide5.jpg)" }}
           >
             <img
-              className="w-full max-h-[400px] object-cover" // Set a max height
+              className="w-full max-h-[600px] object-cover" // Set a max height
               src="https://i.pinimg.com/564x/5b/26/cd/5b26cd4f4f68a736a052694d7ae0a49d.jpg"
               alt="Beautiful Landscape 5"
             />

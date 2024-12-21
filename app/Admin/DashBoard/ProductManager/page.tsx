@@ -245,7 +245,7 @@ export default function ProductManagementPage() {
       <div className="p-6 flex-1">
         <Toaster />
 
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-6 mt-16">
           <h1 className="text-2xl font-bold">Quản lý sản phẩm</h1>
           <button
             className="btn btn-primary"
@@ -497,3 +497,216 @@ export default function ProductManagementPage() {
     </div>
   );
 }
+// "use client";
+// import React from "react";
+// import SalesDashboard from "../NvarbarAdmin";
+
+  
+// import { useToast } from "@/components/ui/use-toast";
+// import { Toaster } from "@/components/ui/toaster";
+
+  
+  
+// import { LoaiSanPham } from "@/app/Admin/DashBoard/ProductManager/type";
+// import SearchBar from "../../ProductTable/SearchBar";
+// import TableDashboard from "../../ProductTable/TableDashBoard";
+// import { ProductForm } from "./components/ProductForm";
+// import { DeleteConfirmDialog } from "./components/DeleteConfirm";
+// import { useProductForm } from "./hooks/useProductForm";
+
+// export default function ProductManagementPage() {
+//   const { toast } = useToast();
+//   const [reloadKey, setReloadKey] = React.useState(0);
+//   const [deleteConfirmId, setDeleteConfirmId] = React.useState<number | null>(null);
+//   const [loaisanphamList, setLoaisanphamList] = React.useState<LoaiSanPham[]>([]);
+  
+//   // Search states
+//   const [searchTerm, setSearchTerm] = React.useState("");
+//   const [selectedCategory, setSelectedCategory] = React.useState("");
+//   const [minPrice, setMinPrice] = React.useState("");
+//   const [maxPrice, setMaxPrice] = React.useState("");
+//   const [gender, setGender] = React.useState("");
+
+//   const {
+//     formData,
+//     setFormData,
+//     isEditing,
+//     imageUrl,
+//     setImageUrl,
+//     handleSubmit,
+//     handleEdit,
+//     resetForm,
+//   } = useProductForm(() => {
+//     setReloadKey((prev) => prev + 1);
+//     const modal = document.getElementById("my_modal_3") as HTMLDialogElement;
+//     modal?.close();
+//   });
+
+//   React.useEffect(() => {
+//     fetchLoaiSanPham();
+//   }, []);
+
+//   const fetchLoaiSanPham = async () => {
+//     try {
+//       const response = await fetch("/api/loaisanpham");
+//       const data = await response.json();
+//       setLoaisanphamList(data);
+//     } catch (err) {
+//       console.error("Failed to fetch loai san pham:", err);
+//       toast({
+//         title: "Lỗi!",
+//         description: "Không thể tải danh sách loại sản phẩm",
+//         variant: "destructive",
+//       });
+//     }
+//   };
+
+//   const handleChange = (
+//     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+//   ) => {
+//     const { name, value } = e.target;
+//     setFormData((prev) => ({
+//       ...prev,
+//       [name]:
+//         name === "idloaisanpham"
+//           ? parseInt(value)
+//           : name === "giamgia"
+//           ? parseFloat(value)
+//           : value,
+//     }));
+//   };
+
+//   const handleGenderChange = (isMale: boolean) => {
+//     setFormData((prev) => ({ ...prev, gioitinh: isMale }));
+//   };
+
+//   const handleSizeChange = (selectedSize: string) => {
+//     setFormData((prev) => {
+//       const sizeSet = new Set(prev.size.split(",").filter(Boolean).map((s) => s.trim()));
+//       if (sizeSet.has(selectedSize)) {
+//         sizeSet.delete(selectedSize);
+//       } else {
+//         sizeSet.add(selectedSize);
+//       }
+//       return { ...prev, size: Array.from(sizeSet).sort().join(",") };
+//     });
+//   };
+
+//   const handleDeleteConfirm = async () => {
+//     if (deleteConfirmId) {
+//       try {
+//         const response = await fetch(`/api/sanpham/${deleteConfirmId}`, {
+//           method: "DELETE",
+//         });
+
+//         if (!response.ok) {
+//           throw new Error("Không thể xóa sản phẩm.");
+//         }
+
+//         toast({
+//           title: "Thành Công!",
+//           description: "Sản phẩm đã được xóa thành công",
+//           variant: "success",
+//         });
+
+//         setReloadKey((prevKey) => prevKey + 1);
+//         setDeleteConfirmId(null);
+//       } catch (err) {
+//         console.error("Error deleting product:", err);
+//         toast({
+//           title: "Lỗi!",
+//           description: err instanceof Error ? err.message : "Lỗi khi xóa sản phẩm",
+//           variant: "destructive",
+//         });
+//       }
+//     }
+//   };
+
+//   return (
+//     <div className="flex">
+//       <SalesDashboard />
+//       <div className="p-6 flex-1">
+//         <Toaster />
+
+//         <div className="flex justify-between items-center mb-6 mt-16">
+//           <h1 className="text-2xl font-bold">Quản lý sản phẩm</h1>
+//           <button
+//             className="btn btn-primary"
+//             onClick={() => {
+//               resetForm();
+//               const modal = document.getElementById("my_modal_3") as HTMLDialogElement;
+//               modal?.showModal();
+//             }}
+//           >
+//             Thêm sản phẩm
+//           </button>
+//         </div>
+
+//         <SearchBar
+//           searchTerm={searchTerm}
+//           onSearchChange={setSearchTerm}
+//           selectedCategory={selectedCategory}
+//           categories={loaisanphamList}
+//           onCategoryChange={setSelectedCategory}
+//           minPrice={minPrice}
+//           maxPrice={maxPrice}
+//           onPriceChange={(min, max) => {
+//             setMinPrice(min);
+//             setMaxPrice(max);
+//           }}
+//           gender={gender}
+//           onGenderChange={setGender}
+//         />
+
+//         <TableDashboard
+//           key={reloadKey}
+//           onEdit={handleEdit}
+//           onDelete={(id) => setDeleteConfirmId(id)}
+//           reloadKey={reloadKey}
+//         />
+
+//         <DeleteConfirmDialog
+//           isOpen={!!deleteConfirmId}
+//           onClose={() => setDeleteConfirmId(null)}
+//           onConfirm={handleDeleteConfirm}
+//         />
+
+//         <dialog id="my_modal_3" className="modal modal-bottom sm:modal-middle">
+//           <div className="modal-box relative">
+//             <button
+//               onClick={() => {
+//                 resetForm();
+//                 const modal = document.getElementById("my_modal_3") as HTMLDialogElement;
+//                 modal?.close();
+//               }}
+//               className="btn btn-sm btn-circle absolute right-2 top-2"
+//             >
+//               ✕
+//             </button>
+
+//             <h3 className="font-bold text-lg mb-4">
+//               {isEditing ? "Cập nhật sản phẩm" : "Thêm sản phẩm mới"}
+//             </h3>
+
+//             <ProductForm
+//               formData={formData}
+//               isEditing={isEditing}
+//               imageUrl={imageUrl}
+//               loaisanphamList={loaisanphamList}
+//               onSubmit={handleSubmit}
+//               onChange={handleChange}
+//               onGenderChange={handleGenderChange}
+//               onSizeChange={handleSizeChange}
+//               onImageChange={setImageUrl}
+//               onCancel={() => {
+//                 resetForm();
+//                 const modal = document.getElementById("my_modal_3") as HTMLDialogElement;
+//                 modal?.close();
+//               }}
+//             />
+//           </div>
+//         </dialog>
+//       </div>
+//     </div>
+//   );
+// }

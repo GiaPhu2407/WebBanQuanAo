@@ -1,6 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Search } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface LoaiSanPham {
   idloaisanpham: number;
@@ -27,6 +36,7 @@ const TableTypeProduct: React.FC<TableDashboardProps> = ({
   reloadKey,
 }) => {
   const [categories, setCategories] = useState<LoaiSanPham[]>([]);
+  const [searchText, setSearchText] = useState("");
   const [meta, setMeta] = useState<Meta>({
     page: 1,
     limit_size: 10,
@@ -39,7 +49,7 @@ const TableTypeProduct: React.FC<TableDashboardProps> = ({
     setLoading(true);
     try {
       const response = await fetch(
-        `/api/phantrangloaisanpham?page=${meta.page}&limit_size=${meta.limit_size}`
+        `/api/phantrangloaisanpham?page=${meta.page}&limit_size=${meta.limit_size}&search=${encodeURIComponent(searchText)}`
       );
       if (!response.ok) {
         throw new Error("Network response was not ok");
@@ -64,18 +74,70 @@ const TableTypeProduct: React.FC<TableDashboardProps> = ({
 
   useEffect(() => {
     fetchCategories();
-  }, [meta.page, meta.limit_size, reloadKey]);
+  }, [meta.page, meta.limit_size, searchText, reloadKey]);
+
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMeta(prev => ({ ...prev, page: 1 }));
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchText]);
 
   const handlePageChange = (newPage: number) => {
-    setMeta((prev) => ({ ...prev, page: newPage }));
+    setMeta(prev => ({ ...prev, page: newPage }));
+  };
+
+  const renderPagination = () => {
+    const pages = [];
+    let startPage = Math.max(1, meta.page - 2);
+    let endPage = Math.min(meta.totalPages, startPage + 4);
+
+    if (endPage - startPage < 4) {
+      startPage = Math.max(1, endPage - 4);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(
+        <Button
+          key={i}
+          variant={i === meta.page ? "default" : "outline"}
+          onClick={() => handlePageChange(i)}
+          className="min-w-[40px]"
+        >
+          {i}
+        </Button>
+      );
+    }
+
+    return pages;
   };
 
   return (
     <div className="space-y-4">
-      <div className="w-full">
+      {/* Search Input */}
+      <div className="flex justify-between items-center gap-4">
+        <div className="flex-1 max-w-sm relative">
+          <Input
+            type="text"
+            placeholder="Tìm kiếm theo tên loại hoặc mô tả..."
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            className="pl-10"
+          />
+          <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
+        </div>
+        
+        <div className="text-sm text-gray-600">
+          Tổng số: {meta.totalRecords} loại sản phẩm
+        </div>
+      </div>
+
+      <div className="w-full ">
         <CardContent>
-          <div className="w-full rounded-lg shadow">
-            <table className="w-full divide-gray-200 bg-gradient-to-r from-red-500 to-pink-400">
+          <div className="w-full rounded-lg shadow ">
+            <table className="w-full divide-gray-200 bg-gradient-to-r from-red-500 to-pink-400 ">
               <thead>
                 <tr>
                   <th className="px-4 py-3 text-white">ID Loại SP</th>
@@ -100,7 +162,7 @@ const TableTypeProduct: React.FC<TableDashboardProps> = ({
                       key={category.idloaisanpham}
                       className={`${
                         index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                      } hover:bg-blue-50 transition-colors duration-200`}
+                      } hover:bg-gray-100`}
                     >
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         {category.idloaisanpham}
@@ -113,18 +175,21 @@ const TableTypeProduct: React.FC<TableDashboardProps> = ({
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex justify-center space-x-2">
-                          <button
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => onEdit(category)}
-                            className="p-1 text-blue-600 hover:text-blue-800 transition-colors duration-200"
                           >
-                            <Pencil className="w-5 h-5" />
-                          </button>
-                          <button
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => onDelete(category.idloaisanpham)}
-                            className="p-1 text-red-600 hover:text-red-800 transition-colors duration-200"
+                            className="text-red-600 hover:text-red-700"
                           >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -135,7 +200,7 @@ const TableTypeProduct: React.FC<TableDashboardProps> = ({
                       colSpan={4}
                       className="px-6 py-4 text-center text-gray-500"
                     >
-                      Không có loại sản phẩm nào
+                      {searchText ? "Không tìm thấy kết quả phù hợp" : "Không có loại sản phẩm nào"}
                     </td>
                   </tr>
                 )}
@@ -146,113 +211,54 @@ const TableTypeProduct: React.FC<TableDashboardProps> = ({
       </div>
 
       {/* Updated Pagination */}
-      <div className="flex items-center justify-between px-4">
-        <div className="text-sm text-gray-700">
-          Results: {(meta.page - 1) * meta.limit_size + 1} -{" "}
-          {Math.min(meta.page * meta.limit_size, meta.totalRecords)} of{" "}
-          {meta.totalRecords}
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-gray-600">
+          Hiển thị {(meta.page - 1) * meta.limit_size + 1} -{" "}
+          {Math.min(meta.page * meta.limit_size, meta.totalRecords)} trong{" "}
+          {meta.totalRecords} loại sản phẩm
         </div>
 
-        <div className="flex items-center space-x-2">
-          <button
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
             onClick={() => handlePageChange(meta.page - 1)}
             disabled={meta.page === 1}
-            className="p-2 rounded-lg border bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-          </button>
+            <span className="sr-only">Previous</span>
+            ←
+          </Button>
 
-          {[1, 2, 3].map((number) => (
-            <button
-              key={number}
-              onClick={() => handlePageChange(number)}
-              className={`min-w-[40px] h-[40px] flex items-center justify-center rounded-lg border text-sm
-                ${
-                  number === meta.page
-                    ? "bg-blue-500 text-white border-blue-500"
-                    : "bg-white hover:bg-gray-50"
-                }`}
-            >
-              {number}
-            </button>
-          ))}
+          {renderPagination()}
 
-          {meta.totalPages > 3 && <span className="px-2">...</span>}
-
-          {meta.totalPages > 3 && (
-            <button
-              onClick={() => handlePageChange(meta.totalPages)}
-              className={`min-w-[40px] h-[40px] flex items-center justify-center rounded-lg border text-sm bg-white hover:bg-gray-50`}
-            >
-              {meta.totalPages}
-            </button>
-          )}
-
-          <button
+          <Button
+            variant="outline"
             onClick={() => handlePageChange(meta.page + 1)}
             disabled={meta.page >= meta.totalPages}
-            className="p-2 rounded-lg border bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </button>
+            <span className="sr-only">Next</span>
+            →
+          </Button>
 
-          <div className="relative ml-2">
-            <select
-              value={meta.limit_size}
-              onChange={(e) =>
-                setMeta((prev) => ({
-                  ...prev,
-                  limit_size: Number(e.target.value),
-                  page: 1,
-                }))
-              }
-              className="appearance-none bg-white border rounded-lg px-4 py-2 pr-8 cursor-pointer text-sm"
-            >
-              <option value="10">10</option>
-              <option value="20">20</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2">
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </div>
-          </div>
+          <Select
+            value={String(meta.limit_size)}
+            onValueChange={(value) =>
+              setMeta((prev) => ({
+                ...prev,
+                limit_size: Number(value),
+                page: 1,
+              }))
+            }
+          >
+            <SelectTrigger className="w-20">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="20">20</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+              <SelectItem value="100">100</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
     </div>

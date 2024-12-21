@@ -44,7 +44,8 @@ const Header = () => {
     }
   };
   return (
-    <div
+    <div className="bg-white w-full h-[200px] shadow fixed z-[99] top-0 left-0"
+
     //className={`bg-white dark:bg-gray-400 -mt-24 flex flex-col items-center p-[30px_152px_125px_152px] w-full box-sizing-border ${
     //userId ? "hidden" : "block"
     //}`}

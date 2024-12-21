@@ -4,7 +4,7 @@ import Content2 from "./Content2";
 
 const Content = () => {
   return (
-    <div>
+    <div className="overflow-hidden">
       <Content1 />
       <Content2 />
     </div>
