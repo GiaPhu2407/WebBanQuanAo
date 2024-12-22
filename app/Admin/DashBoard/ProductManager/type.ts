@@ -1,22 +1,40 @@
-export interface LoaiSanPham {
-    idloaisanpham: number;
+export interface SanPham {
+  idsanpham: number;
+  tensanpham: string;
+  hinhanh: string;
+  gia: string;
+  mota: string;
+  idloaisanpham: number;
+  giamgia: number;
+  gioitinh: boolean;
+  size: string;
+  loaisanpham?: {
     tenloai: string;
     mota: string;
-  }
-  
-  export interface FormData {
-    tensanpham: string;
-    mota: string;
-    gia: string;
-    hinhanh: string;
-    idloaisanpham: number;
-    giamgia: number;
-    gioitinh: boolean;
-    size: string;
-  }
-  
-  export interface SanPham extends FormData {
-    idsanpham: number;
-  }
-  
-  export const VALID_SIZES = ["S", "M", "L", "XL", "2XL", "3XL"];
+  };
+  images?: Array<{ url: string }>;
+}
+
+export interface LoaiSanPham {
+  idloaisanpham: number;
+  tenloai: string;
+  mota: string;
+}
+
+export interface Meta {
+  page: number;
+  limit_size: number;
+  totalRecords: number;
+  totalPages: number;
+}
+
+export interface FormData {
+  tensanpham: string;
+  mota: string;
+  gia: string;
+  hinhanh: string;
+  idloaisanpham: number;
+  giamgia: number;
+  gioitinh: boolean;
+  size: string;
+}
