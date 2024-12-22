@@ -167,53 +167,56 @@ const Content2 = () => {
           </div>
         </div>
       </div>
-      <div className="border mt-10 shadow">
-        <div className="flex items-center justify-center my-8">
-          <div
-            className="border-t border-gray-300 flex-grow mx-4"
-            data-aos="fade-right"
-          ></div>
-          <p className="text-lg font-semibold" data-aos="fade-down">
-            ĐỐI TÁC
-          </p>
-          <div
-            className="border-t border-gray-300 flex-grow mx-4"
-            data-aos="fade-left"
-          ></div>
-        </div>
-        <div className="flex justify-center items-center gap-20">
-          <img
-            src="https://i.pinimg.com/564x/92/de/46/92de46f55a67ad97a1f1facdafa3c967.jpg"
-            alt=""
-            className=" w-24 h-20  "
-            data-aos="fade-right"
-          />
-          <img
-            src="https://i.pinimg.com/564x/e3/39/85/e33985c4790fb765b50a6ffcb660b26d.jpg"
-            alt=""
-            className=" w-24 h-20"
-            data-aos="fade-up"
-          />
-          <img
-            src="https://i.pinimg.com/564x/78/1b/bb/781bbb32f978308bda9e56b82e2b87cf.jpg"
-            alt=""
-            className=" w-24 h-20"
-            data-aos="fade-down"
-          />
-          <img
-            src="https://i.pinimg.com/564x/2c/1b/41/2c1b41a1e41db494a8d6062778b85098.jpg"
-            alt=""
-            className=" w-24 h-20"
-            data-aos="fade-up"
-          />
-          <img
-            src="https://i.pinimg.com/564x/96/ef/8b/96ef8b2a0d8164ab1937c5942fe4065d.jpg"
-            alt=""
-            className=" w-24 h-20"
-            data-aos="fade-left"
-          />
-        </div>
-      </div>
+      <div className="border mt-10 shadow px-4 py-6 md:px-8">
+  {/* Title section */}
+  <div className="flex items-center justify-center my-4 md:my-8">
+    <div
+      className="border-t border-gray-300 flex-grow mx-2 md:mx-4"
+      data-aos="fade-right"
+    ></div>
+    <p className="text-base md:text-lg font-semibold px-2" data-aos="fade-down">
+      ĐỐI TÁC
+    </p>
+    <div
+      className="border-t border-gray-300 flex-grow mx-2 md:mx-4"
+      data-aos="fade-left"
+    ></div>
+  </div>
+
+  {/* Partners logo grid */}
+  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 md:gap-10 lg:gap-20 justify-items-center items-center px-4 py-4">
+    <img
+      src="https://i.pinimg.com/564x/92/de/46/92de46f55a67ad97a1f1facdafa3c967.jpg"
+      alt="Partner 1"
+      className="w-16 h-14 md:w-24 md:h-20 object-contain"
+      data-aos="fade-right"
+    />
+    <img
+      src="https://i.pinimg.com/564x/e3/39/85/e33985c4790fb765b50a6ffcb660b26d.jpg"
+      alt="Partner 2"
+      className="w-16 h-14 md:w-24 md:h-20 object-contain"
+      data-aos="fade-up"
+    />
+    <img
+      src="https://i.pinimg.com/564x/78/1b/bb/781bbb32f978308bda9e56b82e2b87cf.jpg"
+      alt="Partner 3"
+      className="w-16 h-14 md:w-24 md:h-20 object-contain"
+      data-aos="fade-down"
+    />
+    <img
+      src="https://i.pinimg.com/564x/2c/1b/41/2c1b41a1e41db494a8d6062778b85098.jpg"
+      alt="Partner 4"
+      className="w-16 h-14 md:w-24 md:h-20 object-contain"
+      data-aos="fade-up"
+    />
+    <img
+      src="https://i.pinimg.com/564x/96/ef/8b/96ef8b2a0d8164ab1937c5942fe4065d.jpg"
+      alt="Partner 5"
+      className="w-16 h-14 md:w-24 md:h-20 object-contain"
+      data-aos="fade-left"
+    />
+  </div>
+</div>
     </div>
   );
 };

@@ -202,7 +202,7 @@ const UserManagementPage: React.FC = () => {
   return (
     <div className="flex h-screen bg-gray-100">
       <SalesDashboard />
-      <div className="flex-1 p-8">
+      <div className="flex-1 p-8 mt-16">
         <Toaster />
 
         <div className="flex justify-between items-center mb-6">

@@ -156,7 +156,7 @@ const TableDonHang: React.FC<TableDonHangProps> = ({
 
   return (
     <div className="space-y-4">
-      <div className="w-full rounded-lg shadow">
+      <div className="w-full rounded-lg shadow mt-10">
         <table className="w-full divide-gray-200 bg-gradient-to-r from-blue-500 to-purple-400">
           <thead>
             <tr>
