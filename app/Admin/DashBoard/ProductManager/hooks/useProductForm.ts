@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FormData, SanPham } from '@/app/Admin/DashBoard/ProductManager/type';
+import { FormData, SanPham, SizeQuantity } from '@/app/Admin/type/product';
 import { useToast } from '@/components/ui/use-toast';
 
 const initialFormData: FormData = {
@@ -10,7 +10,7 @@ const initialFormData: FormData = {
   idloaisanpham: 0,
   giamgia: 0,
   gioitinh: true,
-  size: "",
+  sizes: []
 };
 
 export const useProductForm = (onSuccess: () => void) => {
@@ -25,7 +25,7 @@ export const useProductForm = (onSuccess: () => void) => {
     if (!formData.mota.trim()) return "Vui lòng nhập mô tả";
     if (!formData.gia || isNaN(Number(formData.gia))) return "Vui lòng nhập giá hợp lệ";
     if (!formData.idloaisanpham) return "Vui lòng chọn loại sản phẩm";
-    if (!formData.size) return "Vui lòng chọn ít nhất một size";
+    if (formData.sizes.length === 0) return "Vui lòng chọn ít nhất một size";
     if (formData.giamgia < 0 || formData.giamgia > 100) return "Giảm giá phải từ 0 đến 100";
     if (!imageUrl) return "Vui lòng tải lên hình ảnh sản phẩm";
     return null;
@@ -78,7 +78,16 @@ export const useProductForm = (onSuccess: () => void) => {
   };
 
   const handleEdit = (product: SanPham) => {
-    setFormData(product);
+    setFormData({
+      tensanpham: product.tensanpham,
+      mota: product.mota,
+      gia: product.gia,
+      hinhanh: product.hinhanh,
+      idloaisanpham: product.idloaisanpham,
+      giamgia: product.giamgia,
+      gioitinh: product.gioitinh,
+      sizes: product.sizes || []
+    });
     setCurrentProductId(product.idsanpham);
     setIsEditing(true);
     setImageUrl(product.hinhanh);
@@ -91,6 +100,14 @@ export const useProductForm = (onSuccess: () => void) => {
     setImageUrl("");
   };
 
+  // Thêm hàm để xử lý cập nhật sizes
+  const handleSizeChange = (sizes: SizeQuantity[]) => {
+    setFormData(prev => ({
+      ...prev,
+      sizes
+    }));
+  };
+
   return {
     formData,
     setFormData,
@@ -100,5 +117,6 @@ export const useProductForm = (onSuccess: () => void) => {
     handleSubmit,
     handleEdit,
     resetForm,
+    handleSizeChange
   };
 };

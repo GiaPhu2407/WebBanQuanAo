@@ -7,7 +7,7 @@ export interface SanPham {
   idloaisanpham: number;
   giamgia: number;
   gioitinh: boolean;
-  size: string;
+  sizes: SizeQuantity[];
   loaisanpham?: {
     tenloai: string;
     mota: string;
@@ -28,6 +28,12 @@ export interface Meta {
   totalPages: number;
 }
 
+export interface SizeQuantity {
+  idSize: number;
+  tenSize: string;
+  soluong: number;
+}
+
 export interface FormData {
   tensanpham: string;
   mota: string;
@@ -36,5 +42,5 @@ export interface FormData {
   idloaisanpham: number;
   giamgia: number;
   gioitinh: boolean;
-  size: string;
+  sizes: SizeQuantity[];
 }
