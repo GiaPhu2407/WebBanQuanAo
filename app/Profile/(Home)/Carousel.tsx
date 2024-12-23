@@ -16,7 +16,7 @@ export default function Carousel() {
   }, []);
   return (
     <div
-      className="w-full h-[300px] md:h-[400px] mb-10 mt-72"
+      className="w-full h-[300px] md:h-[400px] mb-10 mt-36"
       data-aos="fade-down"
     >
       {" "}

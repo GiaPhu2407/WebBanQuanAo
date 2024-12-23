@@ -3,6 +3,7 @@ import { FilterState } from "@/app/component/Type";
 
 interface FilterProps {
   onFilterChange: (filters: FilterState) => void;
+  onClose?: () => void;
 }
 
 interface Category {
@@ -10,7 +11,11 @@ interface Category {
   tenloai: string;
 }
 
-const Filter: React.FC<FilterProps> = ({ onFilterChange }) => {
+interface tensanpham {
+  mausac:string,
+}
+
+const Filter: React.FC<FilterProps> = ({ onFilterChange, onClose }) => {
   const [filters, setFilters] = React.useState<FilterState>({
     categories: [],
     gender: [],
@@ -21,7 +26,6 @@ const Filter: React.FC<FilterProps> = ({ onFilterChange }) => {
   const [categories, setCategories] = React.useState<Category[]>([]);
   const availableSizes = ["S", "M", "L", "XL", "2XL"];
 
-  // Fetch categories from API
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -42,13 +46,18 @@ const Filter: React.FC<FilterProps> = ({ onFilterChange }) => {
     onFilterChange(newFilters);
   };
 
+  const handleApplyFilters = () => {
+    onFilterChange(filters);
+    onClose?.();
+  };
+
   return (
     <div className="space-y-6 p-4 bg-white rounded-lg shadow">
       <div>
         <h3 className="text-lg font-semibold mb-2">Danh mục</h3>
         <div className="space-y-2">
           {categories.map((category) => (
-            <label key={category.idloaisanpham} className="flex items-center">
+            <label key={category.idloaisanpham} className="flex items-center p-2 hover:bg-gray-50 rounded">
               <input
                 type="checkbox"
                 checked={filters.categories.includes(category.idloaisanpham)}
@@ -60,9 +69,9 @@ const Filter: React.FC<FilterProps> = ({ onFilterChange }) => {
                       );
                   handleChange("categories", newCategories);
                 }}
-                className="mr-2"
+                className="mr-3 w-5 h-5"
               />
-              {category.tenloai}
+              <span className="text-sm">{category.tenloai}</span>
             </label>
           ))}
         </div>
@@ -71,40 +80,28 @@ const Filter: React.FC<FilterProps> = ({ onFilterChange }) => {
       <div>
         <h3 className="text-lg font-semibold mb-2">Giới tính</h3>
         <div className="space-y-2">
-          <label className="flex items-center">
-            <input
-              type="checkbox"
-              checked={filters.gender.includes("nam")}
-              onChange={(e) => {
-                const newGender = e.target.checked
-                  ? [...filters.gender, "nam"]
-                  : filters.gender.filter((g) => g !== "nam");
-                handleChange("gender", newGender);
-              }}
-              className="mr-2"
-            />
-            Nam
-          </label>
-          <label className="flex items-center">
-            <input
-              type="checkbox"
-              checked={filters.gender.includes("nu")}
-              onChange={(e) => {
-                const newGender = e.target.checked
-                  ? [...filters.gender, "nu"]
-                  : filters.gender.filter((g) => g !== "nu");
-                handleChange("gender", newGender);
-              }}
-              className="mr-2"
-            />
-            Nữ
-          </label>
+          {["nam", "nu"].map((gender) => (
+            <label key={gender} className="flex items-center p-2 hover:bg-gray-50 rounded">
+              <input
+                type="checkbox"
+                checked={filters.gender.includes(gender)}
+                onChange={(e) => {
+                  const newGender = e.target.checked
+                    ? [...filters.gender, gender]
+                    : filters.gender.filter((g) => g !== gender);
+                  handleChange("gender", newGender);
+                }}
+                className="mr-3 w-5 h-5"
+              />
+              <span className="text-sm">{gender === "nam" ? "Nam" : "Nữ"}</span>
+            </label>
+          ))}
         </div>
       </div>
 
       <div>
         <h3 className="text-lg font-semibold mb-2">Giá</h3>
-        <div className="space-y-2">
+        <div className="space-y-4 px-2">
           <input
             type="range"
             min="0"
@@ -124,9 +121,16 @@ const Filter: React.FC<FilterProps> = ({ onFilterChange }) => {
 
       <div>
         <h3 className="text-lg font-semibold mb-2">Kích thước</h3>
-        <div className="space-y-2">
+        <div className="grid grid-cols-3 gap-2">
           {availableSizes.map((size) => (
-            <label key={size} className="flex items-center">
+            <label
+              key={size}
+              className={`flex items-center justify-center p-2 border rounded cursor-pointer ${
+                filters.sizes.includes(size)
+                  ? "border-blue-500 bg-blue-50"
+                  : "border-gray-200 hover:bg-gray-50"
+              }`}
+            >
               <input
                 type="checkbox"
                 checked={filters.sizes.includes(size)}
@@ -136,13 +140,25 @@ const Filter: React.FC<FilterProps> = ({ onFilterChange }) => {
                     : filters.sizes.filter((s) => s !== size);
                   handleChange("sizes", newSizes);
                 }}
-                className="mr-2"
+                className="hidden"
               />
               {size}
             </label>
           ))}
         </div>
       </div>
+
+      {/* Mobile Apply Button */}
+      {onClose && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t">
+          <button
+            onClick={handleApplyFilters}
+            className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium"
+          >
+            Áp dụng bộ lọc
+          </button>
+        </div>
+      )}
     </div>
   );
 };

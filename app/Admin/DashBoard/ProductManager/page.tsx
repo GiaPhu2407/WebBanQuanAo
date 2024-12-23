@@ -29,6 +29,7 @@ interface FormData {
   hinhanh: string;
   idloaisanpham: number;
   giamgia: number;
+  mausac:string,
   gioitinh: boolean;
   size: string;
 }
@@ -47,6 +48,7 @@ export default function ProductManagementPage() {
     hinhanh: "",
     idloaisanpham: 0,
     giamgia: 0,
+    mausac:"",
     gioitinh: true,
     size: "",
   });
@@ -231,6 +233,7 @@ export default function ProductManagementPage() {
       hinhanh: "",
       idloaisanpham: 0,
       giamgia: 0,
+      mausac:"",
       gioitinh: true,
       size: "",
     });
@@ -374,6 +377,20 @@ export default function ProductManagementPage() {
                     type="number"
                     name="giamgia"
                     value={formData.giamgia}
+                    onChange={handleChange}
+                    className="input input-bordered w-full"
+                    min="0"
+                    max="100"
+                  />
+                </div>
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Màu sắc</span>
+                  </label>
+                  <input
+                    type="string"
+                    name="mausac"
+                    value={formData.mausac}
                     onChange={handleChange}
                     className="input input-bordered w-full"
                     min="0"

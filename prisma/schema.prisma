@@ -93,6 +93,7 @@ model Loaisanpham {
   gia             String?          @db.VarChar(255)
   hinhanh         String?          @db.VarChar(255)
   trangthai       String?          @db.VarChar(255)
+  mausac          String?          @db.VarChar(255)
   idloaisanpham   Int?            
   giamgia         Decimal?         @db.Decimal(5,2)
   gioitinh        Boolean?

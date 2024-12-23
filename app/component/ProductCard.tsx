@@ -143,7 +143,7 @@ const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
 
           <div className="flex gap-2 pt-2">
             <button
-              className="flex-1 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="flex-1 px-3 py-1 whitespace-nowrap bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               onClick={handleBuyClick}
             >
               Mua ngay
@@ -182,7 +182,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({ products }) => {
         ))}
       </div>
 
-      {/* Toggle Button */}
+      {/* Toggle Button */} 
       {products.length > 4 && (
         <div className="flex justify-center">
           <button

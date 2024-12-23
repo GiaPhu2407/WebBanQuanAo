@@ -16,6 +16,7 @@ interface SanPham {
   hinhanh: string;
   gia: string;
   mota: string;
+  mausac:string,
   idloaisanpham: number;
   giamgia: number;
   gioitinh: boolean;
@@ -165,6 +166,7 @@ const TableDashboard: React.FC<TableDashboardProps> = ({
               <th className="py-3 px-4 text-white text-left">Loại SP</th>
               <th className="py-3 px-4 text-white text-right">Giá</th>
               <th className="py-3 px-4 text-white text-center">Giảm Giá</th>
+              <th className="py-3 px-4 text-white text-center">Màu sắc</th>
               <th className="py-3 px-4 text-white text-center">Giới Tính</th>
               <th className="py-3 px-4 text-white text-center">Size</th>
               <th className="py-3 px-4 text-white text-center">Hình Ảnh</th>
@@ -200,6 +202,7 @@ const TableDashboard: React.FC<TableDashboardProps> = ({
                     }).format(Number(product.gia))}
                   </td>
                   <td className="py-3 px-4 text-center">{product.giamgia}%</td>
+                  <td className="py-3 px-4 text-center">{product.mausac}</td>
                   <td className="py-3 px-4 text-center">
                     {product.gioitinh ? "Nam" : "Nữ"}
                   </td>

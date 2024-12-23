@@ -12,8 +12,10 @@ export async function POST(req: NextRequest) {
       mota: body.mota,
       gia: body.gia,
       hinhanh: body.hinhanh,
+      mausac:body.mausac,
       idloaisanpham: parseInt(body.idloaisanpham),
       giamgia: parseFloat(body.giamgia),
+     
       // Directly take gioitinh as a boolean
       gioitinh: body.gioitinh === true, // Ensure this is evaluated as boolean
       size: body.size,
@@ -56,6 +58,7 @@ export async function POST(req: NextRequest) {
         mota: body.mota,
         gia: body.gia,
         hinhanh: body.hinhanh,
+        mausac:body.mausac,
         idloaisanpham: parseInt(body.idloaisanpham),
         giamgia: parseFloat(body.giamgia),
         gioitinh: body.gioitinh, // This should already be a boolean
