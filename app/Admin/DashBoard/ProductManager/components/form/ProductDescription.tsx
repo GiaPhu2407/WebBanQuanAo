@@ -1,27 +1,49 @@
 import React from 'react';
-import { FormData } from '@/app/Admin/type/product';
+import { Size } from '@/app/Admin/type/product';
 
-interface ProductDescriptionProps {
-  formData: FormData;
-  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+interface ProductSizeInputProps {
+  sizes: Size[];
+  productSizes: { [key: number]: number };
+  onSizeChange: (sizeId: number, quantity: number) => void;
 }
 
-export const ProductDescription: React.FC<ProductDescriptionProps> = ({
-  formData,
-  onChange,
+const ProductSizeInput: React.FC<ProductSizeInputProps> = ({
+  sizes,
+  productSizes,
+  onSizeChange,
 }) => {
   return (
-    <div className="form-control">
-      <label className="label">
-        <span className="label-text">Mô tả</span>
-      </label>
-      <textarea
-        name="mota"
-        value={formData.mota}
-        onChange={onChange}
-        className="textarea textarea-bordered h-24"
-        required
-      />
+    <div className="grid grid-cols-2 gap-4">
+      {sizes.map((size) => (
+        <div key={size.idSize} className="flex items-center gap-2">
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={productSizes[size.idSize] !== undefined}
+              onChange={(e) => {
+                if (e.target.checked) {
+                  onSizeChange(size.idSize, 0);
+                } else {
+                  onSizeChange(size.idSize, -1);
+                }
+              }}
+              className="checkbox"
+            />
+            <span>{size.tenSize}</span>
+          </label>
+          {productSizes[size.idSize] !== undefined && (
+            <input
+              type="number"
+              value={productSizes[size.idSize]}
+              onChange={(e) => onSizeChange(size.idSize, parseInt(e.target.value) || 0)}
+              min="0"
+              className="input input-bordered w-24"
+            />
+          )}
+        </div>
+      ))}
     </div>
   );
 };
+
+export default ProductSizeInput;

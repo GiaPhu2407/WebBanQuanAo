@@ -1,46 +1,30 @@
-export interface SanPham {
+export interface Size {
+  idSize: number;
+  tenSize: string;
+}
+
+export interface ProductSize {
+  idProductSize: number;
+  idsanpham: number;
+  idSize: number;
+  soluong: number;
+  size?: Size;
+}
+
+export interface Product {
+  [x: string]: any;
   idsanpham: number;
   tensanpham: string;
   hinhanh: string;
   gia: string;
   mota: string;
+  mausac: string;
   idloaisanpham: number;
   giamgia: number;
   gioitinh: boolean;
-  sizes: SizeQuantity[];
   loaisanpham?: {
     tenloai: string;
     mota: string;
   };
-  images?: Array<{ url: string }>;
-}
-
-export interface LoaiSanPham {
-  idloaisanpham: number;
-  tenloai: string;
-  mota: string;
-}
-
-export interface Meta {
-  page: number;
-  limit_size: number;
-  totalRecords: number;
-  totalPages: number;
-}
-
-export interface SizeQuantity {
-  idSize: number;
-  tenSize: string;
-  soluong: number;
-}
-
-export interface FormData {
-  tensanpham: string;
-  mota: string;
-  gia: string;
-  hinhanh: string;
-  idloaisanpham: number;
-  giamgia: number;
-  gioitinh: boolean;
-  sizes: SizeQuantity[];
+  ProductSizes?: ProductSize[];
 }

@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // images: {
-  //   domains: ["https://example.com/image.jpg"], // Thay 'example.com' bằng hostname bạn muốn sử dụng
-  // },
+  images: {
+    domains: ['utfs.io'], // Thêm domain utfs.io vào danh sách cho phép
+  },
 };
 
 export default nextConfig;
