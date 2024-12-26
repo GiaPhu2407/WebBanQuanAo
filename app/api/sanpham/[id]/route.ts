@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/client";
 import { ProductSchema } from "@/app/zodschema/route";
 import { USER_NOT_EXIST } from "@/lib/constant";
+import { Decimal } from "@prisma/client/runtime/library";
 
 async function checkProductExists(id: number) {
   const product = await prisma.sanpham.findUnique({
@@ -34,38 +35,38 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const { id } = params;
+  const sanphamId = id;
   try {
-    const id = parseInt(params.id);
-    if (isNaN(id)) {
-      return NextResponse.json(
-        { error: "ID sản phẩm không hợp lệ" },
-        { status: 400 }
-      );
-    }
-
-    const sanpham = await prisma.sanpham.findUnique({
-      where: { idsanpham: id },
+    const getSanpham = await prisma.sanpham.findUnique({
+      where: {
+        idsanpham: Number(sanphamId),
+      },
       include: {
         loaisanpham: true,
+        images: true,
+        ProductSizes: {
+          select: {
+            soluong: true,
+            size: {
+              select: {
+                idSize: true,
+                tenSize: true,
+              },
+            },
+          },
+        },
       },
     });
-
-    if (!sanpham) {
-      return NextResponse.json(
-        { error: "Không tìm thấy sản phẩm" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(sanpham);
-  } catch (error) {
-    console.error("Lỗi khi lấy thông tin sản phẩm:", error);
     return NextResponse.json(
-      { error: "Lỗi khi lấy thông tin sản phẩm" },
-      { status: 500 }
+      { getSanpham, message: "Lấy sản phẩm thành công" },
+      { status: 201 }
     );
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
 
 // In your helper file (server-side logic for database)
 
@@ -92,88 +93,77 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const { id } = params;
+  const productId = Number(id);
+
+  if (isNaN(productId)) {
+    return NextResponse.json(
+      { error: "ID sản phẩm không hợp lệ" },
+      { status: 400 }
+    );
+  }
+
   try {
-    const id = parseInt(params.id);
-    if (isNaN(id)) {
+    const {
+      tensanpham,
+      mota,
+      gia,
+      mausac,
+      idloaisanpham,
+      giamgia,
+      gioitinh,
+      trangthai,
+      productSizes,
+      hinhanh
+    } = await request.json();
+
+    // Validate required fields
+    if (!tensanpham || !gia || !idloaisanpham || !productSizes) {
       return NextResponse.json(
-        { error: "ID sản phẩm không hợp lệ" },
+        { message: "Vui lòng nhập đầy đủ thông tin" },
         { status: 400 }
       );
     }
 
-    // Check if the product exists
-    const existingProduct = await prisma.sanpham.findUnique({
-      where: { idsanpham: id },
-    });
-
-    if (!existingProduct) {
-      return NextResponse.json(
-        { error: "Không tìm thấy sản phẩm để cập nhật" },
-        { status: 404 }
-      );
-    }
-
-    const body = await request.json();
-
-    // Validate input data similar to POST
-    const validationResult = ProductSchema.safeParse({
-      tensanpham: body.tensanpham,
-      mota: body.mota,
-      gia: body.gia,
-      hinhanh: body.hinhanh,
-      idloaisanpham: parseInt(body.idloaisanpham),
-      giamgia: parseFloat(body.giamgia),
-      gioitinh: body.gioitinh, // Expecting a boolean value directly
-      size: body.size,
-    });
-
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: "Dữ liệu không hợp lệ", details: validationResult.error },
-        { status: 400 }
-      );
-    }
-
-    // Check for duplicate product name
-    const duplicateProduct = await prisma.sanpham.findFirst({
-      where: {
-        tensanpham: body.tensanpham,
-        NOT: {
-          idsanpham: id,
-        },
-      },
-    });
-
-    if (duplicateProduct) {
-      return NextResponse.json(
-        { error: "Tên sản phẩm đã tồn tại" },
-        { status: 400 }
-      );
-    }
+    // Convert productSizes object to array format for Prisma
+    const formattedSizes = Object.entries(productSizes).map(([idSize, soluong]) => ({
+      idSize: Number(idSize),
+      soluong: Number(soluong)
+    }));
 
     // Update product
     const updatedProduct = await prisma.sanpham.update({
-      where: { idsanpham: id },
+      where: { idsanpham: productId },
       data: {
-        tensanpham: body.tensanpham,
-        mota: body.mota,
-        gia: body.gia, // Ensure that this is a number
-        hinhanh: body.hinhanh,
-        idloaisanpham: parseInt(body.idloaisanpham),
-        giamgia: parseFloat(body.giamgia),
-        gioitinh: body.gioitinh, // Expecting a boolean
-        size: body.size,
+        tensanpham,
+        mota,
+        gia: String(gia),
+        mausac,
+        idloaisanpham: Number(idloaisanpham),
+        giamgia: giamgia ? Number(giamgia) : null,
+        gioitinh,
+        trangthai,
+        hinhanh,
+        ProductSizes: {
+          deleteMany: {},
+          create: formattedSizes,
+        },
       },
+      include: {
+        ProductSizes: true,
+        loaisanpham: true
+      }
     });
 
     return NextResponse.json({
-      message: "Cập nhật sản phẩm thành công",
       data: updatedProduct,
-    });
+      message: "Cập nhật sản phẩm thành công",
+    }, { status: 200 });
+
   } catch (error: any) {
-    console.error("Lỗi khi cập nhật sản phẩm:", error);
+    console.error("Lỗi khi cập nhật sản phẩm:", error.message);
     return NextResponse.json(
-      { error: "Lỗi khi cập nhật sản phẩm", details: error.message },
+      { error: error.message },
       { status: 500 }
     );
   }

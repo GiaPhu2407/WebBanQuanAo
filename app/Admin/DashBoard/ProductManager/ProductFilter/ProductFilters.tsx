@@ -1,5 +1,3 @@
-
-// ProductFilters.tsx
 import React from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -11,12 +9,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+// Định nghĩa interface cho category
+interface Category {
+  idloaisanpham: number;
+  tenloai: string;
+}
+
+// Định nghĩa interface cho props
 interface ProductFiltersProps {
   searchTerm: string;
   onSearchChange: (value: string) => void;
-  categories: string;
+  categories: Category[];
+  categoryFilter: string;
   onCategoryChange: (value: string) => void;
-  gender: string;
+  genderFilter: string;
   onGenderChange: (value: string) => void;
 }
 
@@ -24,8 +30,9 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
   searchTerm,
   onSearchChange,
   categories,
+  categoryFilter,
   onCategoryChange,
-  gender,
+  genderFilter,
   onGenderChange,
 }) => {
   return (
@@ -42,25 +49,29 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
         <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
       </div>
 
-      {/* Category Filter (Select) */}
+      {/* Category Filter */}
       <div className="min-w-[200px]">
-        <Select value={categories} onValueChange={onCategoryChange}>
+        <Select value={categoryFilter} onValueChange={onCategoryChange}>
           <SelectTrigger>
             <SelectValue placeholder="Loại sản phẩm" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tất cả</SelectItem>
-            <SelectItem value="1">Áo thun</SelectItem>
-            <SelectItem value="2">Áo sơ mi</SelectItem>
-            <SelectItem value="3">Quần jean</SelectItem>
-            <SelectItem value="4">Quần tây</SelectItem>
+            {categories.map((category) => (
+              <SelectItem
+                key={category.idloaisanpham}
+                value={category.idloaisanpham.toString()}
+              >
+                {category.tenloai}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
 
-      {/* Gender Filter (Select) */}
+      {/* Gender Filter */}
       <div className="min-w-[200px]">
-        <Select value={gender} onValueChange={onGenderChange}>
+        <Select value={genderFilter} onValueChange={onGenderChange}>
           <SelectTrigger>
             <SelectValue placeholder="Giới tính" />
           </SelectTrigger>

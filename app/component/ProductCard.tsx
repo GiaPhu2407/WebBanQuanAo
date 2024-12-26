@@ -1,12 +1,8 @@
-// components/ProductCard.tsx
-"use client";
+import React, { useState } from 'react';
+import { Heart } from 'lucide-react';
+import Link from 'next/link';
+import Image from 'next/image';
 
-import React, { useState } from "react";
-import { Heart } from "lucide-react";
-import hinh from "@/app/image/hinh.png";
-import Link from "next/link";
-
-// Types
 interface Product {
   idsanpham: number;
   tensanpham: string;
@@ -19,39 +15,42 @@ interface Product {
   size: string;
 }
 
-const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
+interface ProductCardProps {
+  product: Product;
+}
+
+const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [animationPosition, setAnimationPosition] = useState({ x: 0, y: 0 });
-  const { favoriteProducts, toggleFavorite } = useAppContext();
-  const handleFavoriteClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Ngăn chặn sự kiện click từ button ảnh hưởng đến link
-    toggleFavorite(product.idsanpham);
-  };
-  const sizes = product.size
-    ? product.size.split(",").map((s) => s.trim())
-    : [];
-  const discountedPrice =
-    product.giamgia > 0
-      ? product.gia * (1 - product.giamgia / 100)
-      : product.gia;
+
+  const discountedPrice = product.giamgia > 0 
+    ? product.gia * (1 - product.giamgia / 100) 
+    : product.gia;
+
+  const sizes = product.size ? product.size.split(',').map(s => s.trim()) : [];
 
   const handleBuyClick = (e: React.MouseEvent) => {
+    e.preventDefault();
     const buttonRect = e.currentTarget.getBoundingClientRect();
-    const cartIcon = document.querySelector(".shopping-cart-icon");
-    const cartRect = cartIcon?.getBoundingClientRect();
-
-    if (cartRect) {
+    const cartIcon = document.querySelector('.shopping-cart-icon');
+    
+    if (cartIcon) {
+      const cartRect = cartIcon.getBoundingClientRect();
       setAnimationPosition({
-        x: buttonRect.left,
-        y: buttonRect.top,
+        x: cartRect.left - buttonRect.left,
+        y: cartRect.top - buttonRect.top
       });
       setIsAnimating(true);
-      setTimeout(() => {
-        setIsAnimating(false);
-      }, 1000);
+      setTimeout(() => setIsAnimating(false), 1000);
     }
+  };
+
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsFavorite(!isFavorite);
   };
 
   return (
@@ -62,13 +61,13 @@ const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
           style={{
             left: animationPosition.x,
             top: animationPosition.y,
-            transform: "scale(0.5)",
-            animation: "flyToCart 1s forwards",
+            transform: 'scale(0.5)',
+            animation: 'flyToCart 1s forwards'
           }}
         >
-          <img
-            src={product.hinhanh || hinh.src}
-            alt=""
+          <img 
+            src={product.hinhanh} 
+            alt="" 
             className="w-full h-full object-cover rounded-full"
           />
         </div>
@@ -81,19 +80,19 @@ const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
       >
         <div className="relative aspect-square overflow-hidden rounded-t-xl">
           <img
-            src={product.hinhanh || hinh.src}
+            src={product.hinhanh}
             alt={product.tensanpham}
             className={`w-full h-full object-cover transition-transform duration-300 ${
-              isHovered ? "scale-105" : ""
+              isHovered ? 'scale-105' : ''
             }`}
           />
           <button
-            onClick={() => setIsFavorite(!isFavorite)}
+            onClick={handleFavoriteClick}
             className="absolute top-3 right-3 p-2 rounded-full bg-white/80 hover:bg-white transition-colors"
           >
             <Heart
               className={`w-5 h-5 transition-colors ${
-                isFavorite ? "fill-red-500 text-red-500" : "text-gray-600"
+                isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-600'
               }`}
             />
           </button>
@@ -107,33 +106,34 @@ const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
         <div className="p-4 space-y-3">
           <div className="flex items-center space-x-2">
             <span className="px-2 py-1 text-xs border border-gray-300 rounded-full">
-              {product.gioitinh ? "Nam" : "Nữ"}
+              {product.gioitinh ? 'Nam' : 'Nữ'}
             </span>
           </div>
 
+          <h3 className="font-semibold truncate">{product.tensanpham}</h3>
           <p className="text-sm text-gray-600 line-clamp-2">{product.mota}</p>
 
           <div className="flex items-center justify-between">
             <span className="text-lg font-bold text-blue-600">
-              {new Intl.NumberFormat("vi-VN", {
-                style: "currency",
-                currency: "VND",
+              {new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND'
               }).format(discountedPrice)}
             </span>
             {product.giamgia > 0 && (
               <span className="text-sm text-gray-500 line-through">
-                {new Intl.NumberFormat("vi-VN", {
-                  style: "currency",
-                  currency: "VND",
+                {new Intl.NumberFormat('vi-VN', {
+                  style: 'currency',
+                  currency: 'VND'
                 }).format(product.gia)}
               </span>
             )}
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {sizes.map((size) => (
+            {sizes.map((size, index) => (
               <span
-                key={size}
+                key={`${size}-${index}`}
                 className="px-2 py-1 text-xs border border-gray-300 rounded-full"
               >
                 {size}
@@ -143,14 +143,14 @@ const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
 
           <div className="flex gap-2 pt-2">
             <button
-              className="flex-1 px-3 py-1 whitespace-nowrap bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               onClick={handleBuyClick}
+              className="flex-1 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               Mua ngay
             </button>
             <Link
               href={`/component/Category?id=${product.idsanpham}`}
-              className="flex-1 py-1 px-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-center"
+              className="flex-1 px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-center"
             >
               Chi tiết
             </Link>
@@ -161,52 +161,4 @@ const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
   );
 };
 
-// components/ProductGrid.tsx
-import { ChevronDown, ChevronUp } from "lucide-react";
-import { useAppContext } from "./Context/AppContext";
-
-interface ProductGridProps {
-  products: Product[];
-}
-
-const ProductGrid: React.FC<ProductGridProps> = ({ products }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const displayedProducts = isExpanded ? products : products.slice(0, 4);
-
-  return (
-    <div className="space-y-6">
-      {/* Grid Container */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {displayedProducts.map((product) => (
-          <ProductCard key={product.idsanpham} product={product} />
-        ))}
-      </div>
-
-      {/* Toggle Button */} 
-      {products.length > 4 && (
-        <div className="flex justify-center">
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="group flex items-center gap-2 px-6 py-2 bg-white border border-gray-300 rounded-full hover:bg-gray-50 transition-colors"
-          >
-            {isExpanded ? (
-              <>
-                <span className="font-medium text-gray-700">Thu gọn</span>
-                <ChevronUp className="w-5 h-5 text-gray-500 group-hover:text-gray-700" />
-              </>
-            ) : (
-              <>
-                <span className="font-medium text-gray-700">
-                  Xem thêm {products.length - 4} sản phẩm
-                </span>
-                <ChevronDown className="w-5 h-5 text-gray-500 group-hover:text-gray-700" />
-              </>
-            )}
-          </button>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default ProductGrid;
+export default ProductCard;

@@ -728,13 +728,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import SalesDashboard from "../NvarbarAdmin";
-
- 
 import { useToast } from "@/components/ui/use-toast";
-import { Toaster } from "@/components/ui/toaster";
 import { Product, Size } from "@/app/Admin/type/product";
-  
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -745,37 +741,36 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import ProductFilters from "./ProductFilter/ProductFilters";
-import { useProductForm } from "./hooks/useProductForm";
-import { ProductForm } from "./components/form/ProductBasic";
 import { Button } from "@/components/ui/button";
+import ProductFilters from "./ProductFilter/ProductFilters";
 import ProductTable from "./ProductTable/ProductTables";
+import { ProductDialog } from "./components/form/ProductDialog";
+import SalesDashboard from "../NvarbarAdmin";
 
 export default function ProductManagementPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [sizes, setSizes] = useState<Size[]>([]);
   const [categories, setCategories] = useState<Array<{ idloaisanpham: number; tenloai: string }>>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
-  const [genderFilter, setGenderFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [genderFilter, setGenderFilter] = useState("all");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | undefined>();
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
-  const [reloadKey, setReloadKey] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
-  const {
-    formData,
-    setFormData,
-    isEditing,
-    imageUrl,
-    setImageUrl,
-    handleSubmit,
-    handleEdit,
-    resetForm,
-  } = useProductForm(() => {
-    setReloadKey(prev => prev + 1);
-    const modal = document.getElementById("my_modal_3") as HTMLDialogElement;
-    modal?.close();
+  const [formData, setFormData] = useState({
+    tensanpham: '',
+    gia: '',
+    mota: '',
+    idloaisanpham: '',
+    giamgia: 0,
+    mausac: '',
+    gioitinh: true,
+    productSizes: {},
   });
+  const [imageUrl, setImageUrl] = useState("");
 
   useEffect(() => {
     fetchProducts();
@@ -786,18 +781,16 @@ export default function ProductManagementPage() {
   const fetchProducts = async () => {
     try {
       const params = new URLSearchParams({
-        page: '1',
-        limit_size: '100',
         ...(searchTerm && { search: searchTerm }),
-        ...(categoryFilter && { category: categoryFilter }),
-        ...(genderFilter && { gender: genderFilter }),
+        ...(categoryFilter !== 'all' && { category: categoryFilter }),
+        ...(genderFilter !== 'all' && { gender: genderFilter }),
       });
 
       const response = await fetch(`/api/phantrang?${params}`);
+      if (!response.ok) throw new Error('Failed to fetch products');
       const data = await response.json();
-      setProducts(data.data);
+      setProducts(data.data || []);
     } catch (error) {
-      console.error("Error fetching products:", error);
       toast({
         title: "Lỗi",
         description: "Không thể tải danh sách sản phẩm",
@@ -809,140 +802,209 @@ export default function ProductManagementPage() {
   const fetchSizes = async () => {
     try {
       const response = await fetch("/api/size");
+      if (!response.ok) throw new Error('Failed to fetch sizes');
       const data = await response.json();
-      setSizes(data.size);
+      setSizes(data.size || []);
     } catch (error) {
-      console.error("Error fetching sizes:", error);
+      toast({
+        title: "Lỗi",
+        description: "Không thể tải danh sách size",
+        variant: "destructive",
+      });
     }
   };
 
   const fetchCategories = async () => {
     try {
       const response = await fetch("/api/loaisanpham");
+      if (!response.ok) throw new Error('Failed to fetch categories');
       const data = await response.json();
-      setCategories(data);
+      setCategories(data || []);
     } catch (error) {
-      console.error("Error fetching categories:", error);
+      toast({
+        title: "Lỗi",
+        description: "Không thể tải danh sách loại sản phẩm",
+        variant: "destructive",
+      });
     }
   };
 
-  const handleDeleteConfirm = async () => {
-    if (deleteConfirmId) {
-      try {
-        const response = await fetch(`/api/sanpham/${deleteConfirmId}`, {
-          method: "DELETE",
-        });
+  const handleSubmit = async (formData: any) => {
+    setIsSubmitting(true);
+    try {
+      const url = selectedProduct
+        ? `/api/sanpham/${selectedProduct.idsanpham}`
+        : "/api/sanpham";
+        
+      const method = selectedProduct ? "PUT" : "POST";
+      
+      const response = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...formData,
+          hinhanh: imageUrl,
+        }),
+      });
 
-        if (!response.ok) throw new Error("Không thể xóa sản phẩm");
-
-        toast({
-          title: "Thành công",
-          description: "Sản phẩm đã được xóa",
-        });
-
-        setReloadKey(prev => prev + 1);
-        setDeleteConfirmId(null);
-      } catch (error) {
-        toast({
-          title: "Lỗi",
-          description: error instanceof Error ? error.message : "Lỗi khi xóa sản phẩm",
-          variant: "destructive",
-        });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to save product');
       }
+
+      toast({
+        title: "Thành công",
+        description: selectedProduct
+          ? "Cập nhật sản phẩm thành công"
+          : "Thêm sản phẩm thành công",
+      });
+
+      setIsDialogOpen(false);
+      resetForm();
+      fetchProducts();
+    } catch (error) {
+      toast({
+        title: "Lỗi",
+        description: error instanceof Error ? error.message : "Lỗi không xác định",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
+  };
+
+  const handleEdit = (product: Product) => {
+    setSelectedProduct(product);
+    setFormData({
+      tensanpham: product.tensanpham || '',
+      gia: String(product.gia) || '',//+
+      mota: product.mota || '',
+      idloaisanpham: product.idloaisanpham?.toString() || '',//+
+      giamgia: product.giamgia || 0,
+      mausac: product.mausac || '',
+      gioitinh: product.gioitinh,
+      productSizes: product.ProductSizes?.reduce((acc, size) => {
+        acc[size.idSize] = size.soluong;
+        return acc;
+      }, {} as { [key: number]: number }) || {},
+    });
+    setImageUrl(product.hinhanh || '');
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteConfirmId) return;
+
+    try {
+      const response = await fetch(`/api/sanpham/${deleteConfirmId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete product');
+      }
+
+      toast({
+        title: "Thành công",
+        description: "Xóa sản phẩm thành công",
+      });
+
+      setDeleteConfirmId(null);
+      fetchProducts();
+    } catch (error) {
+      toast({
+        title: "Lỗi",
+        description: "Không thể xóa sản phẩm",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      tensanpham: '',
+      gia: '',
+      mota: '',
+      idloaisanpham: '',
+      giamgia: 0,
+      mausac: '',
+      gioitinh: true,
+      productSizes: {},
+    });
+    setImageUrl('');
+    setSelectedProduct(undefined);
   };
 
   return (
     <div className="flex">
-      <SalesDashboard />
-      <div className="p-6 flex-1">
-        <Toaster />
-
-        <div className="mb-6 mt-16">
-          <h1 className="text-2xl font-bold mb-4">Quản lý sản phẩm</h1>
-          
-          <div className="flex justify-between items-center mb-6">
-            <ProductFilters
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-              categories={categoryFilter}
-              onCategoryChange={setCategoryFilter}
-              gender={genderFilter}
-              onGenderChange={setGenderFilter}
-             />
-
-            <Button
-              onClick={() => {
-                resetForm();
-                const modal = document.getElementById("my_modal_3") as HTMLDialogElement;
-                modal?.showModal();
-              }}
-            >
-              Thêm sản phẩm
-            </Button>
-          </div>
+       <SalesDashboard/>
+    
+    <div className="p-6 mt-16">
+     
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-6 ">
+          <h1 className="text-2xl font-bold">Quản lý sản phẩm</h1>
+          <Button className="ml-[800px]" onClick={() => {
+            resetForm();
+            setIsDialogOpen(true);
+          }}>
+            Thêm sản phẩm
+          </Button>
         </div>
 
-        <ProductTable
-          products={products}
-          onEdit={handleEdit}
-          onDelete={(id: React.SetStateAction<number | null>) => setDeleteConfirmId(id)}
+        <ProductFilters
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          categoryFilter={categoryFilter}
+          onCategoryChange={setCategoryFilter}
+          genderFilter={genderFilter}
+          onGenderChange={setGenderFilter}
+          categories={categories}
         />
-
-        <AlertDialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
-              <AlertDialogDescription>
-                Bạn có chắc chắn muốn xóa sản phẩm này? Hành động này không thể hoàn tác.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setDeleteConfirmId(null)}>
-                Hủy
-              </AlertDialogCancel>
-              <AlertDialogAction onClick={handleDeleteConfirm}>
-                Xóa
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-
-        <dialog id="my_modal_3" className="modal modal-bottom sm:modal-middle">
-          <div className="modal-box relative">
-            <button
-              onClick={() => {
-                resetForm();
-                const modal = document.getElementById("my_modal_3") as HTMLDialogElement;
-                modal?.close();
-              }}
-              className="btn btn-sm btn-circle absolute right-2 top-2"
-            >
-              ✕
-            </button>
-
-            <h3 className="font-bold text-lg mb-4">
-              {isEditing ? "Cập nhật sản phẩm" : "Thêm sản phẩm mới"}
-            </h3>
-
-            <ProductForm
-              product={undefined}
-              sizes={sizes}
-              categories={categories}
-              onSubmit={handleSubmit}
-              onCancel={() => {
-                resetForm();
-                const modal = document.getElementById("my_modal_3") as HTMLDialogElement;
-                modal?.close();
-              }}
-              formData={formData}
-              setFormData={setFormData}
-              imageUrl={imageUrl}
-              setImageUrl={setImageUrl}
-            />
-          </div>
-        </dialog>
       </div>
+
+      <ProductTable
+        products={products}
+        onEdit={handleEdit}
+        onDelete={setDeleteConfirmId}
+      />
+
+      <ProductDialog
+        isOpen={isDialogOpen}
+        onClose={() => {
+          setIsDialogOpen(false);
+          resetForm();
+        }}
+        product={selectedProduct}
+        sizes={sizes}
+        categories={categories}
+        onSubmit={handleSubmit}
+        formData={formData}
+        setFormData={setFormData}
+        imageUrl={imageUrl}
+        setImageUrl={setImageUrl}
+        isSubmitting={isSubmitting}
+      />
+
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc chắn muốn xóa sản phẩm này? Hành động này không thể hoàn tác.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteConfirmId(null)}>
+              Hủy
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>
+              Xóa
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
     </div>
   );
 }

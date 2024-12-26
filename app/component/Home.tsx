@@ -1,7 +1,9 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import Filter from "@/app/component/Filter";
-import ProductGrid from "@/app/component/ProductCard";
+
+import React, { useState } from 'react';
+import Filter from '../component/Filter';
+import ProductGrid from './ProductList';
+  
 
 interface Product {
   idsanpham: number;
@@ -15,115 +17,66 @@ interface Product {
   size: string;
 }
 
-const Home: React.FC = () => {
+interface FilterParams {
+  categories: number[];
+  gender: string | null;
+  priceRange: number[];
+  sizes: string[];
+}
+
+export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await fetch("/api/sanpham");
-        if (!response.ok)
-          throw new Error(`HTTP error! status: ${response.status}`);
-        const data = await response.json();
-        setProducts(data);
-        setFilteredProducts(data);
-      } catch (error) {
-        console.error("Lỗi khi tải dữ liệu:", error);
-        setError("Không thể tải dữ liệu sản phẩm. Vui lòng thử lại sau.");
-      } finally {
-        setLoading(false);
+  const fetchProducts = async (filters: FilterParams) => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      
+      if (filters.categories.length) {
+        filters.categories.forEach(cat => params.append('idloaisanpham', cat.toString()));
       }
-    };
+      if (filters.gender) {
+        params.append('gioitinh', filters.gender);
+      }
+      if (filters.priceRange.length === 2) {
+        params.append('minPrice', filters.priceRange[0].toString());
+        params.append('maxPrice', filters.priceRange[1].toString());
+      }
+      if (filters.sizes.length) {
+        filters.sizes.forEach(size => params.append('size', size));
+      }
 
-    fetchProducts();
-  }, []);
-
-  const handleFilterChange = (filters: {
-    categories: number[];
-    gender: string | string[];
-    priceRange: number[];
-    sizes: string[];
-  }) => {
-    let filtered = [...products];
-
-    // Apply category filter
-    if (filters.categories.length > 0) {
-      filtered = filtered.filter((product) =>
-        filters.categories.includes(product.idloaisanpham)
-      );
+      const response = await fetch(`/api/sanpham?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      const data = await response.json();
+      setProducts(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      setProducts([]);
+    } finally {
+      setLoading(false);
     }
-
-    // Apply gender filter
-    if (filters.gender.length > 0) {
-      filtered = filtered.filter((product) =>
-        filters.gender.includes(product.gioitinh ? "nam" : "nu")
-      );
-    }
-
-    // Apply price range filter
-    filtered = filtered.filter(
-      (product) =>
-        product.gia >= filters.priceRange[0] &&
-        product.gia <= filters.priceRange[1]
-    );
-
-    // Apply size filter
-    if (filters.sizes.length > 0) {
-      filtered = filtered.filter((product) => {
-        const productSizes = product.size.split(",").map((s) => s.trim());
-        return filters.sizes.some((size: string) =>
-          productSizes.includes(size)
-        );
-      });
-    }
-
-    setFilteredProducts(filtered);
   };
 
-  if (loading) {
-    return (
-      <div className="loader-container">
-        <div className="loader"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="text-red-600 text-center py-8">{error}</div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex gap-8">
-          {/* Filter Section */}
-          <aside className="w-64 flex-shrink-0">
-            <Filter onFilterChange={handleFilterChange} />
-          </aside>
-
-          {/* Main Content Section */}
-          <main className="flex-1">
-            {filteredProducts.length > 0 ? (
-              <ProductGrid products={filteredProducts} />
-            ) : (
-              <div className="flex justify-center items-center h-64 bg-white rounded-lg shadow">
-                <p className="text-gray-500 text-lg">
-                  Không tìm thấy sản phẩm phù hợp
-                </p>
-              </div>
-            )}
-          </main>
-        </div>
+    <main className="container mx-auto px-4 py-8">
+      <div className="flex flex-col md:flex-row gap-8">
+        <aside className="w-full md:w-1/4">
+          <Filter onFilterChange={fetchProducts} />
+        </aside>
+        <section className="w-full md:w-3/4">
+          {loading ? (
+            <div className="flex justify-center items-center min-h-[200px]">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent" />
+            </div>
+          ) : (
+            <ProductGrid products={products} />
+          )}
+        </section>
       </div>
-    </div>
+    </main>
   );
-};
-
-export default Home;
+}

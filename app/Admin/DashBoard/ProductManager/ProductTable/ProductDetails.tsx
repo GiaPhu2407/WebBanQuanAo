@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -6,6 +6,17 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Product } from '@/app/Admin/type/product';
+
+interface Size {
+  idSize: number;
+  tenSize: string;
+}
+
+interface ProductSize {
+  idProductSize: number;
+  soluong: number;
+  idSize: number;
+}
 
 interface ProductDetailsDialogProps {
   product: Product | null;
@@ -16,6 +27,35 @@ const ProductDetailsDialog: React.FC<ProductDetailsDialogProps> = ({
   product,
   onClose,
 }) => {
+  const [sizes, setSizes] = useState<{ [key: number]: Size }>({});
+
+  useEffect(() => {
+    const fetchSizes = async () => {
+      if (product?.ProductSizes) {
+        const sizesData: { [key: number]: Size } = {};
+        
+        // Fetch size data for each product size
+        await Promise.all(
+          product.ProductSizes.map(async (productSize: ProductSize) => {
+            try {
+              const response = await fetch(`/api/size/${productSize.idSize}`);
+              const data = await response.json();
+              if (data.getSizeId) {
+                sizesData[productSize.idSize] = data.getSizeId;
+              }
+            } catch (error) {
+              console.error('Error fetching size:', error);
+            }
+          })
+        );
+        
+        setSizes(sizesData);
+      }
+    };
+
+    fetchSizes();
+  }, [product]);
+
   if (!product) return null;
 
   return (
@@ -71,12 +111,25 @@ const ProductDetailsDialog: React.FC<ProductDetailsDialogProps> = ({
             <div>
               <h3 className="font-semibold">Sizes và số lượng</h3>
               <div className="grid grid-cols-3 gap-2">
-                {product.ProductSizes?.map((productSize) => (
-                  <div key={productSize.idProductSize} className="border p-2 rounded">
-                    <p className="font-medium">{productSize.size?.tenSize}</p>
-                    <p>SL: {productSize.soluong}</p>
-                  </div>
-                ))}
+                {product.ProductSizes && product.ProductSizes.length > 0 ? (
+                  product.ProductSizes.map((productSize) => (
+                    <div 
+                      key={productSize.idProductSize}
+                      className="border p-2 rounded text-center"
+                    >
+                      <p className="font-medium">
+                        {sizes[productSize.idSize]?.tenSize || 'Đang tải...'}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        SL: {productSize.soluong}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="col-span-3 text-gray-500 italic">
+                    Chưa có thông tin size
+                  </p>
+                )}
               </div>
             </div>
 

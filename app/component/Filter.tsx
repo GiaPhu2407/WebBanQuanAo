@@ -1,166 +1,134 @@
-import React, { useEffect } from "react";
-import { FilterState } from "@/app/component/Type";
+import React, { useState, useEffect } from 'react';
+import { Category } from '@/app/component/type/product';
 
 interface FilterProps {
-  onFilterChange: (filters: FilterState) => void;
-  onClose?: () => void;
+  onFilterChange: (filters: {
+    categories: number[];
+    gender: string | null;
+    priceRange: number[];
+    sizes: string[];
+  }) => void;
 }
 
-interface Category {
-  idloaisanpham: number;
-  tenloai: string;
-}
-
-interface tensanpham {
-  mausac:string,
-}
-
-const Filter: React.FC<FilterProps> = ({ onFilterChange, onClose }) => {
-  const [filters, setFilters] = React.useState<FilterState>({
-    categories: [],
-    gender: [],
-    priceRange: [0, 10000000],
-    sizes: [],
-  });
-
-  const [categories, setCategories] = React.useState<Category[]>([]);
-  const availableSizes = ["S", "M", "L", "XL", "2XL"];
+const Filter: React.FC<FilterProps> = ({ onFilterChange }) => {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
+  const [selectedGender, setSelectedGender] = useState<string | null>(null);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000000]);
+  const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         const response = await fetch("/api/loaisanpham");
         const data = await response.json();
-        setCategories(data);
+        setCategories(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error("Error fetching categories:", error);
       }
     };
-
     fetchCategories();
   }, []);
 
-  const handleChange = (key: keyof FilterState, value: any) => {
-    const newFilters = { ...filters, [key]: value };
-    setFilters(newFilters);
-    onFilterChange(newFilters);
-  };
+  useEffect(() => {
+    const debouncedFilter = setTimeout(() => {
+      onFilterChange({
+        categories: selectedCategories,
+        gender: selectedGender,
+        priceRange,
+        sizes: selectedSizes,
+      });
+    }, 300);
 
-  const handleApplyFilters = () => {
-    onFilterChange(filters);
-    onClose?.();
+    return () => clearTimeout(debouncedFilter);
+  }, [selectedCategories, selectedGender, priceRange, selectedSizes]);
+
+  const handleReset = () => {
+    setSelectedCategories([]);
+    setSelectedGender(null);
+    setPriceRange([0, 10000000]);
+    setSelectedSizes([]);
   };
 
   return (
-    <div className="space-y-6 p-4 bg-white rounded-lg shadow">
-      <div>
-        <h3 className="text-lg font-semibold mb-2">Danh mục</h3>
-        <div className="space-y-2">
+    <div className="bg-white p-4 rounded-lg shadow">
+      <button onClick={handleReset} className="text-blue-600 hover:underline mb-4">
+        Reset Filters
+      </button>
+
+      <div className="space-y-6">
+        <div>
+          <h3 className="font-bold mb-2">Categories</h3>
           {categories.map((category) => (
-            <label key={category.idloaisanpham} className="flex items-center p-2 hover:bg-gray-50 rounded">
+            <label key={category.idloaisanpham} className="flex items-center gap-2">
               <input
                 type="checkbox"
-                checked={filters.categories.includes(category.idloaisanpham)}
-                onChange={(e) => {
-                  const newCategories = e.target.checked
-                    ? [...filters.categories, category.idloaisanpham]
-                    : filters.categories.filter(
-                        (id) => id !== category.idloaisanpham
-                      );
-                  handleChange("categories", newCategories);
-                }}
-                className="mr-3 w-5 h-5"
+                checked={selectedCategories.includes(category.idloaisanpham)}
+                onChange={() => setSelectedCategories(prev => 
+                  prev.includes(category.idloaisanpham) 
+                    ? prev.filter(id => id !== category.idloaisanpham)
+                    : [...prev, category.idloaisanpham]
+                )}
               />
-              <span className="text-sm">{category.tenloai}</span>
+              {category.tenloai}
             </label>
           ))}
         </div>
-      </div>
 
-      <div>
-        <h3 className="text-lg font-semibold mb-2">Giới tính</h3>
-        <div className="space-y-2">
-          {["nam", "nu"].map((gender) => (
-            <label key={gender} className="flex items-center p-2 hover:bg-gray-50 rounded">
+        <div>
+          <h3 className="font-bold mb-2">Gender</h3>
+          {['nam', 'nu'].map((gender) => (
+            <label key={gender} className="flex items-center gap-2">
               <input
-                type="checkbox"
-                checked={filters.gender.includes(gender)}
-                onChange={(e) => {
-                  const newGender = e.target.checked
-                    ? [...filters.gender, gender]
-                    : filters.gender.filter((g) => g !== gender);
-                  handleChange("gender", newGender);
-                }}
-                className="mr-3 w-5 h-5"
+                type="radio"
+                name="gender"
+                checked={selectedGender === gender}
+                onChange={() => setSelectedGender(prev => prev === gender ? null : gender)}
               />
-              <span className="text-sm">{gender === "nam" ? "Nam" : "Nữ"}</span>
+              {gender === 'nam' ? 'Male' : 'Female'}
             </label>
           ))}
         </div>
-      </div>
 
-      <div>
-        <h3 className="text-lg font-semibold mb-2">Giá</h3>
-        <div className="space-y-4 px-2">
-          <input
-            type="range"
-            min="0"
-            max="10000000"
-            step="10000"
-            value={filters.priceRange[1]}
-            onChange={(e) =>
-              handleChange("priceRange", [0, Number(e.target.value)])
-            }
-            className="w-full"
-          />
-          <div className="text-sm text-gray-600">
-            {`0₫ - ${filters.priceRange[1].toLocaleString("vi-VN")}₫`}
+        <div>
+          <h3 className="font-bold mb-2">Price Range</h3>
+          <div className="flex gap-2">
+            <input
+              type="number"
+              value={priceRange[0]}
+              onChange={(e) => setPriceRange([Number(e.target.value), priceRange[1]])}
+              className="border rounded p-1 w-24"
+            />
+            <span>-</span>
+            <input
+              type="number"
+              value={priceRange[1]}
+              onChange={(e) => setPriceRange([priceRange[0], Number(e.target.value)])}
+              className="border rounded p-1 w-24"
+            />
+          </div>
+        </div>
+
+        <div>
+          <h3 className="font-bold mb-2">Sizes</h3>
+          <div className="flex gap-2 flex-wrap">
+            {['S', 'M', 'L', 'XL', '2XL'].map((size) => (
+              <button
+                key={size}
+                onClick={() => setSelectedSizes(prev => 
+                  prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size]
+                )}
+                className={`px-3 py-1 border rounded ${
+                  selectedSizes.includes(size) ? 'bg-blue-600 text-white' : ''
+                }`}
+              >
+                {size}
+              </button>
+            ))}
           </div>
         </div>
       </div>
-
-      <div>
-        <h3 className="text-lg font-semibold mb-2">Kích thước</h3>
-        <div className="grid grid-cols-3 gap-2">
-          {availableSizes.map((size) => (
-            <label
-              key={size}
-              className={`flex items-center justify-center p-2 border rounded cursor-pointer ${
-                filters.sizes.includes(size)
-                  ? "border-blue-500 bg-blue-50"
-                  : "border-gray-200 hover:bg-gray-50"
-              }`}
-            >
-              <input
-                type="checkbox"
-                checked={filters.sizes.includes(size)}
-                onChange={(e) => {
-                  const newSizes = e.target.checked
-                    ? [...filters.sizes, size]
-                    : filters.sizes.filter((s) => s !== size);
-                  handleChange("sizes", newSizes);
-                }}
-                className="hidden"
-              />
-              {size}
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {/* Mobile Apply Button */}
-      {onClose && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t">
-          <button
-            onClick={handleApplyFilters}
-            className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium"
-          >
-            Áp dụng bộ lọc
-          </button>
-        </div>
-      )}
     </div>
   );
 };
-
-export default Filter;
+export default Filter

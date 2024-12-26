@@ -3,6 +3,12 @@ export interface Size {
   tenSize: string;
 }
 
+export interface Category {
+  idloaisanpham: number;
+  tenloai: string;
+  mota?: string;
+}
+
 export interface ProductSize {
   idProductSize: number;
   idsanpham: number;
@@ -12,19 +18,34 @@ export interface ProductSize {
 }
 
 export interface Product {
-  [x: string]: any;
   idsanpham: number;
   tensanpham: string;
   hinhanh: string;
-  gia: string;
+  gia: number;
   mota: string;
   mausac: string;
   idloaisanpham: number;
   giamgia: number;
   gioitinh: boolean;
-  loaisanpham?: {
-    tenloai: string;
-    mota: string;
-  };
-  ProductSizes?: ProductSize[];
+  loaisanpham?: Category;
+  ProductSizes?: {
+    idProductSize: number;
+    idSize: number;
+    soluong: number;
+    size: {
+      idSize: number;
+      tenSize: string;
+    };
+  }[];
+}
+
+export interface ProductFormData {
+  tensanpham: string;
+  gia: number;
+  mota: string;
+  idloaisanpham: number;
+  giamgia: number;
+  mausac: string;
+  gioitinh: boolean;
+  productSizes: { [key: number]: number };
 }
