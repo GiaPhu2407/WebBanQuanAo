@@ -31,7 +31,7 @@ export default function Contact() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <div className="flex-grow flex items-center justify-center px-4 sm:px-6 lg:px-8">
+      <div className="flex-grow flex mt-56 items-center justify-center px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-xl mx-auto p-4 sm:p-6 bg-white rounded-lg shadow-md mt-4 sm:-mt-20">
           <h1 className="text-xl sm:text-2xl font-bold text-center mb-4 sm:mb-6">
             Liên hệ với GiPuDiHi

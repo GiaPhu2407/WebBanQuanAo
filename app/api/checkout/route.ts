@@ -51,7 +51,7 @@ export async function POST(req: Request) {
     }
 
     // Handle regular checkout (COD or other payment methods)
-    const result = await prisma.$transaction(async (tx: { donhang: { create: (arg0: { data: { idUsers: any; ngaydat: Date; trangthai: string; tongsotien: number; tongsoluong: any; }; }) => any; }; chitietDonhang: { create: (arg0: { data: { iddonhang: any; idsanpham: any; idSize: any; soluong: any; dongia: any; }; }) => any; }; thanhtoan: { create: (arg0: { data: { iddonhang: any; phuongthucthanhtoan: any; sotien: number; trangthai: string; ngaythanhtoan: Date; }; }) => any; }; giohang: { delete: (arg0: { where: { idgiohang: any; }; }) => any; }; lichGiaoHang: { create: (arg0: { data: { iddonhang: any; idsanpham: any; idKhachHang: any; NgayGiao: Date; TrangThai: string; }; }) => any; }; }) => {
+    const result = await prisma.$transaction(async (tx) => {
       const allOrders = [];
       const allOrderDetails = [];
       const allPayments = [];
@@ -138,34 +138,4 @@ function calculateDeliveryDate(): Date {
   deliveryDate.setDate(orderDate.getDate() + Math.floor(Math.random() * 4) + 3);
   deliveryDate.setHours(8 + Math.floor(Math.random() * 4), 0, 0, 0);
   return deliveryDate;
-}
-export async function GET(req: Request) {
-  try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const orders = await prisma.donhang.findMany({
-      where: { idUsers: session.idUsers },
-      include: {
-        chitietdonhang: {
-          include: {
-            sanpham: true,
-          },
-        },
-        thanhtoan: true,
-        lichgiaohang: true,
-      },
-      orderBy: { ngaydat: "desc" },
-    });
-
-    return NextResponse.json({ success: true, data: orders });
-  } catch (error) {
-    console.error("Error fetching orders:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
-  }
 }
