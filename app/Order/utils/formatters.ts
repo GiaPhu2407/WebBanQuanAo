@@ -8,6 +8,9 @@ export const formatDate = (dateString: string): string => {
     });
   };
   
-  export const formatCurrency = (amount: number): string => {
+  export const formatCurrency = (amount: number | null): string => {
+    if (amount === null || amount === undefined) {
+      return "0 đ"; // or return whatever default value you want
+    }
     return amount.toLocaleString("vi-VN") + " đ";
   };

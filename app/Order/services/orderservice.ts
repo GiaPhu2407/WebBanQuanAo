@@ -10,7 +10,7 @@ export const fetchOrders = async (): Promise<OrderItem[]> => {
 };
 
 export const deleteOrder = async (orderId: number): Promise<void> => {
-  const response = await fetch(`/api/donhang/${orderId}/delete`, {
+  const response = await fetch(`/api/donhang/${orderId}`, {
     method: "DELETE",
   });
   
