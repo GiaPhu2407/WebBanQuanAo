@@ -1,8 +1,8 @@
 import { OrderItem } from "../types"; 
-import { formatDate, formatCurrency } from "../utils/formatters";
-import { OrderProductItem } from "./OrderProductItem";
+import { formatDate, formatCurrency } from "../utils/formatters"; 
 import { OrderActions } from "./OrderAction";
 import { getStatusColor } from "../utils/status";
+import { OrderProductItem } from "./OrderProductItem";
   
 
 interface OrderCardProps {
