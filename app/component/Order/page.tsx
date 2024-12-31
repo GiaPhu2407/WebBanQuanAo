@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { toast, Toaster } from "react-hot-toast";
 import Header from "../Header";
 import Footer from "../Footer";
+import Image from "next/image";
 
 interface OrderItem {
   iddonhang: number;
@@ -228,28 +229,37 @@ const OrderPage: React.FC = () => {
                       key={index}
                       className="flex items-start gap-4 border-t border-gray-200 py-4"
                     >
-                      <img
-                        src={item.sanpham.hinhanh}
-                        alt={item.sanpham.tensanpham}
-                        className="w-20 h-20 object-cover rounded-lg"
-                      />
+                      {item.sanpham?.hinhanh ? (
+                        <div className="relative w-20 h-20">
+                          <Image
+                            src={item.sanpham.hinhanh}
+                            alt={item.sanpham.tensanpham || "Sản phẩm"}
+                            fill
+                            className="object-cover rounded-lg"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center">
+                          <span className="text-gray-400">No image</span>
+                        </div>
+                      )}
                       <div className="flex-1">
                         <h3 className="text-gray-800 font-medium">
-                          {item.sanpham.tensanpham}
+                          {item.sanpham?.tensanpham || "Sản phẩm không xác định"}
                         </h3>
-                        {item.sanpham.gioitinh !== undefined && (
+                        {item.sanpham?.gioitinh !== undefined && (
                           <p className="text-gray-500 text-sm">
                             Giới tính: {item.sanpham.gioitinh ? "Nam" : "Nữ"}
                           </p>
                         )}
                         <p className="text-gray-500 text-sm">
-                          {item.sanpham.mota}
+                          {item.sanpham?.mota || ""}
                         </p>
                         <p className="text-gray-700 font-semibold">
                           {item.soluong} x {item.dongia.toLocaleString("vi-VN")}{" "}
                           đ
                         </p>
-                        {item.sanpham.kichthuoc && (
+                        {item.sanpham?.kichthuoc && (
                           <p className="text-gray-500 text-sm">
                             Kích thước: {item.sanpham.kichthuoc}
                           </p>
@@ -264,11 +274,15 @@ const OrderPage: React.FC = () => {
                 )}
 
                 <div className="mt-4 flex justify-between items-center border-t pt-4">
-                <span className="text-gray-700 font-semibold">
-  Tổng tiền: {order.tongsotien ? order.tongsotien.toLocaleString("vi-VN") : "0"} đ
-</span>
+                  <span className="text-gray-700 font-semibold">
+                    Tổng tiền:{" "}
+                    {order.tongsotien
+                      ? order.tongsotien.toLocaleString("vi-VN")
+                      : "0"}{" "}
+                    đ
+                  </span>
                   <div>
-                    {order.thanhtoan.map((payment, index) => (
+                    {order.thanhtoan?.map((payment, index) => (
                       <p key={index} className="text-sm text-gray-500">
                         Thanh toán bằng: {payment.phuongthucthanhtoan} vào{" "}
                         {formatDate(payment.ngaythanhtoan)}
@@ -297,17 +311,16 @@ const OrderPage: React.FC = () => {
                   ))}
                 </div>
 
-                {order.trangthai !== "Đã hủy" &&
-                  order.trangthai !== "Đã giao" && (
-                    <div className="flex justify-end mt-4">
-                      <button
-                        className="btn btn-danger btn-sm text-red-500 hover:bg-red-100"
-                        onClick={() => handleCancelOrder(order.iddonhang)}
-                      >
-                        Hủy đơn
-                      </button>
-                    </div>
-                  )}
+                {order.trangthai !== "Đã hủy" && order.trangthai !== "Đã giao" && (
+                  <div className="flex justify-end mt-4">
+                    <button
+                      className="text-red-500 hover:bg-red-50 px-4 py-2 rounded-md transition duration-200"
+                      onClick={() => handleCancelOrder(order.iddonhang)}
+                    >
+                      Hủy đơn
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
