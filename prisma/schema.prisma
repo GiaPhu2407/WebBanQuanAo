@@ -218,14 +218,33 @@ model Luong {
   nhanvien       Nhanvien? @relation(fields: [idnhanvien], references: [idNhanvien])
 }
 
+// model Thanhtoan {
+//   idthanhtoan          Int       @id @default(autoincrement())
+//   iddonhang            Int?      @unique
+//   phuongthucthanhtoan  String?   @db.VarChar(45)
+//   sotien               Decimal?  @db.Decimal(10,2)
+//   trangthai            String?   @db.VarChar(255)
+//   ngaythanhtoan        DateTime? @db.Date
+//   donhang              Donhang?  @relation(fields: [iddonhang], references: [iddonhang])
+// }
 model Thanhtoan {
-  idthanhtoan          Int       @id @default(autoincrement())
-  iddonhang            Int?      @unique
-  phuongthucthanhtoan  String?   @db.VarChar(45)
-  sotien               Decimal?  @db.Decimal(10,2)
-  trangthai            String?   @db.VarChar(255)
-  ngaythanhtoan        DateTime? @db.Date
-  donhang              Donhang?  @relation(fields: [iddonhang], references: [iddonhang])
+  idthanhtoan             Int       @id @default(autoincrement())
+  iddonhang              Int?      @unique
+  phuongthucthanhtoan    String?   @db.VarChar(45)
+  sotien                 Decimal?  @db.Decimal(10,2)
+  trangthai              String?   @db.VarChar(255)
+  ngaythanhtoan          DateTime? @db.Date
+  
+  // Stripe payment fields
+  stripe_session_id      String?   @db.VarChar(255)
+  stripe_payment_intent_id String? @db.VarChar(255)
+  stripe_payment_status   String?   @db.VarChar(50)
+
+  // Relation to Donhang
+  donhang               Donhang?   @relation(fields: [iddonhang], references: [iddonhang])
+
+  @@index([stripe_session_id])
+  @@index([stripe_payment_intent_id])
 }
 model LichGiaoHang {
   idLichGiaoXe Int       @id @default(autoincrement())

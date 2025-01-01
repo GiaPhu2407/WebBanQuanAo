@@ -197,7 +197,7 @@ export const ShoppingCart = () => {
         loading: "Đang xử lý đơn hàng...",
         success: () => {
           setTimeout(() => {
-            router.push("/component/checkout/success");
+            router.push("/component/Order");
           }, 500);
           return "Đặt hàng thành công! Đang chuyển đến trang đơn hàng...";
         },

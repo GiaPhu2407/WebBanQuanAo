@@ -74,3 +74,38 @@ export async function PUT(
     );
   }
 }
+// import { deletePayment, updatePayment } from "@/app/component/Order/services/payment";
+// import { NextRequest, NextResponse } from "next/server";
+
+
+// export async function DELETE(
+//   request: NextRequest,
+//   { params }: { params: { id: string } }
+// ) {
+//   try {
+//     const result = await deletePayment(params.id);
+//     return NextResponse.json(result);
+//   } catch (error) {
+//     console.error(error);
+//     return NextResponse.json(
+//       { message: "Có lỗi xảy ra khi xóa thanh toán" },
+//       { status: 500 }
+//     );
+//   }
+// }
+
+// export async function PUT(
+//   req: NextRequest,
+//   { params }: { params: { id: string } }
+// ) {
+//   try {
+//     const body = await req.json();
+//     const result = await updatePayment(params.id, body);
+//     return NextResponse.json(result);
+//   } catch (error: any) {
+//     return NextResponse.json(
+//       { error: error.message },
+//       { status: 500 }
+//     );
+//   }
+// }
