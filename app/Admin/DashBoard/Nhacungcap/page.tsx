@@ -15,6 +15,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { ExportButtons } from "./XuatExcel/exportButton";
 
 interface NhaCungCap {
   idnhacungcap: number;
@@ -217,6 +218,7 @@ export default function NhaCungCapManagementPage() {
       modal.showModal();
     }
   };
+  
 
   return (
     <div className="flex">
@@ -228,6 +230,7 @@ export default function NhaCungCapManagementPage() {
           <h1 className="text-2xl font-bold whitespace-nowrap">
             Quản lý nhà cung cấp
           </h1>
+          <ExportButtons data={[]}/>
           <Button onClick={handleAddNewClick}>Thêm nhà cung cấp</Button>
         </div>
 

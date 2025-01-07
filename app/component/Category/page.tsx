@@ -911,3 +911,224 @@ const ProductDetail = () => {
 };
 
 export default ProductDetail;
+
+
+// "use client";
+// import React, { useEffect, useState } from "react";
+// import { useSearchParams, useRouter } from "next/navigation";
+// import toast, { Toaster } from "react-hot-toast";
+// import Header from "../Header";
+// import Footer from "../Footer";
+  
+  
+ 
+ 
+  
+  
+// import { ProductWithImages } from "@/app/component/Category/type/product";
+// import { Size, SizeQuantities } from "@/app/component/Category/type/size";
+// import { CartItem } from "@/app/component/Category/type/card";
+// import { ImageGallery } from "../product/Image";
+// import { SizeSelector } from "../product/Size";
+// import { QuantitySelector } from "../product/Quantity";
+// import { ProductPrice } from "../product/ProductPrice";
+// import { ActionButtons } from "../product/ActionButton";
+// import { CartAnimation } from "../product/CardAnimation";
+
+// const ProductDetail = () => {
+//   const router = useRouter();
+//   const searchParams = useSearchParams();
+//   const id = searchParams.get("id");
+
+//   const [product, setProduct] = useState<ProductWithImages | null>(null);
+//   const [selectedImage, setSelectedImage] = useState<string>("");
+//   const [availableSizes, setAvailableSizes] = useState<Size[]>([]);
+//   const [sizeQuantities, setSizeQuantities] = useState<SizeQuantities>({});
+//   const [selectedSize, setSelectedSize] = useState<number | null>(null);
+//   const [quantity, setQuantity] = useState<number>(1);
+//   const [loading, setLoading] = useState(true);
+//   const [error, setError] = useState<string | null>(null);
+//   const [orderLoading, setOrderLoading] = useState(false);
+//   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+//   const [isAddingToCart, setIsAddingToCart] = useState(false);
+
+//   useEffect(() => {
+//     const fetchProductAndSizes = async () => {
+//       if (!id) return;
+
+//       try {
+//         const [productResponse, sizeResponse, sizeQuantitiesResponse] = await Promise.all([
+//           fetch(`/api/category/${id}`),
+//           fetch(`/api/size`),
+//           fetch(`/api/productsize/${id}`)
+//         ]);
+
+//         if (!productResponse.ok || !sizeResponse.ok || !sizeQuantitiesResponse.ok) {
+//           throw new Error("Không thể lấy thông tin sản phẩm");
+//         }
+
+//         const [productData, sizeData, quantitiesData] = await Promise.all([
+//           productResponse.json(),
+//           sizeResponse.json(),
+//           sizeQuantitiesResponse.json()
+//         ]);
+
+//         setProduct(productData);
+//         setSelectedImage(productData.hinhanh);
+//         setAvailableSizes(sizeData.size);
+//         setSizeQuantities(quantitiesData);
+
+//         if (sizeData.size.length > 0) {
+//           setSelectedSize(sizeData.size[0].idSize);
+//         }
+//       } catch (err) {
+//         setError(err instanceof Error ? err.message : "Đã có lỗi xảy ra");
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+
+//     const savedCartItems = localStorage.getItem("cartItems");
+//     if (savedCartItems) {
+//       setCartItems(JSON.parse(savedCartItems));
+//     }
+
+//     fetchProductAndSizes();
+//   }, [id]);
+
+//   const handleOrderCreation = async (isInstantBuy: boolean) => {
+//     if (!product || !selectedSize || quantity <= 0) {
+//       toast.error("Vui lòng chọn size và số lượng");
+//       return;
+//     }
+
+//     setOrderLoading(true);
+//     setIsAddingToCart(true);
+
+//     try {
+//       const response = await fetch("/api/giohang", {
+//         method: "POST",
+//         headers: { "Content-Type": "application/json" },
+//         body: JSON.stringify({
+//           idsanpham: product.idsanpham,
+//           soluong: quantity,
+//           sizeId: selectedSize,
+//         }),
+//       });
+
+//       if (response.ok) {
+//         const selectedSizeObj = availableSizes.find(s => s.idSize === selectedSize);
+//         const sizeName = selectedSizeObj ? selectedSizeObj.tenSize : selectedSize;
+
+//         const newCartItem: CartItem = {
+//           productId: product.idsanpham,
+//           quantity,
+//           sizeId: selectedSize,
+//         };
+
+//         setCartItems(prevItems => {
+//           const existingItemIndex = prevItems.findIndex(
+//             item => item.productId === newCartItem.productId && item.sizeId === newCartItem.sizeId
+//           );
+
+//           if (existingItemIndex > -1) {
+//             const updatedItems = [...prevItems];
+//             updatedItems[existingItemIndex].quantity += quantity;
+//             return updatedItems;
+//           }
+
+//           return [...prevItems, newCartItem];
+//         });
+
+//         toast.success(
+//           `Đã thêm ${quantity} sản phẩm ${product.tensanpham} size ${sizeName} vào giỏ hàng`
+//         );
+
+//         setTimeout(() => {
+//           setIsAddingToCart(false);
+//           if (isInstantBuy) {
+//             router.push("/component/shopping");
+//           }
+//         }, 1000);
+//       } else {
+//         throw new Error("Có lỗi xảy ra khi đặt hàng");
+//       }
+//     } catch (err) {
+//       toast.error(err instanceof Error ? err.message : "Có lỗi xảy ra khi đặt hàng");
+//       setIsAddingToCart(false);
+//     } finally {
+//       setOrderLoading(false);
+//     }
+//   };
+
+//   if (loading) return <div className="p-4">Đang tải...</div>;
+//   if (error) return <div className="p-4 text-red-500">Lỗi: {error}</div>;
+//   if (!product) return <div className="p-4">Không tìm thấy sản phẩm</div>;
+
+//   return (
+//     <div>
+//       <Header />
+//       <Toaster position="top-right" />
+
+//       <CartAnimation
+//         isVisible={isAddingToCart}
+//         imageUrl={selectedImage}
+//         productName={product.tensanpham}
+//       />
+
+//       <div className="container mx-auto p-4">
+//         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+//           <ImageGallery
+//             mainImage={product.hinhanh}
+//             images={product.images}
+//             selectedImage={selectedImage}
+//             onImageSelect={setSelectedImage}
+//           />
+
+//           <div className="space-y-4">
+//             <h1 className="text-2xl font-bold">{product.tensanpham}</h1>
+            
+//             <ProductPrice price={product.gia} discount={product.giamgia} />
+
+//             <div className="prose prose-sm">
+//               <p>{product.mota}</p>
+//             </div>
+
+//             <div className="flex items-center gap-2">
+//               <span className="px-3 py-1 text-sm border border-gray-300 rounded-full">
+//                 {product.gioitinh ? "Nam" : "Nữ"}
+//               </span>
+//             </div>
+
+//             <SizeSelector
+//               sizes={availableSizes}
+//               quantities={sizeQuantities}
+//               selectedSize={selectedSize}
+//               onSizeSelect={(sizeId) => {
+//                 setSelectedSize(parseInt(sizeId));
+//                 setQuantity(1);
+//               }}
+//             />
+
+//             {selectedSize && sizeQuantities[selectedSize] > 0 && (
+//               <QuantitySelector
+//                 quantity={quantity}
+//                 maxQuantity={sizeQuantities[selectedSize]}
+//                 onChange={setQuantity}
+//               />
+//             )}
+
+//             <ActionButtons
+//               onAddToCart={() => handleOrderCreation(false)}
+//               onBuyNow={() => handleOrderCreation(true)}
+//               loading={orderLoading}
+//             />
+//           </div>
+//         </div>
+//       </div>
+//       <Footer />
+//     </div>
+//   );
+// };
+
+// export default ProductDetail;

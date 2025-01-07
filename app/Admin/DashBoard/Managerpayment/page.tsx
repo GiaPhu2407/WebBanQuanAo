@@ -239,11 +239,11 @@ const PaymentManagementPage: React.FC = () => {
         refreshData();
         setDeleteConfirmId(null);
 
-        toast({
-          title: 'Thành Công!',
-          description: 'Thanh toán đã được xóa thành công',
-          variant: 'success',
-        });
+        // toast({
+        //   title: 'Thành Công!',
+        //   description: 'Thanh toán đã được xóa thành công',
+        //   variant: 'success',
+        // });
       } catch (err) {
         console.error('Lỗi xóa thanh toán:', err);
         setError(err instanceof Error ? err.message : 'Lỗi khi xóa thanh toán');
@@ -276,7 +276,7 @@ const PaymentManagementPage: React.FC = () => {
   return (
     <div className="flex">
       <SalesDashboard />
-      <div className="p-6 flex-1">
+      <div className="p-6 flex-1 mt-20">
         <Toaster />
 
         {showToast && (

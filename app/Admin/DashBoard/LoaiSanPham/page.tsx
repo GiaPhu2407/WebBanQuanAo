@@ -1,6 +1,18 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import * as XLSX from 'xlsx';
+import * as XLSX from "xlsx";
+import {
+  Document,
+  Packer,
+  Paragraph,
+  Table,
+  TableRow,
+  TableCell,
+  HeadingLevel,
+  TextRun,
+} from "docx";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 import SalesDashboard from "../NvarbarAdmin";
 import TableTypeProduct from "../../TableTypeProduct";
 import { useToast } from "@/components/ui/use-toast";
@@ -41,7 +53,9 @@ export default function LoaiSanPhamManagementPage() {
   const [loaisanphamList, setLoaisanphamList] = useState<LoaiSanPham[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
-  const [currentLoaiSanPhamId, setCurrentLoaiSanPhamId] = useState<number | null>(null);
+  const [currentLoaiSanPhamId, setCurrentLoaiSanPhamId] = useState<
+    number | null
+  >(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -195,43 +209,189 @@ export default function LoaiSanPhamManagementPage() {
 
   // Excel Export Functionality
   const exportLoaiSanPhamToExcel = () => {
-    const exportData = loaisanphamList.map(item => ({
-      'Mã Loại': item.idloaisanpham,
-      'Tên Loại': item.tenloai,
-      'Mô Tả': item.mota
+    const exportData = loaisanphamList.map((item) => ({
+      "Mã Loại": item.idloaisanpham,
+      "Tên Loại": item.tenloai,
+      "Mô Tả": item.mota,
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Loại Sản Phẩm');
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Loại Sản Phẩm");
 
-    XLSX.writeFile(workbook, `loai_san_pham_${new Date().toISOString().split('T')[0]}.xlsx`);
+    XLSX.writeFile(
+      workbook,
+      `loai_san_pham_${new Date().toISOString().split("T")[0]}.xlsx`
+    );
   };
 
+  // PDF Export Functionality
+  // Hàm xuất PDF - cập nhật phần styles
+  const exportLoaiSanPhamToPDF = () => {
+    const doc = new jsPDF();
+
+    // Add title với font Times New Roman
+    doc.setFont("TimesNewRoman", "normal");
+    doc.setFontSize(16);
+    doc.text("Danh Sách Loại Sản Phẩm", 14, 20);
+
+    // Create table với Times New Roman
+    (doc as any).autoTable({
+      startY: 30,
+      head: [["Mã Loại", "Tên Loại", "Mô Tả"]],
+      body: loaisanphamList.map((item) => [
+        item.idloaisanpham,
+        item.tenloai,
+        item.mota,
+      ]),
+      styles: {
+        fontSize: 10,
+        cellPadding: 5,
+        font: "TimesNewRoman", // Thêm font Times New Roman
+        fontStyle: "normal",
+      },
+      headStyles: {
+        fillColor: [41, 128, 185],
+        textColor: 255,
+        font: "TimesNewRoman", // Font cho header
+        fontStyle: "bold",
+      },
+      alternateRowStyles: {
+        fillColor: [245, 245, 245],
+      },
+      margin: { top: 30 },
+    });
+
+    doc.save(`loai_san_pham_${new Date().toISOString().split("T")[0]}.pdf`);
+  };
+
+  // Hàm xuất Word - cập nhật styling cho paragraphs
+  const exportLoaiSanPhamToWord = async () => {
+    const doc = new Document({
+      sections: [
+        {
+          properties: {},
+          children: [
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "Danh Sách Loại Sản Phẩm",
+                  bold: true,
+                  size: 32, // 16pt
+                  font: "Times New Roman",
+                }),
+              ],
+            }),
+            new Table({
+              rows: [
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      children: [
+                        new Paragraph({
+                          children: [
+                            new TextRun({
+                              text: "Mã Loại",
+                              bold: true,
+                              font: "Times New Roman",
+                            }),
+                          ],
+                        }),
+                      ],
+                    }),
+                    new TableCell({
+                      children: [
+                        new Paragraph({
+                          children: [
+                            new TextRun({
+                              text: "Tên Loại",
+                              bold: true,
+                              font: "Times New Roman",
+                            }),
+                          ],
+                        }),
+                      ],
+                    }),
+                    new TableCell({
+                      children: [
+                        new Paragraph({
+                          children: [
+                            new TextRun({
+                              text: "Mô Tả",
+                              bold: true,
+                              font: "Times New Roman",
+                            }),
+                          ],
+                        }),
+                      ],
+                    }),
+                  ],
+                }),
+                ...loaisanphamList.map(
+                  (item) =>
+                    new TableRow({
+                      children: [
+                        new TableCell({
+                          children: [
+                            new Paragraph({
+                              text: item.idloaisanpham.toString(),
+                            }),
+                          ],
+                        }),
+                        new TableCell({
+                          children: [new Paragraph({ text: item.tenloai })],
+                        }),
+                        new TableCell({
+                          children: [new Paragraph({ text: item.mota })],
+                        }),
+                      ],
+                    })
+                ),
+              ],
+            }),
+          ],
+        },
+      ],
+    });
+
+    const buffer = await Packer.toBuffer(doc);
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `loai_san_pham_${
+      new Date().toISOString().split("T")[0]
+    }.docx`;
+    link.click();
+  };
   // Excel Import Functionality
-  const handleImportExcel = async (data: Omit<LoaiSanPham, 'idloaisanpham'>[]) => {
+  const handleImportExcel = async (
+    data: Omit<LoaiSanPham, "idloaisanpham">[]
+  ) => {
     try {
-      const response = await fetch('/api/loaisanpham/import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+      const response = await fetch("/api/loaisanpham/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
       });
 
       if (!response.ok) {
-        throw new Error('Không thể nhập loại sản phẩm');
+        throw new Error("Không thể nhập loại sản phẩm");
       }
 
-      setReloadKey(prev => prev + 1);
+      setReloadKey((prev) => prev + 1);
       toast({
-        title: 'Thành công',
-        description: 'Nhập loại sản phẩm từ Excel thành công',
-        variant: 'success'
+        title: "Thành công",
+        description: "Nhập loại sản phẩm từ Excel thành công",
+        variant: "success",
       });
     } catch (error) {
       toast({
-        title: 'Lỗi',
-        description: error instanceof Error ? error.message : 'Lỗi nhập Excel',
-        variant: 'destructive'
+        title: "Lỗi",
+        description: error instanceof Error ? error.message : "Lỗi nhập Excel",
+        variant: "destructive",
       });
     }
   };
@@ -242,27 +402,29 @@ export default function LoaiSanPhamManagementPage() {
       const fileReader = new FileReader();
       fileReader.onload = async (e) => {
         const bufferArray = e.target?.result;
-        const workbook = XLSX.read(bufferArray, { type: 'buffer' });
-        
+        const workbook = XLSX.read(bufferArray, { type: "buffer" });
+
         const worksheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[worksheetName];
-        
+
         const data: any[] = XLSX.utils.sheet_to_json(worksheet);
-        
-        const validatedData = data.map(row => {
-          if (!row['Tên Loại'] || !row['Mô Tả']) {
-            throw new Error('Invalid Excel format. Ensure columns "Tên Loại" and "Mô Tả" exist.');
+
+        const validatedData = data.map((row) => {
+          if (!row["Tên Loại"] || !row["Mô Tả"]) {
+            throw new Error(
+              'Invalid Excel format. Ensure columns "Tên Loại" and "Mô Tả" exist.'
+            );
           }
-          
+
           return {
-            tenloai: row['Tên Loại'],
-            mota: row['Mô Tả']
+            tenloai: row["Tên Loại"],
+            mota: row["Mô Tả"],
           };
         });
-        
+
         await handleImportExcel(validatedData);
       };
-      
+
       fileReader.readAsArrayBuffer(file);
     }
   };
@@ -281,14 +443,20 @@ export default function LoaiSanPhamManagementPage() {
               <Button variant="outline" onClick={exportLoaiSanPhamToExcel}>
                 Xuất Excel
               </Button>
+              <Button variant="outline" onClick={exportLoaiSanPhamToPDF}>
+                Xuất PDF
+              </Button>
+              <Button variant="outline" onClick={exportLoaiSanPhamToWord}>
+                Xuất Word
+              </Button>
               <label className="cursor-pointer">
                 <Button variant="secondary" asChild>
                   <span>Nhập Excel</span>
                 </Button>
-                <input 
-                  type="file" 
-                  accept=".xlsx, .xls" 
-                  className="hidden" 
+                <input
+                  type="file"
+                  accept=".xlsx, .xls"
+                  className="hidden"
                   onChange={handleFileUpload}
                 />
               </label>

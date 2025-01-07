@@ -1,11 +1,6 @@
+// exportToExcel.ts
 import * as XLSX from 'xlsx';
-
-// Define the interface directly here
-interface LoaiSanPham {
-  idloaisanpham: number;
-  tenloai: string;
-  mota: string;
-}
+import { LoaiSanPham } from '@/app/Admin/DashBoard/LoaiSanPham/Excel/type';
 
 export const exportLoaiSanPhamToExcel = (data: LoaiSanPham[]) => {
   // Transform data into Excel-friendly format

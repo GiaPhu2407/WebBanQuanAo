@@ -262,7 +262,7 @@ const SalesDashboard: React.FC = () => {
           <SidebarItem
             icon={<ShoppingCart size={16} />}
             label="Cart"
-            onClick={() => router.push("/cart")}
+            onClick={() => router.push("/")}
           />
           <SidebarItem
             icon={<Heart size={16} />}
