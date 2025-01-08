@@ -5,7 +5,6 @@ import {
   Table,
   TableRow,
   TableCell,
-  BorderStyle,
   AlignmentType,
   TextRun,
   HeadingLevel,
@@ -22,13 +21,12 @@ interface NhaCungCap {
 }
 
 export const exportToWord = async (data: NhaCungCap[]) => {
-  // Get current date
   const currentDate = new Date();
   const day = currentDate.getDate();
   const month = currentDate.getMonth() + 1;
   const year = currentDate.getFullYear();
 
-  // Create header paragraphs
+  // Header paragraphs
   const headerParagraphs = [
     new Paragraph({
       alignment: AlignmentType.CENTER,
@@ -36,6 +34,7 @@ export const exportToWord = async (data: NhaCungCap[]) => {
         new TextRun({
           text: "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM",
           bold: true,
+          size: 28,
         }),
       ],
     }),
@@ -45,6 +44,7 @@ export const exportToWord = async (data: NhaCungCap[]) => {
         new TextRun({
           text: "Độc lập - Tự do - Hạnh phúc",
           bold: true,
+          size: 28,
         }),
       ],
     }),
@@ -53,6 +53,7 @@ export const exportToWord = async (data: NhaCungCap[]) => {
       children: [
         new TextRun({
           text: "------------------------",
+          size: 28,
         }),
       ],
     }),
@@ -62,12 +63,11 @@ export const exportToWord = async (data: NhaCungCap[]) => {
         new TextRun({
           text: `Ngày ${day} tháng ${month} năm ${year}`,
           italics: true,
+          size: 24,
         }),
       ],
     }),
-    new Paragraph({
-      text: "",
-    }),
+    new Paragraph({ text: "" }),
     new Paragraph({
       alignment: AlignmentType.CENTER,
       heading: HeadingLevel.HEADING_1,
@@ -75,17 +75,15 @@ export const exportToWord = async (data: NhaCungCap[]) => {
         new TextRun({
           text: "DANH SÁCH NHÀ CUNG CẤP",
           bold: true,
+          size: 32,
         }),
       ],
     }),
-    new Paragraph({
-      text: "",
-    }),
+    new Paragraph({ text: "" }),
   ];
 
-  // Create table rows
-  const rows = [
-    // Header row
+  // Table rows
+  const tableRows = [
     new TableRow({
       children: [
         "STT",
@@ -105,37 +103,51 @@ export const exportToWord = async (data: NhaCungCap[]) => {
               }),
             ],
             shading: {
-              fill: "2B579A",
-              color: "2B579A",
+              fill: "CCCCCC",
             },
           })
       ),
     }),
-    // Data rows
     ...data.map(
       (item, index) =>
         new TableRow({
           children: [
-            (index + 1).toString(),
-            item.idnhacungcap.toString(),
-            item.tennhacungcap,
-            item.sodienthoai,
-            item.diachi,
-            item.email,
-            item.trangthai ? "Đang cung cấp" : "Ngừng cung cấp",
-          ].map(
-            (text, cellIndex) =>
-              new TableCell({
-                children: [
-                  new Paragraph({
-                    text,
-                    alignment: cellIndex === 0 || cellIndex === 1 
-                      ? AlignmentType.CENTER 
-                      : AlignmentType.LEFT,
-                  }),
-                ],
-              })
-          ),
+            new TableCell({
+              children: [
+                new Paragraph({
+                  text: (index + 1).toString(),
+                  alignment: AlignmentType.CENTER,
+                }),
+              ],
+            }),
+            new TableCell({
+              children: [
+                new Paragraph({
+                  text: item.idnhacungcap.toString(),
+                  alignment: AlignmentType.CENTER,
+                }),
+              ],
+            }),
+            new TableCell({
+              children: [new Paragraph({ text: item.tennhacungcap })],
+            }),
+            new TableCell({
+              children: [new Paragraph({ text: item.sodienthoai })],
+            }),
+            new TableCell({
+              children: [new Paragraph({ text: item.diachi })],
+            }),
+            new TableCell({
+              children: [new Paragraph({ text: item.email })],
+            }),
+            new TableCell({
+              children: [
+                new Paragraph({
+                  text: item.trangthai ? "Đang cung cấp" : "Ngừng cung cấp",
+                }),
+              ],
+            }),
+          ],
         })
     ),
   ];
@@ -147,7 +159,7 @@ export const exportToWord = async (data: NhaCungCap[]) => {
         properties: {
           page: {
             margin: {
-              top: 1440, // 1 inch
+              top: 1440,
               right: 1440,
               bottom: 1440,
               left: 1440,
@@ -157,7 +169,7 @@ export const exportToWord = async (data: NhaCungCap[]) => {
         children: [
           ...headerParagraphs,
           new Table({
-            rows,
+            rows: tableRows,
             width: {
               size: 100,
               type: "pct",

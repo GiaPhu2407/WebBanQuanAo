@@ -1,4 +1,5 @@
 import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 interface NhaCungCap {
   idnhacungcap: number;
@@ -10,55 +11,110 @@ interface NhaCungCap {
 }
 
 export const exportToExcel = (data: NhaCungCap[]) => {
-  // Kiểm tra dữ liệu đầu vào
-  console.log("Dữ liệu cần xuất:", data);
+  // Create workbook and worksheet
+  const wb = XLSX.utils.book_new();
 
-  if (!data || data.length === 0) {
-    console.error("Không có dữ liệu để xuất");
-    return;
+  // Add title row
+  const titleRow = [["DANH SÁCH NHÀ CUNG CẤP"]];
+  const ws = XLSX.utils.aoa_to_sheet(titleRow);
+
+  // Merge cells for title
+  ws["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 6 } }];
+
+  // Add header row
+  const headers = [
+    "STT",
+    "Mã NCC",
+    "Tên nhà cung cấp",
+    "Số điện thoại",
+    "Địa chỉ",
+    "Email",
+    "Trạng thái",
+  ];
+  XLSX.utils.sheet_add_aoa(ws, [headers], { origin: "A2" });
+
+  // Add data
+  const excelData = data.map((item, index) => [
+    index + 1,
+    item.idnhacungcap,
+    item.tennhacungcap,
+    item.sodienthoai,
+    item.diachi,
+    item.email,
+    item.trangthai ? "Đang cung cấp" : "Ngừng cung cấp",
+  ]);
+  XLSX.utils.sheet_add_aoa(ws, excelData, { origin: "A3" });
+
+  // Set column widths
+  const colWidths = [
+    { wch: 5 }, // STT
+    { wch: 10 }, // Mã NCC
+    { wch: 30 }, // Tên nhà cung cấp
+    { wch: 15 }, // Số điện thoại
+    { wch: 30 }, // Địa chỉ
+    { wch: 25 }, // Email
+    { wch: 15 }, // Trạng thái
+  ];
+  ws["!cols"] = colWidths;
+
+  // Style the title
+  ws.A1 = {
+    v: "DANH SÁCH NHÀ CUNG CẤP",
+    s: {
+      font: { bold: true, sz: 14 },
+      alignment: { horizontal: "center", vertical: "center" },
+    },
+  };
+
+  // Style the headers
+  const headerStyle = {
+    font: { bold: true, sz: 11 },
+    fill: { fgColor: { rgb: "4F81BD" } },
+    alignment: { horizontal: "center", vertical: "center" },
+    border: {
+      top: { style: "thin" },
+      bottom: { style: "thin" },
+      left: { style: "thin" },
+      right: { style: "thin" },
+    },
+  };
+
+  // Apply header styles
+  for (let i = 0; i < headers.length; i++) {
+    const cell = XLSX.utils.encode_cell({ r: 1, c: i });
+    ws[cell].s = headerStyle;
   }
 
-  // Transform data into Excel-friendly format
-  const exportData = data.map((item) => ({
-    "ID Nhà Cung Cấp": item.idnhacungcap,
-    "Tên Nhà Cung Cấp": item.tennhacungcap,
-    "Số Điện Thoại": item.sodienthoai,
-    "Địa Chỉ": item.diachi,
-    Email: item.email,
-    "Trạng Thái": item.trangthai ? "Đang Cung Cấp" : "Ngừng Cung Cấp",
-  }));
+  // Style data rows with alternating colors
+  for (let i = 0; i < excelData.length; i++) {
+    const rowStyle = {
+      fill: {
+        fgColor: { rgb: i % 2 === 0 ? "FFFFFF" : "F2F2F2" },
+      },
+      border: {
+        top: { style: "thin" },
+        bottom: { style: "thin" },
+        left: { style: "thin" },
+        right: { style: "thin" },
+      },
+    };
 
-  // Create worksheet
-  const worksheet = XLSX.utils.json_to_sheet(exportData);
+    for (let j = 0; j < headers.length; j++) {
+      const cell = XLSX.utils.encode_cell({ r: i + 2, c: j });
+      if (!ws[cell]) ws[cell] = {};
+      ws[cell].s = rowStyle;
+    }
+  }
 
-  // Kiểm tra dữ liệu trong worksheet
-  console.log("Worksheet xuất ra:", XLSX.utils.sheet_to_json(worksheet));
+  // Add to workbook
+  XLSX.utils.book_append_sheet(wb, ws, "Nhà cung cấp");
 
-  // Set column widths (optional, for better formatting)
-  const colWidths = [
-    { wch: 15 }, // ID
-    { wch: 30 }, // Tên Nhà Cung Cấp
-    { wch: 20 }, // Số Điện Thoại
-    { wch: 40 }, // Địa Chỉ
-    { wch: 30 }, // Email
-    { wch: 20 }, // Trạng Thái
-  ];
-  worksheet["!cols"] = colWidths;
-
-  // Create workbook and add worksheet
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Nhà Cung Cấp");
-
-  // Generate buffer for Excel
-  const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-
-  // Create and trigger file download
-  const blob = new Blob([excelBuffer], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
-  const url = window.URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `nha_cung_cap_${new Date().toISOString().split("T")[0]}.xlsx`;
-  link.click();
+  // Generate and save file
+  const currentDate = new Date();
+  const fileName = `danh-sach-nha-cung-cap-${currentDate.getDate()}${
+    currentDate.getMonth() + 1
+  }${currentDate.getFullYear()}.xlsx`;
+  const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+  const blob = new Blob([wbout], { type: "application/octet-stream" });
+  saveAs(blob, fileName);
 };

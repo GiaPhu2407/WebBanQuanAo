@@ -139,7 +139,7 @@ const TableSupplier: React.FC<TableSupplierProps> = ({
 
       <div className="w-full">
         <CardContent>
-          <div className="w-full rounded-lg shadow -ml-36 ">
+          <div className="w-full rounded-lg shadow -ml-40 ">
             <table className="w-full divide-gray-200 bg-gradient-to-r from-red-500 to-pink-400">
               <thead>
                 <tr>

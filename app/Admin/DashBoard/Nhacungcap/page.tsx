@@ -62,7 +62,7 @@ export default function NhaCungCapManagementPage() {
 
   useEffect(() => {
     fetchNhaCungCap();
-  }, []);
+  }, [reloadKey]);
 
   const validateForm = (): string | null => {
     if (!formData.tennhacungcap.trim()) return "Vui lòng nhập tên nhà cung cấp";
@@ -218,7 +218,6 @@ export default function NhaCungCapManagementPage() {
       modal.showModal();
     }
   };
-  
 
   return (
     <div className="flex">
@@ -230,7 +229,7 @@ export default function NhaCungCapManagementPage() {
           <h1 className="text-2xl font-bold whitespace-nowrap">
             Quản lý nhà cung cấp
           </h1>
-          <ExportButtons data={[]}/>
+          <ExportButtons data={nhacungcapList} />
           <Button onClick={handleAddNewClick}>Thêm nhà cung cấp</Button>
         </div>
 

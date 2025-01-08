@@ -1,53 +1,50 @@
-import React from "react";
 import { Button } from "@/components/ui/button";
-
+import { FileSpreadsheet, FileText, File } from "lucide-react";
 import { exportToWord } from "./xuatword";
-import { exportToPDF } from "./xuatpdf";
 import { exportToExcel } from "./xuatexcel";
-import { FileSpreadsheet, File, FileText } from "lucide-react";
-
-interface NhaCungCap {
-  idnhacungcap: number;
-  tennhacungcap: string;
-  sodienthoai: string;
-  diachi: string;
-  email: string;
-  trangthai: boolean;
-}
+import { exportToPDF } from "./xuatpdf";
+exportToPDF;
 
 interface ExportButtonsProps {
-  data: NhaCungCap[];
+  data: any[];
 }
 
-export const ExportButtons: React.FC<ExportButtonsProps> = ({ data }) => {
+export function ExportButtons({ data }: ExportButtonsProps) {
+  const handleExportWord = () => {
+    exportToWord(data);
+  };
+
+  const handleExportExcel = () => {
+    exportToExcel(data);
+  };
+
+  const handleExportPDF = () => {
+    exportToPDF(data);
+  };
+
   return (
     <div className="flex gap-2">
       <Button
-        onClick={() => exportToExcel(data)}
-        variant="outline"
-        className="flex items-center gap-2"
+        onClick={handleExportWord}
+        className="flex items-center gap-2 bg-white text-black"
+      >
+        <FileText className="w-4 h-4 " />
+        Xuất Word
+      </Button>
+      <Button
+        onClick={handleExportExcel}
+        className="flex items-center gap-2  bg-white text-black"
       >
         <FileSpreadsheet className="w-4 h-4" />
         Xuất Excel
       </Button>
-
       <Button
-        onClick={() => exportToPDF(data)}
-        variant="outline"
-        className="flex items-center gap-2"
+        onClick={handleExportPDF}
+        className="flex items-center gap-2  bg-white text-black"
       >
         <File className="w-4 h-4" />
         Xuất PDF
       </Button>
-
-      <Button
-        onClick={() => exportToWord(data)}
-        variant="outline"
-        className="flex items-center gap-2"
-      >
-        <FileText className="w-4 h-4" />
-        Xuất Word
-      </Button>
     </div>
   );
-};
+}
