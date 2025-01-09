@@ -15,7 +15,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { ExportButtons } from "./XuatExcel/exportButton";
+import ExportButtons from "./XuatExcel/exportButton";
+  
 
 interface NhaCungCap {
   idnhacungcap: number;

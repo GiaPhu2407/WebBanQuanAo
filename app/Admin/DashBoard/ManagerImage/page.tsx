@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import SalesDashboard from "../NvarbarAdmin";
 import ImageTable from "../../TableImage";
-import Fileupload from "@/components/ui/Fileupload";
+ 
 import {
   Dialog,
   DialogContent,
@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/use-toast";
 import { Textarea } from "@/components/ui/textarea";
+import Fileupload from "@/components/ui/Fileupload";
 
 interface Image {
   idImage: number;
@@ -215,7 +216,7 @@ const ImageManagementPage = () => {
   return (
     <div className="flex h-screen bg-gray-100">
       <SalesDashboard />
-      <div className="flex-1 p-8">
+      <div className="flex-1 p-8 mt-20">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold text-gray-800">
