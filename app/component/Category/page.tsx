@@ -155,7 +155,6 @@ const ProductDetail = () => {
       const result = await orderResponse.json();
 
       if (orderResponse.ok) {
-        // Find the selected size name
         const selectedSizeObj = availableSizes.find(
           (s) => s.idSize === selectedSize
         );
@@ -170,9 +169,12 @@ const ProductDetail = () => {
           sizeId: selectedSize,
         };
 
-        setCartItems((prevItems) => {
-          // Check if product with same size already exists
-          const existingItemIndex = prevItems.findIndex(
+        setCartItems((prevItems: CartItem[]) => {
+          // Ensure prevItems is an array
+          const currentItems = Array.isArray(prevItems) ? prevItems : [];
+
+          // Find existing item
+          const existingItemIndex = currentItems.findIndex(
             (item) =>
               item.productId === newCartItem.productId &&
               item.sizeId === newCartItem.sizeId
@@ -180,7 +182,7 @@ const ProductDetail = () => {
 
           if (existingItemIndex > -1) {
             // Update quantity if item exists
-            const updatedItems = [...prevItems];
+            const updatedItems = [...currentItems];
             updatedItems[existingItemIndex] = {
               ...updatedItems[existingItemIndex],
               quantity: updatedItems[existingItemIndex].quantity + quantity,
@@ -189,20 +191,22 @@ const ProductDetail = () => {
           }
 
           // Add new item if not exists
-          return [...prevItems, newCartItem];
+          return [...currentItems, newCartItem];
         });
 
         toast.success(
           `Đã thêm ${quantity} sản phẩm ${product.tensanpham} size ${sizeName} vào giỏ hàng`
         );
 
-        // Reset adding to cart state after animation
         setTimeout(() => {
           setIsAddingToCart(false);
           if (isInstantBuy) {
             router.push("/component/shopping");
           }
         }, 1000);
+
+        // Refresh cart items after adding
+        await fetchCartItems();
       } else {
         toast.error(result.error || "Có lỗi xảy ra khi đặt hàng");
         setIsAddingToCart(false);
@@ -518,39 +522,44 @@ export default ProductDetail;
 //       if (!id) return;
 
 //       try {
-//         // Fetch product details and sizes in parallel
-//         const [productResponse, sizeResponse] = await Promise.all([
-//           fetch(`/api/category/${id}`),
-//           fetch(`/api/size?productId=${id}`),
-//         ]);
-
+//         // Fetch product details
+//         const productResponse = await fetch(`/api/category/${id}`);
 //         if (!productResponse.ok) {
-//           throw new Error("Không thể lấy thông tin sản phẩm");
+//           throw new Error("Không thể tải thông tin sản phẩm");
 //         }
-//         if (!sizeResponse.ok) {
-//           throw new Error("Không thể lấy thông tin kích thước");
-//         }
-
 //         const productData = await productResponse.json();
-//         const sizeData = await sizeResponse.json();
-
-//         console.log("Size data:", sizeData); // For debugging
-
 //         setProduct(productData);
 //         setSelectedImage(productData.hinhanh);
 
+//         // Fetch sizes and their quantities
+//         const sizesResponse = await fetch(`/api/size?productId=${id}`);
+//         if (!sizesResponse.ok) {
+//           throw new Error("Không thể tải thông tin size");
+//         }
+//         const sizeData = await sizesResponse.json();
+
+//         // Fetch product sizes for additional details
+//         const productSizesResponse = await fetch(`/api/productsize?productId=${id}`);
+//         if (!productSizesResponse.ok) {
+//           throw new Error("Không thể tải thông tin số lượng");
+//         }
+//         const productSizeData = await productSizesResponse.json();
+
+//         // Combine size data with product size quantities
 //         if (Array.isArray(sizeData.sizes)) {
-//           setAvailableSizes(sizeData.sizes);
-//           // Set default size to first available size with stock
-//           const firstAvailableSize = sizeData.sizes.find(
-//             (size: { soluong: number }) => size.soluong > 0
-//           );
+//           const sortedSizes = sizeData.sizes.sort((a: { soluong: number; tenSize: string; }, b: { soluong: number; tenSize: any; }) => {
+//             if (a.soluong === 0 && b.soluong > 0) return 1;
+//             if (a.soluong > 0 && b.soluong === 0) return -1;
+//             return a.tenSize.localeCompare(b.tenSize);
+//           });
+
+//           setAvailableSizes(sortedSizes);
+
+//           const firstAvailableSize = sortedSizes.find((size: { soluong: number; }) => size.soluong > 0);
 //           if (firstAvailableSize) {
 //             setSelectedSize(firstAvailableSize.idSize);
+//             setQuantity(1);
 //           }
-//         } else {
-//           console.error("Invalid size data received:", sizeData);
-//           setAvailableSizes([]);
 //         }
 //       } catch (err) {
 //         console.error("Error fetching data:", err);
@@ -560,7 +569,6 @@ export default ProductDetail;
 //       }
 //     };
 
-//     // Load cart items from local storage
 //     const loadCartItems = () => {
 //       const savedCartItems = localStorage.getItem("cartItems");
 //       if (savedCartItems) {
@@ -578,7 +586,6 @@ export default ProductDetail;
 //     fetchProductAndSizes();
 //   }, [id]);
 
-//   // Save cart items to localStorage whenever they change
 //   useEffect(() => {
 //     if (cartItems.length > 0) {
 //       localStorage.setItem("cartItems", JSON.stringify(cartItems));
@@ -593,7 +600,6 @@ export default ProductDetail;
 //     );
 //     if (!selectedSizeData) return;
 
-//     // Ensure quantity doesn't exceed available stock
 //     const maxQuantity = selectedSizeData.soluong;
 //     const validQuantity = Math.min(Math.max(1, newQuantity), maxQuantity);
 //     setQuantity(validQuantity);
@@ -601,7 +607,6 @@ export default ProductDetail;
 
 //   const handleSizeChange = (sizeId: number) => {
 //     setSelectedSize(sizeId);
-//     // Reset quantity when size changes
 //     setQuantity(1);
 //   };
 
@@ -623,7 +628,25 @@ export default ProductDetail;
 //     setIsAddingToCart(true);
 
 //     try {
-//       const response = await fetch("/api/giohang", {
+//       // Update product size quantity
+//       const response = await fetch("/api/productsize", {
+//         method: "POST",
+//         headers: {
+//           "Content-Type": "application/json",
+//         },
+//         body: JSON.stringify({
+//           productId: product.idsanpham,
+//           sizeId: selectedSize,
+//           quantity: selectedSizeData.soluong - quantity
+//         }),
+//       });
+
+//       if (!response.ok) {
+//         throw new Error("Lỗi khi cập nhật số lượng");
+//       }
+
+//       // Add to cart
+//       const cartResponse = await fetch("/api/giohang", {
 //         method: "POST",
 //         headers: {
 //           "Content-Type": "application/json",
@@ -635,10 +658,10 @@ export default ProductDetail;
 //         }),
 //       });
 
-//       const data = await response.json();
+//       const cartData = await cartResponse.json();
 
-//       if (response.ok) {
-//         // Update local size quantities
+//       if (cartResponse.ok) {
+//         // Update local state
 //         setAvailableSizes((prevSizes) =>
 //           prevSizes.map((size) =>
 //             size.idSize === selectedSize
@@ -647,7 +670,6 @@ export default ProductDetail;
 //           )
 //         );
 
-//         // Update cart items
 //         const newCartItem: CartItem = {
 //           productId: product.idsanpham,
 //           quantity,
@@ -675,12 +697,10 @@ export default ProductDetail;
 //         );
 
 //         if (isInstantBuy) {
-//           setTimeout(() => {
-//             router.push("/component/shopping");
-//           }, 1000);
+//           router.push("/component/shopping");
 //         }
 //       } else {
-//         throw new Error(data.error || "Có lỗi xảy ra khi thêm vào giỏ hàng");
+//         throw new Error(cartData.error || "Có lỗi xảy ra khi thêm vào giỏ hàng");
 //       }
 //     } catch (err) {
 //       console.error("Error adding to cart:", err);
@@ -691,177 +711,109 @@ export default ProductDetail;
 //     }
 //   };
 
-//   if (loading)
+//   if (loading) {
 //     return (
 //       <div className="min-h-screen flex items-center justify-center">
-//         Đang tải...
+//         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
 //       </div>
 //     );
-//   if (error)
+//   }
+
+//   if (error) {
 //     return (
 //       <div className="min-h-screen flex items-center justify-center text-red-500">
 //         Lỗi: {error}
 //       </div>
 //     );
-//   if (!product)
+//   }
+
+//   if (!product) {
 //     return (
 //       <div className="min-h-screen flex items-center justify-center">
 //         Không tìm thấy sản phẩm
 //       </div>
 //     );
-
-//   const discountedPrice =
-//     product.giamgia > 0
-//       ? product.gia * (1 - product.giamgia / 100)
-//       : product.gia;
+//   }
 
 //   return (
-//     <div className="min-h-screen bg-gray-50">
+//     <div className="min-h-screen bg-gray-100">
 //       <Header />
-//       <Toaster />
+//       <Toaster position="top-center" />
 
-//       {/* Cart Icon with Badge */}
-//       <div className="fixed top-4 right-4 z-50">
-//         <button
-//           onClick={() => router.push("/component/shopping")}
-//           className="btn btn-ghost btn-circle relative"
-//         >
-//           <svg
-//             xmlns="http://www.w3.org/2000/svg"
-//             className="h-6 w-6"
-//             fill="none"
-//             viewBox="0 0 24 24"
-//             stroke="currentColor"
-//           >
-//             <path
-//               strokeLinecap="round"
-//               strokeLinejoin="round"
-//               strokeWidth="2"
-//               d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-//             />
-//           </svg>
-//           {cartItems.length > 0 && (
-//             <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
-//               {cartItems.reduce((sum, item) => sum + item.quantity, 0)}
-//             </span>
-//           )}
-//         </button>
-//       </div>
-
-//       {/* Product Detail Content */}
 //       <div className="container mx-auto px-4 py-8">
-//         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-//           {/* Image Gallery */}
-//           <div className="space-y-4">
-//             <div className="aspect-square rounded-lg overflow-hidden bg-white">
-//               <img
-//                 src={selectedImage}
-//                 alt={product.tensanpham}
-//                 className="w-full h-full object-cover"
-//               />
-//             </div>
-//             <div className="grid grid-cols-4 gap-2">
-//               <button
-//                 onClick={() => setSelectedImage(product.hinhanh)}
-//                 className={`aspect-square rounded-lg overflow-hidden border-2 ${
-//                   selectedImage === product.hinhanh
-//                     ? "border-blue-500"
-//                     : "border-transparent"
-//                 }`}
-//               >
+//         <div className="bg-white rounded-lg shadow-lg p-6">
+//           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+//             {/* Image Gallery */}
+//             <div className="space-y-4">
+//               <div className="aspect-w-1 aspect-h-1">
 //                 <img
-//                   src={product.hinhanh}
-//                   alt="Main"
-//                   className="w-full h-full object-cover"
+//                   src={selectedImage}
+//                   alt={product.tensanpham}
+//                   className="w-full h-full object-cover rounded-lg"
 //                 />
-//               </button>
-//               {product.images.map((image) => (
-//                 <button
-//                   key={image.idImage}
-//                   onClick={() => setSelectedImage(image.url)}
-//                   className={`aspect-square rounded-lg overflow-hidden border-2 ${
-//                     selectedImage === image.url
-//                       ? "border-blue-500"
-//                       : "border-transparent"
-//                   }`}
-//                 >
-//                   <img
-//                     src={image.url}
-//                     alt={image.altText || "Product image"}
-//                     className="w-full h-full object-cover"
-//                   />
-//                 </button>
-//               ))}
-//             </div>
-//           </div>
-
-//           {/* Product Info */}
-//           <div className="space-y-6">
-//             <div>
-//               <h1 className="text-3xl font-bold text-gray-900">
-//                 {product.tensanpham}
-//               </h1>
-//               <div className="mt-4">
-//                 <div className="flex items-center gap-2">
-//                   <span className="text-3xl font-bold text-blue-600">
-//                     {new Intl.NumberFormat("vi-VN", {
-//                       style: "currency",
-//                       currency: "VND",
-//                     }).format(discountedPrice)}
-//                   </span>
-//                   {product.giamgia > 0 && (
-//                     <>
-//                       <span className="text-lg text-gray-500 line-through">
-//                         {new Intl.NumberFormat("vi-VN", {
-//                           style: "currency",
-//                           currency: "VND",
-//                         }).format(product.gia)}
-//                       </span>
-//                       <span className="px-2 py-1 text-sm text-white bg-red-500 rounded-full">
-//                         -{product.giamgia}%
-//                       </span>
-//                     </>
-//                   )}
-//                 </div>
+//               </div>
+//               <div className="grid grid-cols-4 gap-2">
+//                 {product.images.map((image) => (
+//                   <button
+//                     key={image.idImage}
+//                     onClick={() => setSelectedImage(image.url)}
+//                     className={`border-2 rounded-md overflow-hidden ${
+//                       selectedImage === image.url
+//                         ? "border-blue-500"
+//                         : "border-gray-200"
+//                     }`}
+//                   >
+//                     <img
+//                       src={image.url}
+//                       alt={image.altText || ""}
+//                       className="w-full h-full object-cover"
+//                     />
+//                   </button>
+//                 ))}
 //               </div>
 //             </div>
 
-//             <div className="prose prose-sm">
-//               <p>{product.mota}</p>
-//             </div>
+//             {/* Product Info */}
+//             <div className="space-y-6">
+//               <h1 className="text-3xl font-bold">{product.tensanpham}</h1>
+//               <div className="space-y-2">
+//                 <p className="text-2xl font-semibold text-red-600">
+//                   {new Intl.NumberFormat("vi-VN", {
+//                     style: "currency",
+//                     currency: "VND",
+//                   }).format(product.gia)}
+//                 </p>
+//                 {product.giamgia > 0 && (
+//                   <p className="text-sm text-gray-500 line-through">
+//                     {new Intl.NumberFormat("vi-VN", {
+//                       style: "currency",
+//                       currency: "VND",
+//                     }).format(product.gia * (1 + product.giamgia / 100))}
+//                   </p>
+//                 )}
+//               </div>
 
-//             <div>
-//               <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
-//                 {product.gioitinh ? "Nam" : "Nữ"}
-//               </span>
-//             </div>
-
-//             {/* Size Selection */}
-//             <div className="space-y-4">
-//               <label className="block text-sm font-medium text-gray-700">
-//                 Chọn Size
-//               </label>
-//               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-//                 {availableSizes.map((size) => (
-//                   <button
+//               {/* Size Selection */}
+//               <div className="space-y-4">
+//                 <p className="font-medium">Chọn Size:</p>
+//                 <div className="grid grid-cols-4 gap-2">
+//                   {availableSizes.map((size) => (
+//                     <button
 //                     key={size.idSize}
 //                     onClick={() => handleSizeChange(size.idSize)}
 //                     disabled={size.soluong === 0}
-//                     className={`
-//                       p-3 border rounded-lg text-center
-//                       ${
-//                         selectedSize === size.idSize
-//                           ? "border-blue-500 bg-blue-50 text-blue-700"
-//                           : size.soluong === 0
-//                           ? "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
-//                           : "border-gray-300 hover:border-blue-500"
-//                       }
-//                     `}
+//                     className={`py-2 px-4 rounded-md border ${
+//                       selectedSize === size.idSize
+//                         ? "border-blue-500 bg-blue-50 text-blue-700"
+//                         : size.soluong === 0
+//                         ? "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
+//                         : "border-gray-200 hover:border-blue-500"
+//                     }`}
 //                   >
-//                     <div className="font-medium">{size.tenSize}</div>
-//                     <div className="text-sm text-gray-500">
-//                       Còn {size.soluong} sản phẩm
-//                     </div>
+//                     {size.tenSize}
+//                     {size.soluong === 0 && (
+//                       <span className="block text-xs text-red-500">Hết hàng</span>
+//                     )}
 //                   </button>
 //                 ))}
 //               </div>
@@ -869,26 +821,16 @@ export default ProductDetail;
 
 //             {/* Quantity Selection */}
 //             <div className="space-y-4">
-//               <label className="block text-sm font-medium text-gray-700">
-//                 Số lượng
-//               </label>
-//               <div className="flex items-center space-x-3">
+//               <p className="font-medium">Số lượng:</p>
+//               <div className="flex items-center space-x-4">
 //                 <button
 //                   onClick={() => handleQuantityChange(quantity - 1)}
 //                   disabled={quantity <= 1}
-//                   className="w-10 h-10 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50"
+//                   className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center hover:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
 //                 >
 //                   -
 //                 </button>
-//                 <input
-//                   type="number"
-//                   min="1"
-//                   value={quantity}
-//                   onChange={(e) =>
-//                     handleQuantityChange(parseInt(e.target.value) || 1)
-//                   }
-//                   className="w-20 h-10 text-center border-gray-300 rounded-lg"
-//                 />
+//                 <span className="w-16 text-center">{quantity}</span>
 //                 <button
 //                   onClick={() => handleQuantityChange(quantity + 1)}
 //                   disabled={
@@ -897,79 +839,69 @@ export default ProductDetail;
 //                       (availableSizes.find((s) => s.idSize === selectedSize)
 //                         ?.soluong || 0)
 //                   }
-//                   className="w-10 h-10 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50"
+//                   className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center hover:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
 //                 >
 //                   +
 //                 </button>
 //               </div>
 //             </div>
 
-//             {/* Action Buttons */}
+//             {/* Add to Cart and Buy Now Buttons */}
 //             <div className="grid grid-cols-2 gap-4">
 //               <button
 //                 onClick={() => handleAddToCart(false)}
-//                 disabled={orderLoading || !selectedSize}
-//                 className={`
-//                   px-6 py-3 rounded-lg text-sm font-medium
-//                   ${
-//                     orderLoading || !selectedSize
-//                       ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-//                       : "bg-white text-blue-600 border border-blue-600 hover:bg-blue-50"
-//                   }
-//                 `}
+//                 disabled={orderLoading || !selectedSize || quantity <= 0}
+//                 className="w-full py-3 px-6 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
 //               >
-//                 {orderLoading ? "Đang xử lý..." : "Thêm vào giỏ hàng"}
+//                 {isAddingToCart ? (
+//                   <span className="flex items-center justify-center">
+//                     <svg
+//                       className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+//                       xmlns="http://www.w3.org/2000/svg"
+//                       fill="none"
+//                       viewBox="0 0 24 24"
+//                     >
+//                       <circle
+//                         className="opacity-25"
+//                         cx="12"
+//                         cy="12"
+//                         r="10"
+//                         stroke="currentColor"
+//                         strokeWidth="4"
+//                       ></circle>
+//                       <path
+//                         className="opacity-75"
+//                         fill="currentColor"
+//                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+//                       ></path>
+//                     </svg>
+//                     Đang thêm...
+//                   </span>
+//                 ) : (
+//                   "Thêm vào giỏ"
+//                 )}
 //               </button>
 //               <button
 //                 onClick={() => handleAddToCart(true)}
-//                 disabled={orderLoading || !selectedSize}
-//                 className={`
-//                   px-6 py-3 rounded-lg text-sm font-medium
-//                   ${
-//                     orderLoading || !selectedSize
-//                       ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-//                       : "bg-blue-600 text-white hover:bg-blue-700"
-//                   }
-//                 `}
+//                 disabled={orderLoading || !selectedSize || quantity <= 0}
+//                 className="w-full py-3 px-6 rounded-md bg-red-600 text-white font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
 //               >
-//                 {orderLoading ? "Đang xử lý..." : "Mua ngay"}
+//                 Mua ngay
 //               </button>
+//             </div>
+
+//             {/* Product Description */}
+//             <div className="space-y-4">
+//               <h2 className="text-xl font-semibold">Mô tả sản phẩm</h2>
+//               <p className="text-gray-600 whitespace-pre-line">{product.mota}</p>
 //             </div>
 //           </div>
 //         </div>
-
-//         {/* Add to Cart Animation */}
-//         <AnimatePresence>
-//           {isAddingToCart && selectedImage && (
-//             <motion.div
-//               initial={{ opacity: 1, scale: 1, x: 0, y: 0 }}
-//               animate={{
-//                 opacity: 0,
-//                 scale: 0.5,
-//                 x: window.innerWidth - 100,
-//                 y: -window.innerHeight + 100,
-//               }}
-//               exit={{ opacity: 0 }}
-//               transition={{ duration: 1 }}
-//               className="fixed z-50"
-//               style={{
-//                 top: "50%",
-//                 left: "50%",
-//                 transform: "translate(-50%, -50%)",
-//               }}
-//             >
-//               <img
-//                 src={selectedImage}
-//                 alt="Adding to cart"
-//                 className="w-24 h-24 object-cover rounded-lg shadow-lg"
-//               />
-//             </motion.div>
-//           )}
-//         </AnimatePresence>
 //       </div>
-//       <Footer />
 //     </div>
-//   );
+//     <Footer />
+//   </div>
+// );
 // };
 
 // export default ProductDetail;
