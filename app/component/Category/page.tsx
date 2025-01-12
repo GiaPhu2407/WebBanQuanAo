@@ -768,23 +768,28 @@ const ProductDetail = () => {
         <div className="bg-white rounded-lg shadow-lg p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Image Gallery */}
-            <div className="space-y-4">
-              <div className="aspect-w-1 aspect-h-1">
-                <img
-                  src={selectedImage}
-                  alt={product.tensanpham}
-                  className="w-full h-full object-cover rounded-lg"
-                />
+            <div className="flex flex-row-reverse gap-6">
+              {/* Main Image Container */}
+              <div className="flex-1 max-w-2xl">
+                <div className="relative h-[500px]">
+                  <img
+                    src={selectedImage}
+                    alt={product.tensanpham}
+                    className="w-full h-full object-contain rounded-lg bg-gray-50"
+                  />
+                </div>
               </div>
-              <div className="grid grid-cols-4 gap-2">
+
+              {/* Thumbnails Container */}
+              <div className="flex flex-col gap-3 w-20">
                 {product.images.map((image) => (
                   <button
                     key={image.idImage}
                     onClick={() => setSelectedImage(image.url)}
-                    className={`border-2 rounded-md overflow-hidden ${
+                    className={`relative w-full h-20 border-2 rounded-md overflow-hidden transition-all ${
                       selectedImage === image.url
-                        ? "border-blue-500"
-                        : "border-gray-200"
+                        ? "border-blue-500 shadow-md"
+                        : "border-gray-200 hover:border-blue-300"
                     }`}
                   >
                     <img
@@ -801,20 +806,30 @@ const ProductDetail = () => {
             <div className="space-y-6">
               <h1 className="text-3xl font-bold">{product.tensanpham}</h1>
               <div className="space-y-2">
-                <p className="text-2xl font-semibold text-red-600">
-                  {new Intl.NumberFormat("vi-VN", {
-                    style: "currency",
-                    currency: "VND",
-                  }).format(product.gia)}
-                </p>
-                {product.giamgia > 0 && (
-                  <p className="text-sm text-gray-500 line-through">
+                <div className="flex items-baseline gap-2">
+                  <p className="text-2xl font-semibold text-red-600">
                     {new Intl.NumberFormat("vi-VN", {
                       style: "currency",
                       currency: "VND",
-                    }).format(product.gia * (1 + product.giamgia / 100))}
+                    }).format(product.gia)}
                   </p>
-                )}
+                  {product.giamgia > 0 && (
+                    <p className="text-sm text-gray-500 line-through">
+                      {new Intl.NumberFormat("vi-VN", {
+                        style: "currency",
+                        currency: "VND",
+                      }).format(product.gia * (1 + product.giamgia / 100))}
+                    </p>
+                  )}
+                </div>
+                <div className="text-sm text-gray-600">
+                  Tổng số lượng:{" "}
+                  {availableSizes.reduce(
+                    (total, size) => total + size.soluong,
+                    0
+                  )}{" "}
+                  sản phẩm
+                </div>
               </div>
 
               {/* Size Selection */}
@@ -871,6 +886,19 @@ const ProductDetail = () => {
                   >
                     +
                   </button>
+                </div>
+              </div>
+
+              {/* Total Price */}
+              <div className="border-t pt-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-medium">Thành tiền:</span>
+                  <span className="text-xl font-bold text-red-600">
+                    {new Intl.NumberFormat("vi-VN", {
+                      style: "currency",
+                      currency: "VND",
+                    }).format(product.gia * quantity)}
+                  </span>
                 </div>
               </div>
 

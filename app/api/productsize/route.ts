@@ -12,18 +12,45 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const data = await req.json();
   try {
-    const createProductSize = await prisma.productSize.create({
-      data: {
-        idsanpham: data.product_id,
-        idSize: data.size_id,
-        soluong: data.stock_quantity,
+    // Check if product size already exists
+    const existingProductSize = await prisma.productSize.findFirst({
+      where: {
+        idsanpham: data.idsanpham,
+        idSize: data.idSize,
       },
     });
-    return NextResponse.json(
-      { createProductSize, message: " Success" },
-      { status: 200 }
-    );
+
+    let result;
+    if (existingProductSize) {
+      // Update existing record
+      result = await prisma.productSize.update({
+        where: {
+          idsanpham_idSize: {
+            idsanpham: data.idsanpham,
+            idSize: data.idSize,
+          },
+        },
+        data: {
+          soluong: data.soluong,
+        },
+      });
+    } else {
+      // Create new record
+      result = await prisma.productSize.create({
+        data: {
+          idsanpham: data.idsanpham,
+          idSize: data.idSize,
+          soluong: data.soluong,
+        },
+      });
+    }
+
+    return NextResponse.json({ result, message: "Success" }, { status: 200 });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("Error in POST /api/productsize:", error);
+    return NextResponse.json(
+      { error: "Failed to update product size: " + error.message },
+      { status: 500 }
+    );
   }
 }
