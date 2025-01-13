@@ -1,9 +1,10 @@
-import prisma from "@/prisma/client";
+// app/api/evaluate/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import prisma from "@/prisma/client";
 
-// Schema validation cho Danhgia
-const DanhGiaSchema = z.object({
+// Schema validation cho đánh giá
+const ReviewSchema = z.object({
   idsanpham: z.number({
     required_error: "ID sản phẩm không được để trống",
   }),
@@ -20,13 +21,55 @@ const DanhGiaSchema = z.object({
     .max(45, { message: "Nội dung đánh giá tối đa 45 ký tự" }),
 });
 
+// GET - Lấy danh sách đánh giá cho sản phẩm
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams;
+    const idsanpham = searchParams.get("idsanpham");
+
+    if (!idsanpham) {
+      return NextResponse.json(
+        { message: "ID sản phẩm không được để trống" },
+        { status: 400 }
+      );
+    }
+
+    const reviews = await prisma.danhgia.findMany({
+      where: {
+        idsanpham: parseInt(idsanpham),
+      },
+      include: {
+        users: {
+          select: {
+            Tentaikhoan: true,
+            Hoten: true,
+            // Avatar: true,
+          },
+        },
+      },
+      orderBy: {
+        ngaydanhgia: "desc",
+      },
+    });
+
+    return NextResponse.json({ data: reviews }, { status: 200 });
+  } catch (error) {
+    console.error("Error fetching reviews:", error);
+    return NextResponse.json(
+      { message: "Lỗi khi tải đánh giá" },
+      { status: 500 }
+    );
+  }
+}
+
 // POST - Tạo đánh giá mới
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    console.log("Received review data:", body);
 
     // Validate dữ liệu đầu vào
-    const validationResult = DanhGiaSchema.safeParse(body);
+    const validationResult = ReviewSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
         { errors: validationResult.error.errors },
@@ -35,7 +78,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Kiểm tra sản phẩm và người dùng tồn tại
-    const [sanpham, user] = await Promise.all([
+    const [product, user] = await Promise.all([
       prisma.sanpham.findUnique({
         where: { idsanpham: body.idsanpham },
       }),
@@ -44,14 +87,14 @@ export async function POST(request: NextRequest) {
       }),
     ]);
 
-    if (!sanpham || !user) {
+    if (!product || !user) {
       return NextResponse.json(
         { message: "Sản phẩm hoặc người dùng không tồn tại" },
         { status: 404 }
       );
     }
 
-    // Kiểm tra đánh giá đã tồn tại
+    // Kiểm tra người dùng đã đánh giá chưa
     const existingReview = await prisma.danhgia.findFirst({
       where: {
         idsanpham: body.idsanpham,
@@ -75,6 +118,15 @@ export async function POST(request: NextRequest) {
         noidung: body.noidung,
         ngaydanhgia: new Date(),
       },
+      include: {
+        users: {
+          select: {
+            Tentaikhoan: true,
+            Hoten: true,
+            // Avatar: true,
+          },
+        },
+      },
     });
 
     return NextResponse.json(
@@ -83,6 +135,9 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     console.error("Error creating review:", error);
-    return NextResponse.json({ message: "Lỗi server" }, { status: 500 });
+    return NextResponse.json(
+      { message: "Lỗi khi tạo đánh giá" },
+      { status: 500 }
+    );
   }
 }

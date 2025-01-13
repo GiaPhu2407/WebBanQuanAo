@@ -474,6 +474,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
 import Header from "../Header";
 import Footer from "../Footer";
+import ProductReviews from "../Review/Productreviews";
 
 interface ProductWithImages {
   idsanpham: number;
@@ -500,6 +501,18 @@ interface CartItem {
   sizeId: number;
 }
 
+interface Review {
+  iddanhgia: number;
+  idsanpham: number;
+  idUsers: number;
+  sao: number;
+  noidung: string;
+  ngaydanhgia: string;
+  Users?: {
+    tentaikhoan: string;
+  };
+}
+
 const ProductDetail = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -515,7 +528,32 @@ const ProductDetail = () => {
   const [orderLoading, setOrderLoading] = useState(false);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [currentUser, setCurrentUser] = useState<{ idUsers: number } | null>(
+    null
+  );
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
+  // Check authentication status
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      try {
+        const response = await fetch("/api/auth/check");
+        if (response.ok) {
+          const userData = await response.json();
+          setCurrentUser(userData);
+        }
+      } catch (error) {
+        console.error("Error checking auth status:", error);
+      }
+    };
+
+    checkAuthStatus();
+  }, []);
+
+  // Fetch product details, sizes and reviews
   useEffect(() => {
     const fetchProductAndSizes = async () => {
       if (!id) return;
@@ -536,7 +574,7 @@ const ProductDetail = () => {
           throw new Error("Không thể tải thông tin size");
         }
         const sizeData = await sizesResponse.json();
-        const sizes = sizeData.size; // API returns { size: [...] }
+        const sizes = sizeData.size;
 
         // Fetch product sizes
         const productSizesResponse = await fetch("/api/productsize");
@@ -544,9 +582,9 @@ const ProductDetail = () => {
           throw new Error("Không thể tải thông tin số lượng");
         }
         const productSizeData = await productSizesResponse.json();
-        const productSizes = productSizeData.getProductSize; // API returns { getProductSize: [...] }
+        const productSizes = productSizeData.getProductSize;
 
-        // Combine size data with product size quantities
+        // Combine size data
         const sizesWithQuantities = sizes.map(
           (size: { idSize: any; tenSize: any }) => {
             const productSize = productSizes.find(
@@ -561,27 +599,22 @@ const ProductDetail = () => {
           }
         );
 
-        // Sort sizes: available sizes first, then by size name
-        const sortedSizes = sizesWithQuantities.sort(
-          (
-            a: { soluong: number; tenSize: string },
-            b: { soluong: number; tenSize: any }
-          ) => {
-            if (a.soluong === 0 && b.soluong > 0) return 1;
-            if (a.soluong > 0 && b.soluong === 0) return -1;
-            return a.tenSize.localeCompare(b.tenSize);
-          }
-        );
-
-        setAvailableSizes(sortedSizes);
+        setAvailableSizes(sizesWithQuantities);
 
         // Select first available size
-        const firstAvailableSize = sortedSizes.find(
+        const firstAvailableSize = sizesWithQuantities.find(
           (size: { soluong: number }) => size.soluong > 0
         );
         if (firstAvailableSize) {
           setSelectedSize(firstAvailableSize.idSize);
           setQuantity(1);
+        }
+
+        // Fetch reviews
+        const reviewsResponse = await fetch(`/api/evaluate?idsanpham=${id}`);
+        if (reviewsResponse.ok) {
+          const reviewsData = await reviewsResponse.json();
+          setReviews(reviewsData.data || []);
         }
       } catch (err) {
         console.error("Error fetching data:", err);
@@ -608,12 +641,7 @@ const ProductDetail = () => {
     fetchProductAndSizes();
   }, [id]);
 
-  useEffect(() => {
-    if (cartItems.length > 0) {
-      localStorage.setItem("cartItems", JSON.stringify(cartItems));
-    }
-  }, [cartItems]);
-
+  // Handle quantity change
   const handleQuantityChange = (newQuantity: number) => {
     if (!selectedSize) return;
 
@@ -627,11 +655,13 @@ const ProductDetail = () => {
     setQuantity(validQuantity);
   };
 
+  // Handle size change
   const handleSizeChange = (sizeId: number) => {
     setSelectedSize(sizeId);
     setQuantity(1);
   };
 
+  // Handle add to cart
   const handleAddToCart = async (isInstantBuy: boolean) => {
     if (!product || !selectedSize || quantity <= 0) {
       toast.error("Vui lòng chọn size và số lượng");
@@ -650,16 +680,16 @@ const ProductDetail = () => {
     setIsAddingToCart(true);
 
     try {
-      // Update product size quantity - Sửa lại tên các field cho đúng với API
+      // Update product size quantity
       const response = await fetch("/api/productsize", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          idsanpham: product.idsanpham, // Sửa từ product_id thành idsanpham
-          idSize: selectedSize, // Sửa từ size_id thành idSize
-          soluong: selectedSizeData.soluong - quantity, // Sửa từ stock_quantity thành soluong
+          idsanpham: product.idsanpham,
+          idSize: selectedSize,
+          soluong: selectedSizeData.soluong - quantity,
         }),
       });
 
@@ -683,7 +713,6 @@ const ProductDetail = () => {
       const cartData = await cartResponse.json();
 
       if (cartResponse.ok) {
-        // Update local state
         setAvailableSizes((prevSizes) =>
           prevSizes.map((size) =>
             size.idSize === selectedSize
@@ -735,6 +764,60 @@ const ProductDetail = () => {
     }
   };
 
+  // Handle submit review
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!currentUser) {
+      toast.error("Vui lòng đăng nhập để đánh giá");
+      return;
+    }
+
+    if (!comment.trim()) {
+      toast.error("Vui lòng nhập nội dung đánh giá");
+      return;
+    }
+
+    setIsSubmittingReview(true);
+
+    try {
+      const response = await fetch("/api/danhgia", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          idsanpham: parseInt(id!),
+          idUsers: currentUser.idUsers,
+          sao: rating,
+          noidung: comment.trim(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Lỗi khi gửi đánh giá");
+      }
+
+      toast.success("Đánh giá thành công");
+      setComment("");
+      setRating(5);
+
+      // Refresh reviews
+      const reviewsResponse = await fetch(`/api/evaluate?idsanpham=${id}`);
+      const reviewsData = await reviewsResponse.json();
+      setReviews(reviewsData.data || []);
+    } catch (error) {
+      console.error("Error submitting review:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Lỗi khi gửi đánh giá"
+      );
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -759,17 +842,24 @@ const ProductDetail = () => {
     );
   }
 
+  const averageRating =
+    reviews.length > 0
+      ? (
+          reviews.reduce((acc, review) => acc + review.sao, 0) / reviews.length
+        ).toFixed(1)
+      : "0.0";
+
   return (
     <div className="min-h-screen bg-gray-100">
       <Header />
       <Toaster position="top-center" />
 
       <div className="container mx-auto px-4 py-8">
+        {/* Product Details Section */}
         <div className="bg-white rounded-lg shadow-lg p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Image Gallery */}
             <div className="flex flex-row-reverse gap-6">
-              {/* Main Image Container */}
               <div className="flex-1 max-w-2xl">
                 <div className="relative h-[500px]">
                   <img
@@ -780,7 +870,6 @@ const ProductDetail = () => {
                 </div>
               </div>
 
-              {/* Thumbnails Container */}
               <div className="flex flex-col gap-3 w-20">
                 {product.images.map((image) => (
                   <button
@@ -805,6 +894,8 @@ const ProductDetail = () => {
             {/* Product Info */}
             <div className="space-y-6">
               <h1 className="text-3xl font-bold">{product.tensanpham}</h1>
+
+              {/* Price */}
               <div className="space-y-2">
                 <div className="flex items-baseline gap-2">
                   <p className="text-2xl font-semibold text-red-600">
@@ -824,56 +915,45 @@ const ProductDetail = () => {
                 </div>
                 <div className="text-sm text-gray-600">
                   Tổng số lượng:{" "}
-                  {availableSizes.reduce(
-                    (total, size) => total + size.soluong,
-                    0
-                  )}{" "}
-                  sản phẩm
+                  {availableSizes.reduce((acc, size) => acc + size.soluong, 0)}
                 </div>
               </div>
 
-              {/* Size Selection */}
-              <div className="space-y-4">
-                <p className="font-medium">Chọn Size:</p>
-                <div className="grid grid-cols-4 gap-2">
+              {/* Sizes */}
+              <div className="space-y-3">
+                <p className="font-medium">Kích thước:</p>
+                <div className="flex flex-wrap gap-2">
                   {availableSizes.map((size) => (
                     <button
                       key={size.idSize}
                       onClick={() => handleSizeChange(size.idSize)}
                       disabled={size.soluong === 0}
-                      className={`py-2 px-4 rounded-md border ${
+                      className={`px-4 py-2 border rounded-md transition-all ${
                         selectedSize === size.idSize
-                          ? "border-blue-500 bg-blue-50 text-blue-700"
+                          ? "border-blue-500 bg-blue-50 text-blue-600"
                           : size.soluong === 0
                           ? "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
-                          : "border-gray-200 hover:border-blue-500"
+                          : "border-gray-200 hover:border-blue-300"
                       }`}
                     >
-                      {size.tenSize}
-                      <span className="block text-xs">
-                        {size.soluong === 0 ? (
-                          <span className="text-red-500">Hết hàng</span>
-                        ) : (
-                          `Còn ${size.soluong}`
-                        )}
-                      </span>
+                      {size.tenSize} ({size.soluong})
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Quantity Selection */}
-              <div className="space-y-4">
+              {/* Quantity */}
+              <div className="space-y-3">
                 <p className="font-medium">Số lượng:</p>
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center gap-3">
                   <button
                     onClick={() => handleQuantityChange(quantity - 1)}
                     disabled={quantity <= 1}
-                    className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center hover:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-10 h-10 rounded-full border flex items-center justify-center hover:bg-gray-50 disabled:opacity-50"
                   >
                     -
                   </button>
-                  <span className="w-16 text-center">{quantity}</span>
+                  <span className="w-12 text-center">{quantity}</span>
                   <button
                     onClick={() => handleQuantityChange(quantity + 1)}
                     disabled={
@@ -882,72 +962,40 @@ const ProductDetail = () => {
                         (availableSizes.find((s) => s.idSize === selectedSize)
                           ?.soluong || 0)
                     }
-                    className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center hover:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-10 h-10 rounded-full border flex items-center justify-center hover:bg-gray-50 disabled:opacity-50"
                   >
                     +
                   </button>
                 </div>
               </div>
 
-              {/* Total Price */}
-              <div className="border-t pt-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-lg font-medium">Thành tiền:</span>
-                  <span className="text-xl font-bold text-red-600">
-                    {new Intl.NumberFormat("vi-VN", {
-                      style: "currency",
-                      currency: "VND",
-                    }).format(product.gia * quantity)}
-                  </span>
-                </div>
-              </div>
-
-              {/* Add to Cart and Buy Now Buttons */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* Action Buttons */}
+              <div className="flex gap-4">
                 <button
                   onClick={() => handleAddToCart(false)}
-                  disabled={orderLoading || !selectedSize || quantity <= 0}
-                  className="w-full py-3 px-6 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={orderLoading || !selectedSize}
+                  className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isAddingToCart ? (
-                    <span className="flex items-center justify-center">
-                      <svg
-                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Đang thêm...
+                  {orderLoading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <div className="w-5 h-5 border-t-2 border-white rounded-full animate-spin" />
+                      Đang xử lý...
                     </span>
                   ) : (
-                    "Thêm vào giỏ"
+                    "Thêm vào giỏ hàng"
                   )}
                 </button>
                 <button
                   onClick={() => handleAddToCart(true)}
-                  disabled={orderLoading || !selectedSize || quantity <= 0}
-                  className="w-full py-3 px-6 rounded-md bg-red-600 text-white font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={orderLoading || !selectedSize}
+                  className="flex-1 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Mua ngay
                 </button>
               </div>
 
-              {/* Product Description */}
-              <div className="space-y-4">
+              {/* Description */}
+              <div className="space-y-3">
                 <h2 className="text-xl font-semibold">Mô tả sản phẩm</h2>
                 <p className="text-gray-600 whitespace-pre-line">
                   {product.mota}
@@ -956,7 +1004,13 @@ const ProductDetail = () => {
             </div>
           </div>
         </div>
+        {/* Reviews Section */}
+        <ProductReviews
+          productId={product?.idsanpham || 0}
+          // userId={currentUser?.idUsers || 0}
+        />
       </div>
+
       <Footer />
     </div>
   );
