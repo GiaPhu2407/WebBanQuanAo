@@ -341,9 +341,6 @@ const ProductReviews = ({ productId }: ProductReviewsProps) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingReview, setEditingReview] = useState<Review | null>(null);
-  // const [error, setError] = useState<string | null>(null);
-
-  // Removed hasUserReviewed state since we now allow multiple reviews
 
   // Fetch session/user data
   useEffect(() => {
@@ -356,6 +353,7 @@ const ProductReviews = ({ productId }: ProductReviewsProps) => {
         }
       } catch (error) {
         console.error("Error checking session:", error);
+        toast.error("Lỗi khi kiểm tra phiên đăng nhập");
       }
     };
 
@@ -367,7 +365,9 @@ const ProductReviews = ({ productId }: ProductReviewsProps) => {
     try {
       setLoading(true);
       const response = await fetch(`/api/evaluate?idsanpham=${productId}`);
-      if (!response.ok) throw new Error("Không thể tải đánh giá");
+      if (!response.ok) {
+        throw new Error("Không thể tải đánh giá");
+      }
       const data = await response.json();
       setReviews(data.data || []);
       setError(null);
@@ -384,37 +384,22 @@ const ProductReviews = ({ productId }: ProductReviewsProps) => {
     fetchReviews();
   }, [productId]);
 
-  // Submit a new review
+  // Handle edit click
   const handleEditClick = (review: Review) => {
     setEditingReview(review);
     setRating(review.sao);
     setComment(review.noidung);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Handle delete review
-  const handleDeleteReview = async (iddanhgia: number) => {
-    if (!confirm("Bạn có chắc chắn muốn xóa đánh giá này?")) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/evaluate/${iddanhgia}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        throw new Error("Không thể xóa đánh giá");
-      }
-
-      toast.success("Xóa đánh giá thành công");
-      fetchReviews();
-    } catch (error) {
-      console.error("Error deleting review:", error);
-      toast.error("Lỗi khi xóa đánh giá");
-    }
+  // Handle cancel edit
+  const handleCancelEdit = () => {
+    setEditingReview(null);
+    setRating(5);
+    setComment("");
   };
 
-  // Submit handler now handles both new reviews and updates
+  // Submit handler for both new reviews and updates
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -428,14 +413,22 @@ const ProductReviews = ({ productId }: ProductReviewsProps) => {
       return;
     }
 
+    if (comment.trim().length > 45) {
+      toast.error("Nội dung đánh giá không được vượt quá 45 ký tự");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      const url = editingReview ? "/api/evaluate" : "/api/evaluate";
+      let url = "/api/evaluate";
+      let method = "POST";
 
-      const method = editingReview ? "PUT" : "POST";
+      if (editingReview) {
+        url = `/api/evaluate/${editingReview.iddanhgia}`;
+        method = "PUT";
+      }
 
       const body = {
-        ...(editingReview && { iddanhgia: editingReview.iddanhgia }),
         idsanpham: productId,
         idUsers: user.idUsers,
         sao: rating,
@@ -453,11 +446,11 @@ const ProductReviews = ({ productId }: ProductReviewsProps) => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Lỗi khi gửi đánh giá");
+        throw new Error(data.message || "Lỗi khi xử lý đánh giá");
       }
 
       toast.success(
-        editingReview ? "Cập nhật đánh giá thành công" : "Đánh giá thành công"
+        editingReview ? "Sửa đánh giá thành công!" : "Đánh giá thành công!"
       );
       setComment("");
       setRating(5);
@@ -466,13 +459,76 @@ const ProductReviews = ({ productId }: ProductReviewsProps) => {
     } catch (error) {
       console.error("Error submitting review:", error);
       toast.error(
-        error instanceof Error ? error.message : "Lỗi khi gửi đánh giá"
+        error instanceof Error
+          ? error.message
+          : "Có lỗi xảy ra khi xử lý đánh giá. Vui lòng thử lại!"
       );
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // Handle delete review
+  const handleDeleteReview = async (iddanhgia: number) => {
+    // Create custom toast for delete confirmation
+    toast(
+      (t) => (
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-gray-600">
+            Bạn có chắc chắn muốn xóa đánh giá này?
+          </p>
+          <div className="flex gap-2 justify-end">
+            <button
+              onClick={() => {
+                deleteReview(iddanhgia);
+                toast.dismiss(t.id);
+              }}
+              className="px-3 py-1 text-sm text-white bg-red-500 rounded hover:bg-red-600"
+            >
+              Xóa
+            </button>
+            <button
+              onClick={() => toast.dismiss(t.id)}
+              className="px-3 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300"
+            >
+              Hủy
+            </button>
+          </div>
+        </div>
+      ),
+      {
+        duration: 5000, // Toast will stay for 5 seconds
+        position: "top-center",
+        style: {
+          minWidth: "300px",
+        },
+      }
+    );
+  };
+
+  // Add this new function to handle the actual deletion
+  const deleteReview = async (iddanhgia: number) => {
+    try {
+      const response = await fetch(`/api/evaluate/${iddanhgia}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Không thể xóa đánh giá");
+      }
+
+      toast.success("Xóa đánh giá thành công!");
+      fetchReviews();
+    } catch (error) {
+      console.error("Error deleting review:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Có lỗi xảy ra khi xóa đánh giá. Vui lòng thử lại!"
+      );
+    }
+  };
   // Calculate average rating
   const averageRating =
     reviews.length > 0
@@ -491,7 +547,6 @@ const ProductReviews = ({ productId }: ProductReviewsProps) => {
 
   return (
     <div className="space-y-6">
-      {/* Header section remains the same */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-semibold">
           {editingReview ? "Chỉnh sửa đánh giá" : "Đánh giá sản phẩm"}
@@ -502,7 +557,7 @@ const ProductReviews = ({ productId }: ProductReviewsProps) => {
         </div>
       </div>
 
-      {/* Review Form - now handles both new reviews and updates */}
+      {/* Review Form */}
       {user ? (
         <form onSubmit={handleSubmitReview} className="space-y-4 border-b pb-6">
           <div>
@@ -574,7 +629,7 @@ const ProductReviews = ({ productId }: ProductReviewsProps) => {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     />
                   </svg>
-                  Đang gửi...
+                  Đang xử lý...
                 </>
               ) : editingReview ? (
                 "Cập nhật đánh giá"
@@ -585,11 +640,7 @@ const ProductReviews = ({ productId }: ProductReviewsProps) => {
             {editingReview && (
               <button
                 type="button"
-                onClick={() => {
-                  setEditingReview(null);
-                  setComment("");
-                  setRating(5);
-                }}
+                onClick={handleCancelEdit}
                 className="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               >
                 Hủy chỉnh sửa
@@ -609,7 +660,7 @@ const ProductReviews = ({ productId }: ProductReviewsProps) => {
         </div>
       )}
 
-      {/* Reviews List - now with edit and delete buttons */}
+      {/* Reviews List */}
       <div className="space-y-6">
         {error ? (
           <div className="text-center text-red-500">{error}</div>
@@ -639,13 +690,13 @@ const ProductReviews = ({ productId }: ProductReviewsProps) => {
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleEditClick(review)}
-                      className="text-blue-600 hover:text-blue-800"
+                      className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                     >
                       Sửa
                     </button>
                     <button
                       onClick={() => handleDeleteReview(review.iddanhgia)}
-                      className="text-red-600 hover:text-red-800"
+                      className="text-red-600 hover:text-red-800 text-sm font-medium"
                     >
                       Xóa
                     </button>
