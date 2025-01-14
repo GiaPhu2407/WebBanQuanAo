@@ -9,6 +9,7 @@ interface Product {
   gia: number;
   mota: string;
   idloaisanpham: number;
+  mausac: string; // Giá trị là mã màu (hex, rgb, hoặc tên màu)
   giamgia: number;
   gioitinh: boolean;
   size: string;
@@ -70,14 +71,16 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         </div>
 
         <div className="p-4 space-y-3">
-          <div className="flex items-center space-x-2">
+          {/* <div className="flex items-center space-x-2">
             <span className="px-2 py-1 text-xs border border-gray-300 rounded-full">
               {product.gioitinh ? "Nam" : "Nữ"}
             </span>
-          </div>
+          </div> */}
 
           <h3 className="font-semibold truncate">{product.tensanpham}</h3>
-          <p className="text-sm text-gray-600 line-clamp-2">{product.mota}</p>
+
+          {/* Hiển thị màu sắc dưới dạng hình tròn */}
+          <div className="w-6 h-6 rounded-full ">{product.mausac}</div>
 
           <div className="flex items-center justify-between">
             <span className="text-lg font-bold text-blue-600">
