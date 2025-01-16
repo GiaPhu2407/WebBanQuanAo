@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from 'react';
-import Filter from '../component/Filter';
-import ProductGrid from './ProductList';
-  
+import React, { useState } from "react";
+import Filter from "../component/Filter";
+import ProductGrid from "./ProductList";
+import FeaturedCollection from "./Bosutap";
+import Carousel from "./CarouselAfterLogin";
 
 interface Product {
   idsanpham: number;
@@ -13,6 +14,7 @@ interface Product {
   mota: string;
   idloaisanpham: number;
   giamgia: number;
+  mausac: string;
   gioitinh: boolean;
   size: string;
 }
@@ -32,24 +34,26 @@ export default function Home() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      
+
       if (filters.categories.length) {
-        filters.categories.forEach(cat => params.append('idloaisanpham', cat.toString()));
+        filters.categories.forEach((cat) =>
+          params.append("idloaisanpham", cat.toString())
+        );
       }
       if (filters.gender) {
-        params.append('gioitinh', filters.gender);
+        params.append("gioitinh", filters.gender);
       }
       if (filters.priceRange.length === 2) {
-        params.append('minPrice', filters.priceRange[0].toString());
-        params.append('maxPrice', filters.priceRange[1].toString());
+        params.append("minPrice", filters.priceRange[0].toString());
+        params.append("maxPrice", filters.priceRange[1].toString());
       }
       if (filters.sizes.length) {
-        filters.sizes.forEach(size => params.append('size', size));
+        filters.sizes.forEach((size) => params.append("size", size));
       }
 
       const response = await fetch(`/api/sanpham?${params.toString()}`);
       if (!response.ok) {
-        throw new Error('Network response was not ok');
+        throw new Error("Network response was not ok");
       }
       const data = await response.json();
       setProducts(Array.isArray(data) ? data : []);
@@ -77,6 +81,25 @@ export default function Home() {
           )}
         </section>
       </div>
+      <div className="flex justify-center items-center gap-24 mt-10">
+        <img
+          src="https://m.yodycdn.com/fit-in/filters:format(webp)//products/tet-2025-2512-05.jpg"
+          alt=""
+          className="w-96"
+        />
+        <img
+          src="https://m.yodycdn.com/fit-in/filters:format(webp)//products/tet-2025-2512-03.jpg"
+          alt=""
+          className="w-96"
+        />
+        <img
+          src="https://m.yodycdn.com/fit-in/filters:format(webp)//products/tet-2025-2512-03.jpg"
+          alt=""
+          className="w-96"
+        />
+      </div>
+      <FeaturedCollection />
+      <Carousel />
     </main>
   );
 }

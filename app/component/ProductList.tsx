@@ -8,6 +8,7 @@ interface Product {
   gia: number;
   mota: string;
   idloaisanpham: number;
+  mausac:string
   giamgia: number;
   gioitinh: boolean;
   size: string;
