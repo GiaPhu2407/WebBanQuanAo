@@ -1,18 +1,30 @@
-export interface Product {
+// types.ts
+interface Product {
   idsanpham: number;
   tensanpham: string;
   hinhanh: string;
   gia: number;
   mota: string;
   idloaisanpham: number;
+  mausac: string;
   giamgia: number;
   gioitinh: boolean;
   size: string;
 }
 
-export interface FilterState {
+interface Category {
+  idloaisanpham: number;
+  tenloai: string;
+}
+
+interface Size {
+  id: number;
+  tenSize: string;
+}
+
+interface FilterParams {
   categories: number[];
-  gender: string[];
-  priceRange: [number, number];
+  gender: string | null;
+  priceRange: number[];
   sizes: string[];
 }
