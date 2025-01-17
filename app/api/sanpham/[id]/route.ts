@@ -138,7 +138,6 @@ export async function PUT(
         tensanpham,
         mota,
         gia: String(gia),
-        mausac,
         idloaisanpham: Number(idloaisanpham),
         giamgia: giamgia ? Number(giamgia) : null,
         gioitinh,

@@ -93,7 +93,6 @@ model Loaisanpham {
   gia             String?          @db.VarChar(255)
   hinhanh         String?          @db.VarChar(255)
   trangthai       String?          @db.VarChar(255)
-  mausac          String?          @db.VarChar(255)
   idloaisanpham   Int?            
   giamgia         Decimal?         @db.Decimal(5,2)
   gioitinh        Boolean?
@@ -108,6 +107,49 @@ model Loaisanpham {
   yeuthich        Yeuthich[] 
   lichgiaohang    LichGiaoHang[]
   ProductSizes    ProductSize[]     // New relationship
+  ProductColors   ProductColor[]    // Thêm relation với bảng trung gian
+
+}
+// model Sanpham {
+//   idsanpham       Int              @id @default(autoincrement())
+//   tensanpham      String?          @db.VarChar(255)
+//   mota            String?          @db.VarChar(255)
+//   gia             String?          @db.VarChar(255)
+//   hinhanh         String?          @db.VarChar(255)
+//   trangthai       String?          @db.VarChar(255)
+//   idloaisanpham   Int?            
+//   giamgia         Decimal?         @db.Decimal(5,2)
+//   gioitinh        Boolean?
+//   size            String?          @db.VarChar(255)
+//   loaisanpham     Loaisanpham?     @relation(fields: [idloaisanpham], references: [idloaisanpham])
+//   chitietnhap     Chitietnhap[]
+//   chitietdonhang  ChitietDonhang[]
+//   giohang         Giohang[]
+//   danhgia         Danhgia[]
+//   kho             Kho[]
+//   images          Image[]  
+//   yeuthich        Yeuthich[] 
+//   lichgiaohang    LichGiaoHang[]
+//   ProductSizes    ProductSize[]
+// }
+
+// Tạo model mới cho Màu sắc
+model Color {
+  idmausac        Int              @id @default(autoincrement())
+  tenmau          String           @db.VarChar(255)
+  mamau           String           @db.VarChar(50)    // Mã màu (ví dụ: #FF0000)
+  ProductColors   ProductColor[]    // Relation với bảng trung gian
+}
+
+// Bảng trung gian để liên kết nhiều-nhiều giữa Sản phẩm và Màu sắc
+model ProductColor {
+  idsanpham       Int
+  idmausac        Int
+  hinhanh         String?          @db.VarChar(255)   // Hình ảnh cho variant màu này
+  sanpham         Sanpham          @relation(fields: [idsanpham], references: [idsanpham])
+  color           Color            @relation(fields: [idmausac], references: [idmausac])
+  
+  @@id([idsanpham, idmausac])     // Composite primary key
 }
 model Yeuthich {
   idYeuthich  Int      @id @default(autoincrement()) // Khóa chính

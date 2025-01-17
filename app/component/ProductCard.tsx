@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
+import { useColors } from "../Admin/DashBoard/ProductManager/hooks/useColor";
 
 interface Product {
   idsanpham: number;
@@ -7,46 +8,18 @@ interface Product {
   gia: number;
   giamgia: number;
   hinhanh: string;
-  mausac: string;
+  ProductColors?: {
+    idmausac: number;
+    hinhanh: string;
+  }[];
 }
 
-// Hàm chuyển đổi tên màu sang mã màu CSS
-const getColorCode = (colorName: string): string => {
-  // Map các tên màu tiếng Việt sang mã màu CSS
-  const colorMap: { [key: string]: string } = {
-    đỏ: "#FF0000",
-    xanh: "#0000FF",
-    vàng: "#FFFF00",
-    đen: "#000000",
-    trắng: "#FFFFFF",
-    xám: "#808080",
-    nâu: "#A52A2A",
-    hồng: "#FFC0CB",
-    tím: "#800080",
-    cam: "#FFA500",
-    "xanh lá": "#008000",
-    "xanh dương": "#0000FF",
-    "xanh nước biển": "#000080",
-    // Thêm các màu khác tùy theo nhu cầu
-  };
-
-  const normalizedColor = colorName.toLowerCase().trim();
-  return colorMap[normalizedColor] || colorName; // Trả về mã màu hoặc tên màu gốc nếu không tìm thấy
-};
-
 const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
+  const { colors } = useColors();
   const discountedPrice =
     product.giamgia > 0
       ? product.gia * (1 - product.giamgia / 100)
       : product.gia;
-
-  // Xử lý chuỗi màu sắc
-  const colors = product.mausac
-    ? product.mausac
-        .split(",")
-        .map((color) => color.trim())
-        .filter((color) => color) // Lọc bỏ chuỗi rỗng
-    : [];
 
   return (
     <Link href={`/component/Category?id=${product.idsanpham}`}>
@@ -86,19 +59,29 @@ const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
             )}
           </div>
 
-          <div className="flex gap-2">
-            {colors.map((color, index) => {
-              const colorCode = getColorCode(color);
-              return (
-                <div
-                  key={index}
-                  className="w-5 h-5 rounded-full cursor-pointer hover:scale-110 transition-transform border border-gray-200"
-                  style={{ backgroundColor: colorCode }}
-                  title={color}
-                />
-              );
-            })}
-          </div>
+          {product.ProductColors && product.ProductColors.length > 0 && (
+            <div className="flex gap-2">
+              {product.ProductColors.map((productColor) => {
+                const color = colors.find(
+                  (c) => c.idmausac === productColor.idmausac
+                );
+                if (!color) return null;
+
+                return (
+                  <div
+                    key={productColor.idmausac}
+                    className="group/color relative w-5 h-5 rounded-full cursor-pointer hover:scale-110 transition-transform border border-gray-200"
+                    style={{ backgroundColor: color.mamau }}
+                  >
+                    {/* Tooltip */}
+                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-xs bg-gray-900 text-white rounded opacity-0 group-hover/color:opacity-100 transition-opacity whitespace-nowrap">
+                      {color.tenmau}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </Link>

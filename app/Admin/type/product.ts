@@ -1,3 +1,4 @@
+// Types for the product management system
 export interface Size {
   idSize: number;
   tenSize: string;
@@ -17,35 +18,30 @@ export interface ProductSize {
   size?: Size;
 }
 
+export interface ProductColor {
+  idProductColor: number;
+  idsanpham: number;
+  idmausac: number;
+  hinhanh: string;
+  color?: Color;
+}
+
+export interface Color {
+  idmausac: number;
+  tenmau: string;
+  mamau: string;
+}
+
 export interface Product {
   idsanpham: number;
   tensanpham: string;
   hinhanh: string;
   gia: number;
   mota: string;
-  mausac: string;
   idloaisanpham: number;
   giamgia: number;
   gioitinh: boolean;
   loaisanpham?: Category;
-  ProductSizes?: {
-    idProductSize: number;
-    idSize: number;
-    soluong: number;
-    size: {
-      idSize: number;
-      tenSize: string;
-    };
-  }[];
-}
-
-export interface ProductFormData {
-  tensanpham: string;
-  gia: number;
-  mota: string;
-  idloaisanpham: number;
-  giamgia: number;
-  mausac: string;
-  gioitinh: boolean;
-  productSizes: { [key: number]: number };
+  ProductSizes?: ProductSize[];
+  ProductColors?: ProductColor[];
 }
