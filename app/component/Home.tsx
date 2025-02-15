@@ -103,15 +103,13 @@
 //     </main>
 //   );
 // }
-
 "use client";
-
 import React, { useEffect, useState } from "react";
-
 import FeaturedCollection from "./Bosutap";
 import Carousel from "./CarouselAfterLogin";
 import Filter from "./Filter";
 import ProductGrid from "./ProductCard";
+import DailyNewsModal from "./Daily";
 
 interface Product {
   idsanpham: number;
@@ -127,11 +125,15 @@ interface Product {
 }
 
 export default function Home() {
-  const [allProducts, setAllProducts] = useState<Product[]>([]); // Lưu trữ tất cả sản phẩm
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]); // Lưu trữ sản phẩm đã lọc
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showNewsModal, setShowNewsModal] = useState(false);
 
-  // Fetch tất cả sản phẩm khi component mount
+  useEffect(() => {
+    setShowNewsModal(true);
+  }, []);
+
   useEffect(() => {
     const fetchAllProducts = async () => {
       setLoading(true);
@@ -140,7 +142,7 @@ export default function Home() {
         if (!response.ok) throw new Error("Failed to fetch products");
         const data = await response.json();
         setAllProducts(data);
-        setFilteredProducts(data); // Ban đầu hiện tất cả sản phẩm
+        setFilteredProducts(data);
       } catch (error) {
         console.error("Error fetching products:", error);
       } finally {
@@ -151,7 +153,6 @@ export default function Home() {
     fetchAllProducts();
   }, []);
 
-  // Hàm xử lý lọc sản phẩm
   const handleFilterChange = (filters: {
     categories: number[];
     gender: string | null;
@@ -162,14 +163,12 @@ export default function Home() {
 
     let filtered = [...allProducts];
 
-    // Lọc theo danh mục
     if (filters.categories.length > 0) {
       filtered = filtered.filter((product) =>
         filters.categories.includes(product.idloaisanpham)
       );
     }
 
-    // Lọc theo giới tính
     if (filters.gender) {
       filtered = filtered.filter(
         (product) =>
@@ -178,18 +177,24 @@ export default function Home() {
       );
     }
 
-    // Lọc theo giá
     filtered = filtered.filter(
       (product) =>
         product.gia >= filters.priceRange[0] &&
         product.gia <= filters.priceRange[1]
     );
 
-    // Lọc theo size
     if (filters.sizes.length > 0) {
       filtered = filtered.filter((product) => {
+        // Check if product.size exists and is not empty
+        if (!product.size) return false;
+
+        // Split the sizes and trim each size
         const productSizes = product.size.split(",").map((s) => s.trim());
-        return filters.sizes.some((size) => productSizes.includes(size));
+
+        // Check if any of the selected sizes match the product sizes
+        return filters.sizes.some((selectedSize) =>
+          productSizes.includes(selectedSize)
+        );
       });
     }
 
@@ -198,42 +203,49 @@ export default function Home() {
   };
 
   return (
-    <main className="container mx-auto px-4 py-8">
-      <div className="flex flex-col md:flex-row gap-8">
-        <aside className="w-full md:w-1/4">
-          <Filter onFilterChange={handleFilterChange} />
-        </aside>
-        <section className="w-full md:w-3/4">
-          {loading ? (
-            <div className="flex justify-center items-center min-h-[200px]">
-              <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent" />
-            </div>
-          ) : (
-            <ProductGrid products={filteredProducts} />
-          )}
-        </section>
-      </div>
+    <>
+      <DailyNewsModal
+        isOpen={showNewsModal}
+        onClose={() => setShowNewsModal(false)}
+      />
 
-      <div className="flex justify-center items-center gap-24 mt-10">
-        <img
-          src="https://m.yodycdn.com/fit-in/filters:format(webp)//products/tet-2025-2512-05.jpg"
-          alt=""
-          className="w-96"
-        />
-        <img
-          src="https://m.yodycdn.com/fit-in/filters:format(webp)//products/tet-2025-2512-03.jpg"
-          alt=""
-          className="w-96"
-        />
-        <img
-          src="https://m.yodycdn.com/fit-in/filters:format(webp)//products/tet-2025-2512-03.jpg"
-          alt=""
-          className="w-96"
-        />
-      </div>
+      <main className="container mx-auto px-4 py-8">
+        <div className="flex flex-col md:flex-row gap-8">
+          <aside className="w-full md:w-1/4">
+            <Filter onFilterChange={handleFilterChange} />
+          </aside>
+          <section className="w-full md:w-3/4">
+            {loading ? (
+              <div className="flex justify-center items-center min-h-[200px]">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent" />
+              </div>
+            ) : (
+              <ProductGrid products={filteredProducts} />
+            )}
+          </section>
+        </div>
 
-      <FeaturedCollection />
-      <Carousel />
-    </main>
+        <div className="flex justify-center items-center gap-24 mt-10">
+          <img
+            src="https://m.yodycdn.com/fit-in/filters:format(webp)//products/tet-2025-2512-05.jpg"
+            alt=""
+            className="w-96"
+          />
+          <img
+            src="https://m.yodycdn.com/fit-in/filters:format(webp)//products/tet-2025-2512-03.jpg"
+            alt=""
+            className="w-96"
+          />
+          <img
+            src="https://m.yodycdn.com/fit-in/filters:format(webp)//products/tet-2025-2512-03.jpg"
+            alt=""
+            className="w-96"
+          />
+        </div>
+
+        <FeaturedCollection />
+        <Carousel />
+      </main>
+    </>
   );
 }

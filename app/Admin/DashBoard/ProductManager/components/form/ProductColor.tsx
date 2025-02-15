@@ -1,7 +1,5 @@
 import React from "react";
-
 import { Button } from "@/components/ui/button";
-import { FileUpload } from "@/components/ui/file-upload";
 import { Plus, X } from "lucide-react";
 import { ProductColor } from "@/app/Admin/type/product";
 import { useColors } from "../../hooks/useColor";
@@ -15,29 +13,35 @@ interface ProductColorSelectorProps {
     color: Omit<ProductColor, "idProductColor" | "idsanpham" | "color">
   ) => void;
   onColorRemove: (colorId: number) => void;
-  onImageChange: (colorId: number, imageUrl: string) => void;
 }
 
 export function ProductColorSelector({
   selectedColors,
   onColorAdd,
   onColorRemove,
-  onImageChange,
 }: ProductColorSelectorProps) {
   const { colors, loading, error } = useColors();
-  const [selectedColorId, setSelectedColorId] = React.useState<string>("");
+  const [selectedColorIds, setSelectedColorIds] = React.useState<string[]>([]);
 
   // Filter out already selected colors
   const availableColors = colors.filter(
     (color) => !selectedColors.some((sc) => sc.idmausac === color.idmausac)
   );
 
-  const handleAddColor = () => {
-    if (selectedColorId) {
-      const colorId = parseInt(selectedColorId);
-      onColorAdd({ idmausac: colorId, hinhanh: "" });
-      setSelectedColorId("");
-    }
+  const handleAddColors = () => {
+    selectedColorIds.forEach((colorId) => {
+      const numericColorId = parseInt(colorId);
+      if (!isNaN(numericColorId)) {
+        onColorAdd({ idmausac: numericColorId, hinhanh: "" });
+      }
+    });
+    setSelectedColorIds([]); // Reset selection after adding
+  };
+
+  const handleColorSelection = (colorId: string, isSelected: boolean) => {
+    setSelectedColorIds((prev) =>
+      isSelected ? [...prev, colorId] : prev.filter((id) => id !== colorId)
+    );
   };
 
   if (loading) {
@@ -50,8 +54,8 @@ export function ProductColorSelector({
 
   return (
     <div className="space-y-4">
-      {/* Selected colors with their images */}
-      <div className="grid grid-cols-1 gap-4">
+      {/* Selected colors display */}
+      <div className="flex flex-wrap gap-2">
         {selectedColors.map((productColor) => {
           const color = colors.find(
             (c) => c.idmausac === productColor.idmausac
@@ -59,43 +63,21 @@ export function ProductColorSelector({
           return (
             <div
               key={productColor.idmausac}
-              className="flex items-start gap-4 p-4 border rounded-lg bg-white shadow-sm"
+              className="flex items-center gap-2 px-3 py-2 bg-white border rounded-full shadow-sm"
             >
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <div
-                    className="w-6 h-6 rounded-full border shadow-sm"
-                    style={{ backgroundColor: color?.mamau }}
-                  />
-                  <span className="font-medium">{color?.tenmau}</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onColorRemove(productColor.idmausac)}
-                    className="ml-auto text-red-500 hover:text-red-700 hover:bg-red-50"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-                <div className="mt-2">
-                  {/* <FileUpload
-                    value={productColor.hinhanh}
-                    onChange={(url) =>
-                      onImageChange(productColor.idmausac, url || "")
-                    }
-                    onRemove={() => onImageChange(productColor.idmausac, "")}
-                  /> */}
-                  {productColor.hinhanh && (
-                    <div className="mt-2">
-                      <img
-                        src={productColor.hinhanh}
-                        alt={`Color variant ${color?.tenmau}`}
-                        className="max-h-32 rounded-md"
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
+              <div
+                className="w-4 h-4 rounded-full border shadow-sm"
+                style={{ backgroundColor: color?.mamau }}
+              />
+              <span className="text-sm font-medium">{color?.tenmau}</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onColorRemove(productColor.idmausac)}
+                className="ml-1 h-5 w-5 p-0 hover:bg-red-50 hover:text-red-500"
+              >
+                <X className="w-3 h-3" />
+              </Button>
             </div>
           );
         })}
@@ -103,26 +85,39 @@ export function ProductColorSelector({
 
       {/* Color selector */}
       {availableColors.length > 0 && (
-        <div className="flex gap-2">
-          <select
-            value={selectedColorId}
-            onChange={(e) => setSelectedColorId(e.target.value)}
-            className="flex-1 p-2 border rounded-md bg-white"
-          >
-            <option value="">Chọn màu sắc</option>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {availableColors.map((color) => (
-              <option key={color.idmausac} value={color.idmausac}>
-                {color.tenmau}
-              </option>
+              <label
+                key={color.idmausac}
+                className="flex items-center gap-2 p-2 border rounded cursor-pointer hover:bg-gray-50 transition-colors"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedColorIds.includes(color.idmausac.toString())}
+                  onChange={(e) =>
+                    handleColorSelection(
+                      color.idmausac.toString(),
+                      e.target.checked
+                    )
+                  }
+                  className="rounded border-gray-300"
+                />
+                <div
+                  className="w-4 h-4 rounded-full border"
+                  style={{ backgroundColor: color.mamau }}
+                />
+                <span className="text-sm">{color.tenmau}</span>
+              </label>
             ))}
-          </select>
+          </div>
           <Button
-            onClick={handleAddColor}
-            disabled={!selectedColorId}
-            className="min-w-[120px]"
+            onClick={handleAddColors}
+            disabled={selectedColorIds.length === 0}
+            className="w-full"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Thêm màu
+            Thêm {selectedColorIds.length} màu đã chọn
           </Button>
         </div>
       )}

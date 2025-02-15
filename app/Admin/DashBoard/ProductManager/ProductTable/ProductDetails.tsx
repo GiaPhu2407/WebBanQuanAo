@@ -1,151 +1,3 @@
-// import React, { useEffect, useState } from 'react';
-// import {
-//   Dialog,
-//   DialogContent,
-//   DialogHeader,
-//   DialogTitle,
-// } from "@/components/ui/dialog";
-// import { Product } from '@/app/Admin/type/product';
-
-// interface Size {
-//   idSize: number;
-//   tenSize: string;
-// }
-
-// interface ProductSize {
-//   idProductSize: number;
-//   soluong: number;
-//   idSize: number;
-// }
-
-// interface ProductDetailsDialogProps {
-//   product: Product | null;
-//   onClose: () => void;
-// }
-
-// const ProductDetailsDialog: React.FC<ProductDetailsDialogProps> = ({
-//   product,
-//   onClose,
-// }) => {
-//   const [sizes, setSizes] = useState<{ [key: number]: Size }>({});
-
-//   useEffect(() => {
-//     const fetchSizes = async () => {
-//       if (product?.ProductSizes) {
-//         const sizesData: { [key: number]: Size } = {};
-
-//         // Fetch size data for each product size
-//         await Promise.all(
-//           product.ProductSizes.map(async (productSize: ProductSize) => {
-//             try {
-//               const response = await fetch(`/api/size/${productSize.idSize}`);
-//               const data = await response.json();
-//               if (data.getSizeId) {
-//                 sizesData[productSize.idSize] = data.getSizeId;
-//               }
-//             } catch (error) {
-//               console.error('Error fetching size:', error);
-//             }
-//           })
-//         );
-
-//         setSizes(sizesData);
-//       }
-//     };
-
-//     fetchSizes();
-//   }, [product]);
-
-//   if (!product) return null;
-
-//   return (
-//     <Dialog open={!!product} onOpenChange={onClose}>
-//       <DialogContent className="max-w-3xl">
-//         <DialogHeader>
-//           <DialogTitle>Chi tiết sản phẩm</DialogTitle>
-//         </DialogHeader>
-
-//         <div className="grid grid-cols-2 gap-4">
-//           <div>
-//             <img
-//               src={product.hinhanh}
-//               alt={product.tensanpham}
-//               className="w-full h-auto rounded-lg"
-//             />
-//           </div>
-
-//           <div className="space-y-4">
-//             <div>
-//               <h3 className="font-semibold">Tên sản phẩm</h3>
-//               <p>{product.tensanpham}</p>
-//             </div>
-
-//             <div>
-//               <h3 className="font-semibold">Giá</h3>
-//               <p>{new Intl.NumberFormat("vi-VN", {
-//                 style: "currency",
-//                 currency: "VND",
-//               }).format(Number(product.gia))}</p>
-//             </div>
-
-//             <div>
-//               <h3 className="font-semibold">Loại sản phẩm</h3>
-//               <p>{product.loaisanpham?.tenloai}</p>
-//             </div>
-
-//             <div>
-//               <h3 className="font-semibold">Giảm giá</h3>
-//               <p>{product.giamgia}%</p>
-//             </div>
-
-//             <div>
-//               <h3 className="font-semibold">Màu sắc</h3>
-//               <p>{product.mausac}</p>
-//             </div>
-
-//             <div>
-//               <h3 className="font-semibold">Giới tính</h3>
-//               <p>{product.gioitinh ? 'Nam' : 'Nữ'}</p>
-//             </div>
-
-//             <div>
-//               <h3 className="font-semibold">Sizes và số lượng</h3>
-//               <div className="grid grid-cols-3 gap-2">
-//                 {product.ProductSizes && product.ProductSizes.length > 0 ? (
-//                   product.ProductSizes.map((productSize) => (
-//                     <div
-//                       key={productSize.idProductSize}
-//                       className="border p-2 rounded text-center"
-//                     >
-//                       <p className="font-medium">
-//                         {sizes[productSize.idSize]?.tenSize || 'Đang tải...'}
-//                       </p>
-//                       <p className="text-sm text-gray-600">
-//                         SL: {productSize.soluong}
-//                       </p>
-//                     </div>
-//                   ))
-//                 ) : (
-//                   <p className="col-span-3 text-gray-500 italic">
-//                     Chưa có thông tin size
-//                   </p>
-//                 )}
-//               </div>
-//             </div>
-
-//             <div>
-//               <h3 className="font-semibold">Mô tả</h3>
-//               <p className="text-sm">{product.mota}</p>
-//             </div>
-//           </div>
-//         </div>
-//       </DialogContent>
-//     </Dialog>
-//   );
-// };
-
-// export default ProductDetailsDialog;
-
 import React, { useEffect, useState } from "react";
 import {
   Dialog,
@@ -155,7 +7,6 @@ import {
 } from "@/components/ui/dialog";
 import { Product, Color, Size } from "@/app/Admin/type/product";
 import { useColors } from "../hooks/useColor";
-  
 
 interface ProductDetailsDialogProps {
   product: Product | null;
@@ -193,7 +44,6 @@ const ProductDetailsDialog: React.FC<ProductDetailsDialogProps> = ({
 
     if (product) {
       fetchSizes();
-      // Set the first color as selected by default
       if (product.ProductColors && product.ProductColors.length > 0) {
         setSelectedColorId(product.ProductColors[0].idmausac);
       }
@@ -205,7 +55,11 @@ const ProductDetailsDialog: React.FC<ProductDetailsDialogProps> = ({
   const selectedColor = product.ProductColors?.find(
     (pc) => pc.idmausac === selectedColorId
   );
-  const displayImage = selectedColor ? selectedColor.hinhanh : product.hinhanh;
+  const displayImage = selectedColor?.hinhanh || product.hinhanh;
+
+  const discountedPrice = product.giamgia
+    ? Number(product.gia) * (1 - Number(product.giamgia) / 100)
+    : Number(product.gia);
 
   return (
     <Dialog open={!!product} onOpenChange={onClose}>
@@ -227,6 +81,7 @@ const ProductDetailsDialog: React.FC<ProductDetailsDialogProps> = ({
               />
             </div>
 
+            {/* Color selection */}
             {product.ProductColors && product.ProductColors.length > 0 && (
               <div className="space-y-2">
                 <h3 className="font-medium text-sm text-gray-700">
@@ -237,25 +92,37 @@ const ProductDetailsDialog: React.FC<ProductDetailsDialogProps> = ({
                     const color = colors.find(
                       (c) => c.idmausac === productColor.idmausac
                     );
+                    if (!color) return null;
+
                     return (
                       <button
                         key={productColor.idmausac}
                         onClick={() =>
                           setSelectedColorId(productColor.idmausac)
                         }
-                        className={`group relative w-12 h-12 rounded-full border-2 transition-all ${
+                        className={`group relative w-20 h-20 rounded-lg overflow-hidden ${
                           selectedColorId === productColor.idmausac
-                            ? "border-blue-500 ring-2 ring-blue-200"
-                            : "border-gray-200 hover:border-blue-300"
+                            ? "ring-2 ring-primary"
+                            : "ring-1 ring-gray-200"
                         }`}
                       >
-                        <span
-                          className="absolute inset-1 rounded-full"
-                          style={{ backgroundColor: color?.mamau }}
-                        />
-                        <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-sm bg-gray-900 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                          {color?.tenmau}
-                        </span>
+                        {productColor.hinhanh ? (
+                          <img
+                            src={productColor.hinhanh}
+                            alt={color.tenmau}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div
+                            className="w-full h-full"
+                            style={{ backgroundColor: color.mamau }}
+                          />
+                        )}
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <span className="text-white text-sm font-medium">
+                            {color.tenmau}
+                          </span>
+                        </div>
                       </button>
                     );
                   })}
@@ -270,16 +137,26 @@ const ProductDetailsDialog: React.FC<ProductDetailsDialogProps> = ({
               <h2 className="text-2xl font-bold text-gray-900">
                 {product.tensanpham}
               </h2>
-              <div className="mt-4 flex items-baseline gap-4">
-                <p className="text-3xl font-bold text-gray-900">
-                  {new Intl.NumberFormat("vi-VN", {
-                    style: "currency",
-                    currency: "VND",
-                  }).format(Number(product.gia))}
-                </p>
+              <div className="mt-4 space-y-2">
+                <div className="flex items-baseline gap-4">
+                  <p className="text-3xl font-bold text-gray-900">
+                    {new Intl.NumberFormat("vi-VN", {
+                      style: "currency",
+                      currency: "VND",
+                    }).format(discountedPrice)}
+                  </p>
+                  {product.giamgia > 0 && (
+                    <p className="text-xl text-gray-500 line-through">
+                      {new Intl.NumberFormat("vi-VN", {
+                        style: "currency",
+                        currency: "VND",
+                      }).format(Number(product.gia))}
+                    </p>
+                  )}
+                </div>
                 {product.giamgia > 0 && (
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-red-100 text-red-800">
-                    -{product.giamgia}%
+                    Giảm {product.giamgia}%
                   </span>
                 )}
               </div>

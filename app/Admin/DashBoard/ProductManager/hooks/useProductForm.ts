@@ -1,5 +1,3 @@
-
-
 import { useState } from 'react';
 import { Product } from '@/app/Admin/type/product';
 import { useToast } from "@/components/ui/use-toast";
@@ -12,9 +10,9 @@ interface FormData {
   hinhanh: string;
   idloaisanpham: number | string;
   giamgia: number;
-  mausac: string;
   gioitinh: boolean;
   productSizes: { [key: number]: number };
+  productColors: Array<{ idmausac: number; hinhanh: string }>;
 }
 
 export function useProductForm(onSuccess: () => void) {
@@ -25,9 +23,9 @@ export function useProductForm(onSuccess: () => void) {
     hinhanh: '',
     idloaisanpham: '',
     giamgia: 0,
-    mausac: '',
     gioitinh: true,
     productSizes: {},
+    productColors: [],
   });
 
   const [isEditing, setIsEditing] = useState(false);
@@ -35,6 +33,7 @@ export function useProductForm(onSuccess: () => void) {
   const [imageUrl, setImageUrl] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+
   const resetForm = () => {
     setFormData({
       tensanpham: '',
@@ -43,9 +42,9 @@ export function useProductForm(onSuccess: () => void) {
       hinhanh: '',
       idloaisanpham: '',
       giamgia: 0,
-      mausac: '',
       gioitinh: true,
       productSizes: {},
+      productColors: [],
     });
     setCurrentProductId(null);
     setIsEditing(false);
@@ -57,25 +56,11 @@ export function useProductForm(onSuccess: () => void) {
     if (!formData.gia || isNaN(Number(formData.gia))) return "Vui lòng nhập giá hợp lệ";
     if (!formData.idloaisanpham) return "Vui lòng chọn loại sản phẩm";
     if (Object.keys(formData.productSizes).length === 0) return "Vui lòng chọn ít nhất một size";
+    if (formData.productColors.length === 0) return "Vui lòng chọn ít nhất một màu";
     if (!imageUrl) return "Vui lòng tải lên hình ảnh sản phẩm";
     return null;
   };
 
-  const prepareFormDataForSubmission = () => {
-    // Convert string values to appropriate types
-    return {
-      ...formData,
-      gia: Number(formData.gia),
-      idloaisanpham: Number(formData.idloaisanpham),
-      giamgia: Number(formData.giamgia),
-      hinhanh: imageUrl,
-      // Convert productSizes to array format if needed by API
-      sizes: Object.entries(formData.productSizes).map(([idSize, soluong]) => ({
-        idSize: Number(idSize),
-        soluong: Number(soluong)
-      }))
-    };
-  };
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     
@@ -95,8 +80,8 @@ export function useProductForm(onSuccess: () => void) {
 
     try {
       const url = currentProductId 
-        ? `/api/sanpham/${currentProductId}` 
-        : "/api/sanpham";
+        ? `/api/sanphammoi/${currentProductId}` 
+        : "/api/sanphammoi";
         
       const method = currentProductId ? "PUT" : "POST";
       const formDataToSubmit = {
@@ -105,9 +90,9 @@ export function useProductForm(onSuccess: () => void) {
         idloaisanpham: Number(formData.idloaisanpham),
         giamgia: Number(formData.giamgia),
         hinhanh: imageUrl,
-        sizes: Object.entries(formData.productSizes).map(([idSize, soluong]) => ({
-          idSize: Number(idSize),
-          soluong: Number(soluong)
+        productColors: formData.productColors.map(color => ({
+          idmausac: Number(color.idmausac),
+          hinhanh: color.hinhanh || imageUrl // Use main image if no specific color image
         }))
       };
 
@@ -143,6 +128,7 @@ export function useProductForm(onSuccess: () => void) {
       setIsSubmitting(false);
     }
   };
+
   const handleEdit = (product: Product) => {
     setFormData({
       tensanpham: product.tensanpham || '',
@@ -151,12 +137,15 @@ export function useProductForm(onSuccess: () => void) {
       hinhanh: product.hinhanh || '',
       idloaisanpham: product.idloaisanpham || '',
       giamgia: product.giamgia || 0,
-      mausac: product.mausac || '',
       gioitinh: product.gioitinh,
       productSizes: product.ProductSizes?.reduce((acc, size) => {
         acc[size.idSize] = size.soluong;
         return acc;
       }, {} as { [key: number]: number }) || {},
+      productColors: product.ProductColors?.map(pc => ({
+        idmausac: pc.idmausac,
+        hinhanh: pc.hinhanh || ''
+      })) || [],
     });
     setCurrentProductId(product.idsanpham);
     setIsEditing(true);

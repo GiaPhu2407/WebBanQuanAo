@@ -441,7 +441,7 @@ export function ProductForm({
             />
           </div>
 
-          <div>
+          {/* <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Màu sắc và hình ảnh
             </label>
@@ -449,9 +449,9 @@ export function ProductForm({
               selectedColors={formData.productColors || []}
               onColorAdd={handleColorAdd}
               onColorRemove={handleColorRemove}
-              onImageChange={handleColorImageChange}
+              // onImageChange={handleColorImageChange}
             />
-          </div>
+          </div> */}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
