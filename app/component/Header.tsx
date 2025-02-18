@@ -114,29 +114,50 @@ const Menu: React.FC = () => {
   };
 
   const renderMobileMenu = () => (
-    <div className={`fixed inset-0 bg-white z-[100] transform ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'} transition-transform duration-300 ease-in-out md:hidden`}>
+    <div
+      className={`fixed inset-0 bg-white z-[100] transform ${
+        isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
+      } transition-transform duration-300 ease-in-out md:hidden`}
+    >
       <div className="h-20 shadow px-4 flex items-center justify-between">
-        <Link href="/" className="text-xl font-bold">Logo</Link>
+        <Link href="/" className="text-xl font-bold">
+          Logo
+        </Link>
         <button onClick={() => setIsMobileMenuOpen(false)} className="p-2">
           <X className="h-6 w-6" />
         </button>
       </div>
-      
+
       <div className="p-4 overflow-y-auto h-[calc(100vh-5rem)]">
         <div className="space-y-4">
           {/* Mobile Search */}
           <label className="input input-bordered flex items-center gap-2">
             <input type="text" className="grow" placeholder="Search" />
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-4 h-4 opacity-70">
-              <path fillRule="evenodd" d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z" clipRule="evenodd" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 16 16"
+              fill="currentColor"
+              className="w-4 h-4 opacity-70"
+            >
+              <path
+                fillRule="evenodd"
+                d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z"
+                clipRule="evenodd"
+              />
             </svg>
           </label>
 
           {/* Mobile Navigation Links */}
           <div className="space-y-2">
-            <Link href="/sale" className="block py-2">Sale</Link>
-            <Link href="/new-arrivals" className="block py-2">Mới về</Link>
-            <Link href="/bestsellers" className="block py-2">Bán chạy</Link>
+            <Link href="/sale" className="block py-2">
+              Sale
+            </Link>
+            <Link href="/new-arrivals" className="block py-2">
+              Mới về
+            </Link>
+            <Link href="/bestsellers" className="block py-2">
+              Bán chạy
+            </Link>
 
             {/* Mobile Nam Section */}
             <div>
@@ -210,10 +231,18 @@ const Menu: React.FC = () => {
               )}
             </div>
 
-            <Link href="/children" className="block py-2">Trẻ Em</Link>
-            <Link href="/collections" className="block py-2">Bộ sưu tập</Link>
-            <Link href="/uniform" className="block py-2">Đồng phục</Link>
-            <Link href="/hot-news" className="block py-2">Tin Hot</Link>
+            <Link href="/children" className="block py-2">
+              Trẻ Em
+            </Link>
+            <Link href="/collections" className="block py-2">
+              Bộ sưu tập
+            </Link>
+            <Link href="/uniform" className="block py-2">
+              Đồng phục
+            </Link>
+            <Link href="/hot-news" className="block py-2">
+              Tin Hot
+            </Link>
           </div>
         </div>
       </div>
@@ -316,7 +345,11 @@ const Menu: React.FC = () => {
             {/* Shopping Cart */}
             <div className="dropdown dropdown-end">
               <Link href="/component/shopping">
-                <div tabIndex={0} role="button" className="btn btn-ghost btn-circle">
+                <div
+                  tabIndex={0}
+                  role="button"
+                  className="btn btn-ghost btn-circle"
+                >
                   <div className="indicator">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -355,7 +388,8 @@ const Menu: React.FC = () => {
                           {userData.Hoten ? userData.Hoten[0] : "JP"}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="hidden md:block text-sm font-medium">{userData.Hoten}
+                      <div className="hidden md:block text-sm font-medium">
+                        {userData.Hoten}
                       </div>
                       <div className="hidden md:block">
                         <Button variant="destructive" onClick={handleLogout}>
@@ -407,7 +441,7 @@ const Menu: React.FC = () => {
               ) : (
                 <>
                   {/* Login/Register buttons - Show on desktop */}
-                  <div className="hidden md:flex items-center gap-2">
+                  {/* <div className="hidden md:flex items-center gap-2">
                     <Link href="/contact">
                       <Button variant="outline" className="me-2">
                         Contact
@@ -421,7 +455,7 @@ const Menu: React.FC = () => {
                         Register
                       </Button>
                     </Link>
-                  </div>
+                  </div> */}
                   {/* Show only avatar on mobile */}
                   <div className="md:hidden">
                     <Link href="/auth/login">

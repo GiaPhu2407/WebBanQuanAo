@@ -21,12 +21,15 @@ model Users {
   Tentaikhoan String?   @db.VarChar(225)
   Matkhau     String?   @db.VarChar(225)
   Hoten       String?   @db.VarChar(225)
-  Sdt         String?   @db.VarChar(15)
+  Sdt         String?   @db.VarChar(15) @unique
   Diachi      String?   @db.VarChar(45)
   Email       String?   @db.VarChar(45) @unique
   idRole      Int?      
   Ngaydangky  DateTime? @db.Date
   Token        String?  // Trường lưu token
+   ResetToken      String?   // Added for password reset
+  ResetCode       String?   // Added for password reset
+  ResetTokenExpiry DateTime? // Added for password reset
   role         Role?     @relation(fields: [idRole], references: [idrole])
   danhgia      Danhgia[]
   yeuthich     Yeuthich[]        // Quan hệ 1-n với bảng Image
