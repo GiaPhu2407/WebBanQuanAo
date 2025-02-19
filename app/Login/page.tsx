@@ -173,7 +173,7 @@ const LoginPage = () => {
                   </Link>
                 </p>
                 <Link
-                  href="/forgot-password"
+                  href="/ForgotPassword"
                   className="text-sm text-blue-500 hover:text-blue-700 mt-2 inline-block"
                 >
                   Quên mật khẩu?

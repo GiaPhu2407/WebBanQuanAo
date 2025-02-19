@@ -1,9 +1,9 @@
-import { OrderItem } from "../types"; 
-import { formatDate, formatCurrency } from "../utils/formatters"; 
+import { OrderItem } from "../types";
+import { formatDate, formatCurrency } from "../utils/formatters";
 import { OrderActions } from "./OrderAction";
 import { getStatusColor } from "../utils/status";
 import { OrderProductItem } from "./OrderProductItem";
-  
+import Image from "next/image";
 
 interface OrderCardProps {
   order: OrderItem;
@@ -11,7 +11,11 @@ interface OrderCardProps {
   onDeleteOrder: (orderId: number) => void;
 }
 
-export const OrderCard = ({ order, onCancelOrder, onDeleteOrder }: OrderCardProps) => {
+export const OrderCard = ({
+  order,
+  onCancelOrder,
+  onDeleteOrder,
+}: OrderCardProps) => {
   return (
     <div className="bg-white rounded-lg shadow-sm p-6">
       <div className="flex justify-between items-start mb-4">
@@ -33,11 +37,45 @@ export const OrderCard = ({ order, onCancelOrder, onDeleteOrder }: OrderCardProp
       </div>
 
       {order.chitietdonhang && order.chitietdonhang.length > 0 ? (
-        order.chitietdonhang.map((item, index) => (
-          <OrderProductItem key={index} item={item} />
-        ))
+        <div className="space-y-4 mb-4">
+          <h3 className="text-md font-medium text-gray-800">
+            Sản phẩm đã đặt:
+          </h3>
+          {order.chitietdonhang.map((item, index) => (
+            <div key={index} className="flex items-start border-b pb-4">
+              <div className="w-20 h-20 relative flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
+                {item.sanpham?.hinhanh ? (
+                  <Image
+                    src={item.sanpham.hinhanh}
+                    alt={item.sanpham.tensanpham || "Sản phẩm"}
+                    fill
+                    className="object-cover object-center"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                    <span className="text-xs text-gray-500">No image</span>
+                  </div>
+                )}
+              </div>
+              <div className="ml-4 flex-1">
+                <h4 className="text-base font-medium text-gray-900">
+                  {item.sanpham?.tensanpham || "Sản phẩm không rõ"}
+                </h4>
+                <div className="mt-1 text-sm text-gray-500">
+                  <p>
+                    Số lượng: {item.soluong} x {formatCurrency(item.dongia)}
+                  </p>
+                  {item.idSize && <p className="mt-1">Size: {item.idSize}</p>}
+                </div>
+                <p className="mt-2 text-sm font-medium text-gray-700">
+                  Thành tiền: {formatCurrency(item.soluong * item.dongia)}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
       ) : (
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-500 mb-4">
           Không có sản phẩm nào trong đơn hàng này
         </p>
       )}

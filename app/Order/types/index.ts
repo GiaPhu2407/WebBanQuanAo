@@ -9,6 +9,7 @@ export interface OrderItem {
   }
   
   export interface OrderDetail {
+    idSize: any;
     idsanpham: number;
     soluong: number;
     dongia: number;

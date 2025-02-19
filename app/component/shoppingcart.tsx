@@ -10,7 +10,13 @@ import { CartItem } from "./cart/CartItem";
 import { CartSummary } from "./cart/Cartsummary";
 import Header from "./Header";
 import { calculateDiscountedPrice } from "./utils/price";
- 
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements } from "@stripe/react-stripe-js";
+import CheckoutForm from "@/components/ui/Stripecomponents";
+
+const stripePromise = loadStripe(
+  "pk_test_51QtqEE06jxx8upvnnLHhOPk8V0VmtKPrSKIuXOxSUP9rakNIWceNgtcT0zchmN9atOAP0EHCat3vuPVrH8FjBMPj00e3aLrrY3"
+);
 
 export const ShoppingCart = () => {
   const [cartItems, setCartItems] = useState<CartItemType[]>([]);
@@ -19,6 +25,8 @@ export const ShoppingCart = () => {
   const [paymentMethod, setPaymentMethod] = useState<string>("");
   const [itemProcessingId, setItemProcessingId] = useState<number | null>(null);
   const [isAllSelected, setIsAllSelected] = useState(false);
+  const [showStripeForm, setShowStripeForm] = useState(false);
+  const [clientSecret, setClientSecret] = useState("");
   const router = useRouter();
 
   useEffect(() => {
@@ -32,10 +40,12 @@ export const ShoppingCart = () => {
         throw new Error("Failed to fetch cart items");
       }
       const data = await response.json();
-      const itemsWithSelection = (data.data || []).map((item: CartItemType) => ({
-        ...item,
-        isSelected: true,
-      }));
+      const itemsWithSelection = (data.data || []).map(
+        (item: CartItemType) => ({
+          ...item,
+          isSelected: true,
+        })
+      );
       setCartItems(itemsWithSelection);
       setIsAllSelected(true);
     } catch (error) {
@@ -129,11 +139,11 @@ export const ShoppingCart = () => {
         },
         body: JSON.stringify({ soluong: newQuantity }),
       });
-      
+
       if (!response.ok) {
         throw new Error("Failed to update item quantity");
       }
-      
+
       setCartItems((prev) =>
         prev.map((item) =>
           item.idgiohang === idgiohang
@@ -154,55 +164,104 @@ export const ShoppingCart = () => {
       .reduce((total, item) => {
         const originalPrice = item.sanpham?.gia ?? 0;
         const discountPercent = item.sanpham?.giamgia ?? 0;
-        const discountedPrice = calculateDiscountedPrice(originalPrice, discountPercent);
-        return total + (discountedPrice * item.soluong);
+        const discountedPrice = calculateDiscountedPrice(
+          originalPrice,
+          discountPercent
+        );
+        return total + discountedPrice * item.soluong;
       }, 0);
   };
 
-  const handleCheckout = async () => {
-    const selectedItems = cartItems.filter((item) => item.isSelected);
+  const validateAmount = (total: number) => {
+    return total <= 200000000; // 200 million VND
+  };
 
-    if (selectedItems.length === 0) {
-      toast.error("Vui lòng chọn ít nhất một sản phẩm");
-      return;
+  const handleStripePayment = async () => {
+    try {
+      const response = await fetch("/api/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cartItems,
+          metadata: {
+            cartItems: JSON.stringify(cartItems), // Add this
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message);
+      }
+
+      const { clientSecret } = await response.json();
+      setClientSecret(clientSecret);
+      setShowStripeForm(true);
+    } catch (error) {
+      console.error("Payment error:", error);
+      toast.error("Có lỗi xảy ra trong quá trình thanh toán");
     }
+  };
 
+  const handleCheckout = async () => {
     if (!paymentMethod) {
       toast.error("Vui lòng chọn phương thức thanh toán");
       return;
     }
 
+    const calculateTotal = () => {
+      return cartItems
+        .filter((item) => item.isSelected && item.sanpham)
+        .reduce((total, item) => {
+          const originalPrice = item.sanpham?.gia ?? 0;
+          const discountPercent = item.sanpham?.giamgia ?? 0;
+          const discountedPrice = calculateDiscountedPrice(
+            originalPrice,
+            discountPercent
+          );
+          return total + discountedPrice * item.soluong;
+        }, 0);
+    };
+
+    if (paymentMethod === "STRIPE" && !validateAmount(calculateTotal())) {
+      toast.error(
+        "Giá trị đơn hàng vượt quá 200 triệu VND. Vui lòng chọn phương thức thanh toán khác hoặc chia nhỏ đơn hàng."
+      );
+      return;
+    }
+
+    setProcessing(true);
+
     try {
-      setProcessing(true);
-
-      const totalAmount = calculateTotal();
-
-      const response = await fetch("/api/thanhtoan", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          cartItems: selectedItems,
-          paymentMethod,
-          totalAmount,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Thanh toán thất bại");
+      if (paymentMethod === "STRIPE") {
+        await handleStripePayment();
+        return;
       }
 
-      await toast.promise(new Promise((resolve) => setTimeout(resolve, 1500)), {
-        loading: "Đang xử lý đơn hàng...",
-        success: () => {
-          setTimeout(() => {
-            router.push("/component/Order");
-          }, 500);
-          return "Đặt hàng thành công! Đang chuyển đến trang đơn hàng...";
-        },
-        error: "Có lỗi xảy ra khi xử lý đơn hàng",
+      // Handle traditional payment methods
+      const response = await fetch("/api/thanhtoan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cartItems, paymentMethod }),
       });
+
+      if (!response.ok) throw new Error("Checkout failed");
+
+      const result = await response.json();
+
+      const toastPromise = toast.promise(
+        new Promise((resolve) => setTimeout(resolve, 2500)),
+        {
+          loading: "Đang thanh toán...",
+          success: "Đặt hàng thành công!",
+          error: "Có lỗi xảy ra",
+        },
+        { duration: 4000 }
+      );
+
+      await toastPromise;
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      router.push("/component/Order");
     } catch (error) {
       console.error("Error during checkout:", error);
       toast.error("Có lỗi xảy ra trong quá trình thanh toán");
@@ -261,7 +320,8 @@ export const ShoppingCart = () => {
                   htmlFor="select-all"
                   className="font-medium text-gray-700"
                 >
-                  Chọn tất cả ({cartItems.filter((item) => item.isSelected).length}/
+                  Chọn tất cả (
+                  {cartItems.filter((item) => item.isSelected).length}/
                   {cartItems.length})
                 </label>
               </div>
@@ -280,7 +340,9 @@ export const ShoppingCart = () => {
 
             <div className="lg:col-span-1">
               <CartSummary
-                selectedItemsCount={cartItems.filter((item) => item.isSelected).length}
+                selectedItemsCount={
+                  cartItems.filter((item) => item.isSelected).length
+                }
                 totalItemsCount={cartItems.length}
                 total={calculateTotal()}
                 paymentMethod={paymentMethod}
@@ -289,6 +351,33 @@ export const ShoppingCart = () => {
                 processing={processing}
               />
             </div>
+
+            {showStripeForm && clientSecret && (
+              <Elements
+                stripe={stripePromise}
+                options={{
+                  clientSecret,
+                  appearance: {
+                    theme: "stripe",
+                    variables: {
+                      colorPrimary: "#4F46E5",
+                    },
+                  },
+                }}
+              >
+                <CheckoutForm
+                  amount={calculateTotal()}
+                  onSuccess={() => {
+                    setShowStripeForm(false);
+                    router.push("/success");
+                  }}
+                  onCancel={() => {
+                    setShowStripeForm(false);
+                    setProcessing(false);
+                  }}
+                />
+              </Elements>
+            )}
           </div>
         )}
       </div>

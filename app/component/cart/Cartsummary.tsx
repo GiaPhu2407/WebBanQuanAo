@@ -62,6 +62,7 @@ export const CartSummary = ({
             <option value="">Chọn phương thức thanh toán</option>
             <option value="cash">Thanh toán khi nhận hàng</option>
             <option value="online">Thanh toán online</option>
+            <option value="STRIPE">Thanh toán Stripe</option>
           </select>
         </div>
 
