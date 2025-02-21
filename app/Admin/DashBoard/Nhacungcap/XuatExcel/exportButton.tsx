@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FileSpreadsheet, FileText, File, X } from "lucide-react";
 import { exportToExcel } from "./xuatexcel";
-import { exportToPDF } from "./xuatpdf";
 import {
   Dialog,
   DialogContent,
@@ -122,7 +121,7 @@ const ExportButtons = ({ data }: ExportButtonsProps) => {
     );
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     switch (previewType) {
       case "word":
         exportToWord(data);
@@ -131,7 +130,48 @@ const ExportButtons = ({ data }: ExportButtonsProps) => {
         exportToExcel(data);
         break;
       case "pdf":
-        exportToPDF(data);
+        try {
+          const response = await fetch("/api/exportpdfncc", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ data }),
+          });
+
+          if (!response.ok) {
+            throw new Error("PDF generation failed");
+          }
+
+          // Get the blob from the response
+          const blob = await response.blob();
+
+          // Create a URL for the blob
+          const url = window.URL.createObjectURL(blob);
+
+          // Create a link element
+          const link = document.createElement("a");
+
+          // Set link properties
+          const currentDate = new Date();
+          const fileName = `danh-sach-nha-cung-cap-${currentDate.getDate()}${
+            currentDate.getMonth() + 1
+          }${currentDate.getFullYear()}.pdf`;
+
+          link.href = url;
+          link.download = fileName;
+
+          // Append link to body, click it, and remove it
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+
+          // Clean up the URL
+          window.URL.revokeObjectURL(url);
+        } catch (error) {
+          console.error("Error generating PDF:", error);
+          // Handle error (you might want to show a notification to the user)
+        }
         break;
     }
   };

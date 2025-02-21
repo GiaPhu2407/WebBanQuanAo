@@ -9,6 +9,8 @@ import {
   TextRun,
   HeadingLevel,
   WidthType,
+  TabStopType,
+  TabStop,
 } from "docx";
 import { saveAs } from "file-saver";
 
@@ -74,22 +76,9 @@ export const exportToWord = async (data: NhaCungCap[]) => {
       heading: HeadingLevel.HEADING_1,
       children: [
         new TextRun({
-          text: "HỢP ĐỒNG CUNG CẤP SẢN PHẨM",
+          text: "THÔNG TIN DANH SÁCH NHÀ CUNG CẤP",
           bold: true,
           size: 32,
-        }),
-      ],
-    }),
-    new Paragraph({ text: "" }),
-  ];
-
-  // Contract content
-  const contractContent = [
-    new Paragraph({
-      children: [
-        new TextRun({
-          text: "Hợp đồng này được ký kết giữa Công ty chúng tôi và các Nhà cung cấp dưới đây. Hai bên cam kết thực hiện đúng các điều khoản của hợp đồng, tuân thủ các quy định của pháp luật hiện hành.",
-          size: 24,
         }),
       ],
     }),
@@ -117,7 +106,7 @@ export const exportToWord = async (data: NhaCungCap[]) => {
               }),
             ],
             shading: {
-              fill: "CCCCCC",
+              fill: "f5f5f5",
             },
           })
       ),
@@ -135,7 +124,12 @@ export const exportToWord = async (data: NhaCungCap[]) => {
               ],
             }),
             new TableCell({
-              children: [new Paragraph({ text: item.idnhacungcap.toString() })],
+              children: [
+                new Paragraph({
+                  text: item.idnhacungcap.toString(),
+                  alignment: AlignmentType.CENTER,
+                }),
+              ],
             }),
             new TableCell({
               children: [new Paragraph({ text: item.tennhacungcap })],
@@ -149,6 +143,7 @@ export const exportToWord = async (data: NhaCungCap[]) => {
               children: [
                 new Paragraph({
                   text: item.trangthai ? "Đang cung cấp" : "Ngừng cung cấp",
+                  alignment: AlignmentType.CENTER,
                 }),
               ],
             }),
@@ -157,67 +152,87 @@ export const exportToWord = async (data: NhaCungCap[]) => {
     ),
   ];
 
+  // Terms and conditions
+  const termsSection = [
+    new Paragraph({ text: "" }),
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: "ĐIỀU KHOẢN THỎA THUẬN:",
+          bold: true,
+          size: 24,
+        }),
+      ],
+    }),
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: "1. Nhà cung cấp cam kết cung cấp đúng và đầy đủ thông tin như đã được liệt kê trong danh sách trên.",
+          size: 24,
+        }),
+      ],
+    }),
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: "2. Mọi thay đổi về thông tin liên hệ cần được thông báo bằng văn bản cho đơn vị quản lý trong vòng 07 ngày làm việc.",
+          size: 24,
+        }),
+      ],
+    }),
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: "3. Nhà cung cấp có trách nhiệm duy trì chất lượng dịch vụ và tuân thủ các quy định của đơn vị quản lý.",
+          size: 24,
+        }),
+      ],
+    }),
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: "4. Các bên cam kết thực hiện đúng các điều khoản đã thỏa thuận.",
+          size: 24,
+        }),
+      ],
+    }),
+  ];
+
   // Signature section
   const signatureSection = [
     new Paragraph({ text: "" }),
-    new Table({
-      rows: [
-        new TableRow({
-          children: [
-            new TableCell({
-              children: [
-                new Paragraph({
-                  alignment: AlignmentType.CENTER,
-                  children: [
-                    new TextRun({
-                      text: "ĐẠI DIỆN NGƯỜI MUA",
-                      bold: true,
-                      size: 24,
-                    }),
-                  ],
-                }),
-                new Paragraph({
-                  alignment: AlignmentType.CENTER,
-                  children: [
-                    new TextRun({
-                      text: "(Ký và ghi rõ họ tên)",
-                      italics: true,
-                      size: 20,
-                    }),
-                  ],
-                }),
-              ],
-              width: { size: 50, type: WidthType.PERCENTAGE },
-            }),
-            new TableCell({
-              children: [
-                new Paragraph({
-                  alignment: AlignmentType.CENTER,
-                  children: [
-                    new TextRun({
-                      text: "ĐẠI DIỆN CÔNG TY",
-                      bold: true,
-                      size: 24,
-                    }),
-                  ],
-                }),
-                new Paragraph({
-                  alignment: AlignmentType.CENTER,
-                  children: [
-                    new TextRun({
-                      text: "(Ký và ghi rõ họ tên)",
-                      italics: true,
-                      size: 20,
-                    }),
-                  ],
-                }),
-              ],
-              width: { size: 50, type: WidthType.PERCENTAGE },
-            }),
-          ],
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: "ĐẠI DIỆN ĐƠN VỊ QUẢN LÝ",
+          bold: true,
+          size: 24,
+        }),
+        new TextRun({ text: "\t\t\t\t\t\t\t\t" }),
+        new TextRun({
+          text: "ĐẠI DIỆN NHÀ CUNG CẤP",
+          bold: true,
+          size: 24,
         }),
       ],
-      width: { size: 100, type: WidthType.PERCENTAGE },
+      alignment: AlignmentType.CENTER,
+    }),
+    new Paragraph({ text: "" }),
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: "(Ký, ghi rõ họ tên)",
+          italics: true,
+          size: 20,
+        }),
+        new TextRun({ text: "\t\t\t\t\t\t\t\t\t\t\t" }),
+        new TextRun({
+          text: "(Ký, ghi rõ họ tên)",
+          italics: true,
+          size: 20,
+        }),
+      ],
+      alignment: AlignmentType.CENTER,
     }),
   ];
 
@@ -228,11 +243,11 @@ export const exportToWord = async (data: NhaCungCap[]) => {
         properties: {},
         children: [
           ...headerParagraphs,
-          ...contractContent,
           new Table({
             rows: tableRows,
             width: { size: 100, type: WidthType.PERCENTAGE },
           }),
+          ...termsSection,
           ...signatureSection,
         ],
       },
@@ -241,5 +256,5 @@ export const exportToWord = async (data: NhaCungCap[]) => {
 
   // Generate and save document
   const blob = await Packer.toBlob(doc);
-  saveAs(blob, `hop-dong-nha-cung-cap-${day}${month}${year}.docx`);
+  saveAs(blob, `danh-sach-nha-cung-cap-${day}${month}${year}.docx`);
 };
