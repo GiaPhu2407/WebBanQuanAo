@@ -170,10 +170,10 @@ const TableSupplier: React.FC<TableSupplierProps> = ({
                         index % 2 === 0 ? "bg-white" : "bg-gray-50"
                       } hover:bg-gray-100`}
                     >
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <td className="px-1 py-4 whitespace-nowrap text-center">
                         {supplier.idnhacungcap}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-2 py-4 whitespace-nowrap">
                         {supplier.tennhacungcap}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -182,7 +182,7 @@ const TableSupplier: React.FC<TableSupplierProps> = ({
                       <td className="px-6 py-4 whitespace-nowrap">
                         {supplier.diachi}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-1 py-4 whitespace-nowrap">
                         {supplier.email}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

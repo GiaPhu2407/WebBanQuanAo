@@ -36,6 +36,28 @@ model Users {
   donhang       Donhang[]
   lichgiaohang    LichGiaoHang[]   // Quan hệ 1-n với bảng Image
   giohang          Giohang[]
+    notifications Notification[] // Add this line
+
+}
+model Notification {
+  idNotification Int      @id @default(autoincrement())
+  idUsers        Int?     // ID của người nhận thông báo
+  title          String   @db.VarChar(255)
+  message        String   @db.Text
+  isRead         Boolean  @default(false)
+  type           String   @db.VarChar(50)  // 'payment', 'order', etc.
+  createdAt      DateTime @default(now())
+  idDonhang      Int?     // Optional reference to order
+  idThanhtoan    Int?     // Optional reference to payment
+
+  // Relations
+  users          Users?   @relation(fields: [idUsers], references: [idUsers])
+  donhang        Donhang? @relation(fields: [idDonhang], references: [iddonhang])
+  thanhtoan      Thanhtoan? @relation(fields: [idThanhtoan], references: [idthanhtoan])
+
+  @@index([idUsers])
+  @@index([createdAt])
+  @@index([isRead])
 }
 model Danhgia {
   iddanhgia    Int       @id @default(autoincrement())
@@ -78,6 +100,7 @@ model Donhang {
   chitietdonhang ChitietDonhang[]
   thanhtoan      Thanhtoan[]
       lichgiaohang    LichGiaoHang[]   // Quan hệ 1-n với bảng Image
+  notifications Notification[] // Add this line
 
 }
 
@@ -212,7 +235,7 @@ model ChitietDonhang {
   idsanpham        Int?
   idSize           Int?      // New field for size
   donhang          Donhang?  @relation(fields: [iddonhang], references: [iddonhang])
-  sanpham          Sanpham?  @relation(fields: [idsanpham], references: [idsanpham])
+  sanpham            Sanpham?  @relation(fields: [idsanpham], references: [idsanpham])
   size             Size?     @relation(fields: [idSize], references: [idSize])
 }
 
@@ -287,6 +310,7 @@ model Thanhtoan {
 
   // Relation to Donhang
   donhang               Donhang?   @relation(fields: [iddonhang], references: [iddonhang])
+  notifications Notification[] // Add this line
 
   @@index([stripe_session_id])
   @@index([stripe_payment_intent_id])

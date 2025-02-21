@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Eye, Trash2, Edit } from "lucide-react";
+import Image from "next/image";
 
 interface DonHang {
   iddonhang: number;
@@ -8,21 +9,21 @@ interface DonHang {
   tongsotien: number;
   ngaydat: string;
   idUsers: number;
-  ChitietDonhang:{
+  chitietdonhang: {
     idchitietdonhang: number;
     iddonhang: number;
     idsanpham: number;
     tensanpham: string;
     dongia: number;
     soluong: number;
-    sanpham:{
+    sanpham: {
       idsanpham: number;
       tensanpham: string;
-      gia: number;
-      hinhanh:string;
-    }
-   
-  }
+      gia: string;
+      hinhanh: string;
+      gioitinh: boolean;
+    };
+  }[];
   users?: {
     Hoten: string;
     Email: string;
@@ -32,6 +33,7 @@ interface DonHang {
     NgayGiao: string;
   }[];
 }
+
 interface ChitietDonhang {
   iddonhang: number;
   idsanpham: number;
@@ -41,9 +43,10 @@ interface ChitietDonhang {
   sanpham?: {
     tensanpham: string;
     hinhanh: string;
-    Gia: number;
+    gia: string;
   };
 }
+
 interface Meta {
   page: number;
   limit_size: number;
@@ -91,6 +94,7 @@ const TableDonHang: React.FC<TableDonHangProps> = ({
         throw new Error("Không thể tải danh sách đơn hàng");
       }
       const result = await response.json();
+      console.log("API Response:", result);
       if (result.data) {
         setDonHangs(result.data);
         setMeta({
@@ -154,6 +158,21 @@ const TableDonHang: React.FC<TableDonHangProps> = ({
     }
   };
 
+  const getImageUrl = (sanpham: any) => {
+    if (!sanpham) return "/no-image.jpg";
+
+    if (sanpham.hinhanh) {
+      // Check if it's already a full URL
+      if (sanpham.hinhanh.startsWith("http")) {
+        return sanpham.hinhanh;
+      }
+      // If it's not a full URL, construct it with NEXT_PUBLIC_SUPABASE_URL
+      return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/images/${sanpham.hinhanh}`;
+    }
+
+    return "/no-image.jpg";
+  };
+
   return (
     <div className="space-y-4">
       <div className="w-full rounded-lg shadow mt-10">
@@ -191,14 +210,34 @@ const TableDonHang: React.FC<TableDonHangProps> = ({
                   <td className="px-4 py-4 text-center">
                     {donhang.tongsoluong || 0}
                   </td>
-                  <td className="px-4 py-4 text-center">
-                  <img
-                     src={donhang.ChitietDonhang?.sanpham?.hinhanh || "/no-image.jpg"}
-                     alt="Product Image"
-
-
-                      className="w-16 h-16 object-cover rounded-lg"
-                    />
+                  <td className="px-4 py-4">
+                    <div className="flex justify-center">
+                      {donhang.chitietdonhang?.[0]?.sanpham ? (
+                        <div className="relative w-16 h-16">
+                          <img
+                            src={getImageUrl(donhang.chitietdonhang[0].sanpham)}
+                            alt={
+                              donhang.chitietdonhang[0].sanpham.tensanpham ||
+                              "Sản phẩm"
+                            }
+                            className="w-16 h-16 object-cover rounded-lg"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = "/no-image.jpg";
+                              target.onerror = null;
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div className="relative w-16 h-16">
+                          <img
+                            src="/no-image.jpg"
+                            alt="No Image"
+                            className="w-16 h-16 object-cover rounded-lg"
+                          />
+                        </div>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-4 text-right">
                     {formatCurrency(donhang.tongsotien || 0)}
@@ -256,7 +295,6 @@ const TableDonHang: React.FC<TableDonHangProps> = ({
         </table>
       </div>
 
-      {/* Pagination */}
       <div className="flex items-center justify-between px-4">
         <div className="text-sm text-gray-700">
           Kết quả: {(meta.page - 1) * meta.limit_size + 1} -{" "}

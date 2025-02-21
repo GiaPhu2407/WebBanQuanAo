@@ -1,16 +1,16 @@
 "use client";
-import React, { useState, useEffect } from 'react';
-import SalesDashboard from '../NvarbarAdmin';
-import TableDonHang from '@/app/Admin/Tabledonhang';
-import { 
-  AlertDialog, 
-  AlertDialogAction, 
-  AlertDialogCancel, 
-  AlertDialogContent, 
-  AlertDialogDescription, 
-  AlertDialogFooter, 
-  AlertDialogHeader, 
-  AlertDialogTitle 
+import React, { useState, useEffect } from "react";
+import SalesDashboard from "../NvarbarAdmin";
+import TableDonHang from "@/app/Admin/Tabledonhang";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
@@ -21,21 +21,21 @@ interface DonHang {
   tongsotien: number;
   ngaydat: string;
   idUsers: number;
-  ChitietDonhang:{
+  chitietdonhang: {
     idchitietdonhang: number;
     iddonhang: number;
     idsanpham: number;
     tensanpham: string;
     dongia: number;
     soluong: number;
-    sanpham:{
+    sanpham: {
       idsanpham: number;
       tensanpham: string;
-      gia: number;
-      hinhanh:string;
-    }
-   
-  }
+      gia: string;
+      hinhanh: string;
+      gioitinh: boolean;
+    };
+  }[];
   users?: {
     Hoten: string;
     Email: string;
@@ -46,7 +46,7 @@ interface DonHang {
   }[];
 }
 
-interface FormData { 
+interface FormData {
   TrangThaiDonHang: string;
 }
 
@@ -65,7 +65,7 @@ export default function OrderManagementPage() {
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<DonHang | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
-  
+
   const { toast } = useToast();
 
   const refreshData = () => {
@@ -80,7 +80,7 @@ export default function OrderManagementPage() {
         setError("");
         setSuccess("");
       }, 3000);
-      
+
       return () => clearTimeout(timer);
     }
   }, [error, success]);
@@ -106,7 +106,7 @@ export default function OrderManagementPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
@@ -118,7 +118,7 @@ export default function OrderManagementPage() {
     });
     setIsEditing(true);
     setEditingId(order.iddonhang);
-    
+
     const dialog = document.getElementById("my_modal_3") as HTMLDialogElement;
     if (dialog) {
       dialog.showModal();
@@ -127,23 +127,26 @@ export default function OrderManagementPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
-    const url = isEditing ? `/api/donhang/${editingId}` : '/api/donhang';
-    const method = isEditing ? 'PUT' : 'POST';
+    setError("");
+    setSuccess("");
+    const url = isEditing ? `/api/donhang/${editingId}` : "/api/donhang";
+    const method = isEditing ? "PUT" : "POST";
 
     try {
       const response = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(formData),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || `Failed to ${isEditing ? 'update' : 'create'} order`);
+        throw new Error(
+          errorData.message ||
+            `Failed to ${isEditing ? "update" : "create"} order`
+        );
       }
 
       const data = await response.json();
@@ -159,18 +162,22 @@ export default function OrderManagementPage() {
       }
 
       toast({
-        title: 'Thành Công!',
+        title: "Thành Công!",
         description: data.message,
-        variant: 'success',
+        variant: "success",
       });
-
     } catch (err) {
-      setError(err instanceof Error ? err.message : `Error ${isEditing ? 'updating' : 'creating'} order`);
-      
+      setError(
+        err instanceof Error
+          ? err.message
+          : `Error ${isEditing ? "updating" : "creating"} order`
+      );
+
       toast({
-        title: 'Lỗi!',
-        description: err instanceof Error ? err.message : 'Lỗi khi thực hiện thao tác',
-        variant: 'destructive',
+        title: "Lỗi!",
+        description:
+          err instanceof Error ? err.message : "Lỗi khi thực hiện thao tác",
+        variant: "destructive",
       });
     }
   };
@@ -179,11 +186,11 @@ export default function OrderManagementPage() {
     if (deleteConfirmId) {
       try {
         const response = await fetch(`/api/donhang/${deleteConfirmId}`, {
-          method: 'DELETE',
+          method: "DELETE",
         });
 
         if (!response.ok) {
-          throw new Error('Không thể xóa đơn hàng');
+          throw new Error("Không thể xóa đơn hàng");
         }
 
         const data = await response.json();
@@ -192,18 +199,19 @@ export default function OrderManagementPage() {
         setDeleteConfirmId(null);
 
         toast({
-          title: 'Thành Công!',
-          description: 'Đơn hàng đã được xóa thành công',
-          variant: 'success',
+          title: "Thành Công!",
+          description: "Đơn hàng đã được xóa thành công",
+          variant: "success",
         });
       } catch (err) {
-        console.error('Error deleting order:', err);
-        setError(err instanceof Error ? err.message : 'Lỗi khi xóa đơn hàng');
-        
+        console.error("Error deleting order:", err);
+        setError(err instanceof Error ? err.message : "Lỗi khi xóa đơn hàng");
+
         toast({
-          title: 'Lỗi!',
-          description: err instanceof Error ? err.message : 'Lỗi khi xóa đơn hàng',
-          variant: 'destructive',
+          title: "Lỗi!",
+          description:
+            err instanceof Error ? err.message : "Lỗi khi xóa đơn hàng",
+          variant: "destructive",
         });
       }
     }
@@ -221,26 +229,32 @@ export default function OrderManagementPage() {
 
   const handleViewOrder = (donhang: DonHang) => {
     setSelectedOrder(donhang);
-    const modal = document.getElementById("order-detail-modal") as HTMLDialogElement;
+    const modal = document.getElementById(
+      "order-detail-modal"
+    ) as HTMLDialogElement;
     modal?.showModal();
   };
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
     }).format(value);
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('vi-VN');
+    return new Date(dateString).toLocaleDateString("vi-VN");
   };
 
-  if (loading) return (
-    <div className="flex justify-center items-center h-screen" data-theme="light">
-      <span className="loading loading-spinner text-blue-600 loading-lg"></span>
-    </div>
-  );
+  if (loading)
+    return (
+      <div
+        className="flex justify-center items-center h-screen"
+        data-theme="light"
+      >
+        <span className="loading loading-spinner text-blue-600 loading-lg"></span>
+      </div>
+    );
 
   return (
     <div className="flex">
@@ -368,26 +382,30 @@ export default function OrderManagementPage() {
             <AlertDialogHeader>
               <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
               <AlertDialogDescription>
-                Bạn có chắc chắn muốn xóa đơn hàng này? Hành động này không thể hoàn tác.
+                Bạn có chắc chắn muốn xóa đơn hàng này? Hành động này không thể
+                hoàn tác.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel onClick={() => setDeleteConfirmId(null)}>
                 Hủy
               </AlertDialogCancel>
-              <AlertDialogAction onClick={handleDelete}>
-                Xóa
-              </AlertDialogAction>
+              <AlertDialogAction onClick={handleDelete}>Xóa</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
 
         {/* Order Detail Modal */}
-        <dialog id="order-detail-modal" className="modal modal-bottom sm:modal-middle">
+        <dialog
+          id="order-detail-modal"
+          className="modal modal-bottom sm:modal-middle"
+        >
           <div className="modal-box relative">
             <button
               onClick={() => {
-                const modal = document.getElementById("order-detail-modal") as HTMLDialogElement;
+                const modal = document.getElementById(
+                  "order-detail-modal"
+                ) as HTMLDialogElement;
                 modal?.close();
                 setSelectedOrder(null);
               }}
@@ -423,18 +441,21 @@ export default function OrderManagementPage() {
                   </div>
                   {selectedOrder.users && (
                     <div>
-                    <p className="font-semibold">Khách hàng:</p>
+                      <p className="font-semibold">Khách hàng:</p>
                       <p>{selectedOrder.users.Hoten}</p>
                       <p>{selectedOrder.users.Email}</p>
                       <p>{selectedOrder.users.Sdt}</p>
                     </div>
                   )}
-                  {selectedOrder.lichgiaohang && selectedOrder.lichgiaohang.length > 0 && (
-                    <div>
-                      <p className="font-semibold">Ngày giao:</p>
-                      <p>{formatDate(selectedOrder.lichgiaohang[0].NgayGiao)}</p>
-                    </div>
-                  )}
+                  {selectedOrder.lichgiaohang &&
+                    selectedOrder.lichgiaohang.length > 0 && (
+                      <div>
+                        <p className="font-semibold">Ngày giao:</p>
+                        <p>
+                          {formatDate(selectedOrder.lichgiaohang[0].NgayGiao)}
+                        </p>
+                      </div>
+                    )}
                 </div>
               </div>
             )}

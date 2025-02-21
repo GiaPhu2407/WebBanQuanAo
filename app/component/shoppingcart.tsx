@@ -248,7 +248,19 @@ export const ShoppingCart = () => {
       if (!response.ok) throw new Error("Checkout failed");
 
       const result = await response.json();
-
+      // Send notification
+      await fetch("/api/notifications", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          orderId: result.orderId,
+          customerName: "Customer Name", // Replace with actual customer name
+          amount: calculateTotal(),
+          status: "completed",
+        }),
+      });
       const toastPromise = toast.promise(
         new Promise((resolve) => setTimeout(resolve, 2500)),
         {
