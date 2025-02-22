@@ -342,11 +342,11 @@ import { OrderCard } from "@/app/Order/component/OrderCard";
 import { useOrders } from "@/app/Order/hook/useOrder";
 import { EmptyState } from "@/app/Order/component/EmptyState";
 import LoadingSpinner from "@/app/Order/component/LoadingSpinner";
-  
 
 const OrderPage = () => {
   const router = useRouter();
-  const { orders, loading, error, handleCancelOrder, handleDeleteOrder } = useOrders();
+  const { orders, loading, error, handleCancelOrder, handleDeleteOrder } =
+    useOrders();
 
   if (loading) {
     return <LoadingSpinner />;

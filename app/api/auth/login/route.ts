@@ -115,20 +115,19 @@ import prisma from "@/prisma/client";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { usernameOrEmail, password } = body;
+    const { identifier, password } = body; // Changed from usernameOrEmail to identifier to match frontend
 
-    const user = await login(usernameOrEmail, password);
-    
+    const user = await login(identifier, password);
+
     // Make sure to return the user object with the role
     return NextResponse.json({
       user: {
         id: user.idUsers,
         email: user.email,
         username: user.username,
-        role: user.role, // Ensure this is included
-      }
+        role: user.role,
+      },
     });
-    
   } catch (error) {
     return NextResponse.json(
       { error: "Authentication failed" },

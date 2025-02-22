@@ -50,8 +50,15 @@ const DailyNewsModal: React.FC<DailyNewsModalProps> = ({ isOpen, onClose }) => {
 
   return (
     <div
-      className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm p-6 z-50"
+      className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm p-6 z-[9999]"
       onClick={handleBackdropClick}
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+      }}
     >
       <div className="bg-white rounded-3xl w-full max-w-4xl overflow-hidden shadow-2xl transform scale-100 transition-all">
         <button

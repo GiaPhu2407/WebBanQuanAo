@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Mail, Phone, Lock } from "lucide-react";
+import { Mail, Phone, Lock, EyeOff, Eye } from "lucide-react";
 
 export default function ForgotPassword() {
   const router = useRouter();
@@ -13,6 +13,7 @@ export default function ForgotPassword() {
   const [step, setStep] = useState(1);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleRequestReset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,7 +83,7 @@ export default function ForgotPassword() {
     <div className="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-md">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          <h2 className="mt-6 text-center text-3xl font-semibold text-gray-900">
             Quên mật khẩu
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
@@ -206,20 +207,30 @@ export default function ForgotPassword() {
               >
                 Mật khẩu mới
               </label>
-              <div className="mt-1 relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
-                </div>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
-                  id="newPassword"
-                  name="newPassword"
-                  type="password"
-                  required
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  name="password"
+                  placeholder="Nhập mật khẩu mới"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="appearance-none block w-full pl-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                  placeholder="Nhập mật khẩu mới"
+                  className="pl-10 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  required
+                  // disabled={isLoading}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
               </div>
             </div>
 

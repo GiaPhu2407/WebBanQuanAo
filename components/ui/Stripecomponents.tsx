@@ -1,14 +1,18 @@
 "use client";
 import { useState } from "react";
-import { useStripe, useElements, PaymentElement } from "@stripe/react-stripe-js";
+import {
+  useStripe,
+  useElements,
+  PaymentElement,
+} from "@stripe/react-stripe-js";
 import toast from "react-hot-toast";
 import { StripeError } from "@stripe/stripe-js";
 
 type CheckoutFormProps = {
-    amount: number; // hoặc string, nếu amount là dạng khác
-    onSuccess: () => void;
-    onCancel: () => void;
-  };
+  amount: number; // hoặc string, nếu amount là dạng khác
+  onSuccess: () => void;
+  onCancel: () => void;
+};
 const CheckoutForm = ({ amount, onSuccess, onCancel }: CheckoutFormProps) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -21,11 +25,14 @@ const CheckoutForm = ({ amount, onSuccess, onCancel }: CheckoutFormProps) => {
       toast.error("Stripe chưa được khởi tạo. Vui lòng thử lại.");
       return;
     }
-    
+
     setProcessing(true);
 
     try {
-        const { error, paymentIntent }: { error: StripeError | null; paymentIntent?: { status: string } } = 
+      const {
+        error,
+        paymentIntent,
+      }: { error: StripeError | null; paymentIntent?: { status: string } } =
         await stripe.confirmPayment({
           elements,
           confirmParams: {
@@ -36,7 +43,7 @@ const CheckoutForm = ({ amount, onSuccess, onCancel }: CheckoutFormProps) => {
       if (error) {
         console.error(error);
         toast.error(error.message || "Thanh toán thất bại.");
-      } else if (paymentIntent?.status === 'succeeded') {
+      } else if (paymentIntent?.status === "succeeded") {
         toast.success("Thanh toán thành công!");
         onSuccess();
       } else {
@@ -51,7 +58,7 @@ const CheckoutForm = ({ amount, onSuccess, onCancel }: CheckoutFormProps) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[9999]">
       <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold">Thanh toán bằng thẻ</h3>
@@ -69,13 +76,17 @@ const CheckoutForm = ({ amount, onSuccess, onCancel }: CheckoutFormProps) => {
               type="submit"
               disabled={!stripe || processing}
               className={`flex-1 py-2 px-4 rounded-md text-white ${
-                processing ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'
+                processing
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-indigo-600 hover:bg-indigo-700"
               }`}
             >
-              {processing ? 'Đang xử lý...' : `Thanh toán ${new Intl.NumberFormat('vi-VN', {
-                style: 'currency',
-                currency: 'VND'
-              }).format(amount)}`}
+              {processing
+                ? "Đang xử lý..."
+                : `Thanh toán ${new Intl.NumberFormat("vi-VN", {
+                    style: "currency",
+                    currency: "VND",
+                  }).format(amount)}`}
             </button>
             <button
               type="button"

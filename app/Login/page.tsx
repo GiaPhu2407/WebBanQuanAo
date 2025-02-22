@@ -1,84 +1,75 @@
 "use client";
 import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
-import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Mail, Lock, Eye, EyeOff } from "lucide-react";
-import { loginUser } from "../api/auth/(functions)/function";
+import { useToast } from "@/components/ui/use-toast";
+import {
+  Loader2,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  Fingerprint,
+  AtSign,
+} from "lucide-react";
 import { Toaster } from "@/components/ui/toaster";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const LoginPage = () => {
-  const router = useRouter();
-  const [formData, setFormData] = useState({
-    usernameOrEmail: "",
-    password: "",
-  });
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter();
   const { toast } = useToast();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsLoading(true);
+    const formData = new FormData(event.currentTarget);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const { usernameOrEmail, password } = formData;
+    // Basic validation
+    const identifier = formData.get("identifier"); // This can be either email or username
+    const password = formData.get("password");
 
-    if (!usernameOrEmail || !password) {
-      setError("Vui lòng nhập email/tên đăng nhập và mật khẩu.");
+    if (!identifier || !password) {
+      setError("Please fill in all required fields.");
       toast({
-        title: "Lỗi Xác Thực!",
-        description: "Vui lòng điền đầy đủ thông tin.",
+        title: "Validation Error!",
+        description: "Please fill in all required fields.",
         variant: "destructive",
       });
+      setIsLoading(false);
       return;
     }
 
-    setError("");
-    setIsLoading(true);
-
     try {
-      const res = await loginUser(usernameOrEmail, password);
-      if (res?.status) {
-        localStorage.setItem("token", res.data.token);
-        localStorage.setItem("userData", JSON.stringify(res.data));
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify({
+          identifier: identifier,
+          password: password,
+        }),
+      });
 
-        if (res.data.role === "Admin") {
-          toast({
-            title: "Đăng Nhập Thành Công!",
-            description: "Chào mừng quản trị viên!",
-            variant: "success",
-          });
-          router.push("/Admin");
-        } else {
-          toast({
-            title: "Đăng Nhập Thành Công!",
-            description: "Chào mừng bạn quay trở lại!",
-            variant: "success",
-          });
-          router.push("/Show");
-        }
-      } else {
-        setError("Thông tin đăng nhập không chính xác");
-        toast({
-          title: "Đăng Nhập Thất Bại",
-          description: "Vui lòng kiểm tra lại email/tên đăng nhập và mật khẩu.",
-          variant: "destructive",
-        });
+      if (!res.ok) {
+        throw new Error("Login failed");
       }
-    } catch (error) {
-      setError("Đã xảy ra lỗi trong quá trình đăng nhập");
+
       toast({
-        title: "Lỗi!",
-        description: "Đăng nhập thất bại - Vui lòng thử lại.",
+        title: "Login Successful!",
+        description: "Welcome back!",
+        variant: "success",
+      });
+
+      setTimeout(() => {
+        router.push("/Show");
+      }, 1000);
+    } catch (error) {
+      setError("Invalid credentials.");
+      toast({
+        title: "Login Failed",
+        description: "Please check your credentials and try again.",
         variant: "destructive",
       });
     } finally {
@@ -87,125 +78,95 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-black via-gray-900 to-black p-4">
-      <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1557683316-973673baf926')] bg-cover bg-center opacity-5"></div>
-
-      <div className="w-full max-w-4xl flex rounded-3xl overflow-hidden bg-white/5 backdrop-blur-lg shadow-[0_20px_50px_rgba(255,255,255,0.15)] border border-white/10 transform hover:scale-[1.01] transition-all duration-300 ease-out">
-        {/* Left side - Decorative */}
-        <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden p-12 flex-col justify-center items-start">
-          <div className="relative z-10 space-y-8 transform translate-z-10">
-            <h2 className="text-4xl font-bold text-white drop-shadow-[0_5px_5px_rgba(0,0,0,0.5)]">
-              Chào mừng trở lại!
-            </h2>
-            <p className="text-white/90 text-lg leading-relaxed text-shadow">
-              Đăng nhập để khám phá những sản phẩm tuyệt vời của chúng tôi.
-            </p>
-            <div className="space-y-6">
-              <div className="flex items-center space-x-4 text-white/90">
-                <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-sm shadow-lg transform hover:scale-110 transition-transform duration-300">
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                    />
-                  </svg>
-                </div>
-                <span className="font-medium">Bảo mật tuyệt đối</span>
+    <div className="min-h-screen flex bg-gray-50">
+      {/* Left side with image */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 to-purple-600 p-12 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1579547945413-497e1b99dac0')] bg-cover bg-center opacity-10"></div>
+        <div className="relative z-10 flex flex-col justify-center">
+          <h1 className="text-5xl font-bold text-white mb-8">Welcome Back!</h1>
+          <p className="text-xl text-white/90 leading-relaxed">
+            Sign in to access your account and continue your journey with us.
+            We're glad to see you again.
+          </p>
+          <div className="mt-12 space-y-4">
+            <div className="flex items-center text-white/80">
+              <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mr-4">
+                <ShieldCheck className="w-6 h-6" />
               </div>
-              <div className="flex items-center space-x-4 text-white/90">
-                <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-sm shadow-lg transform hover:scale-110 transition-transform duration-300">
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M13 10V3L4 14h7v7l9-11h-7z"
-                    />
-                  </svg>
-                </div>
-                <span className="font-medium">Trải nghiệm nhanh chóng</span>
+              <p>Enhanced security protocols</p>
+            </div>
+            <div className="flex items-center text-white/80">
+              <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mr-4">
+                <Fingerprint className="w-6 h-6" />
               </div>
+              <p>Secure authentication system</p>
             </div>
           </div>
-          <div className="absolute inset-0 bg-gradient-to-br from-black/60 to-gray-900/60 backdrop-blur-sm"></div>
         </div>
+      </div>
 
-        {/* Right side - Login Form */}
-        <div className="w-full lg:w-1/2 p-8">
-          <div className="w-full max-w-md mx-auto space-y-8">
-            <div className="text-center transform hover:translate-y-[-5px] transition-transform duration-300">
-              <h1 className="text-3xl font-bold text-white mb-2 drop-shadow-[0_5px_5px_rgba(0,0,0,0.5)]">
-                Đăng Nhập
-              </h1>
-              <p className="text-white/80">Vui lòng nhập thông tin của bạn</p>
-            </div>
+      {/* Login form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
+        <div className="w-full max-w-md space-y-8">
+          <div className="text-center">
+            <h2 className="text-3xl font-bold text-gray-900">Sign in</h2>
+            <p className="mt-2 text-gray-600">
+              Welcome back! Please enter your details
+            </p>
+          </div>
 
-            {error && (
-              <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-200 text-sm animate-pulse shadow-lg">
-                {error}
-              </div>
-            )}
+          {error && (
+            <Alert variant="destructive">
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
+          <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+            <div className="space-y-4">
+              <div className="relative">
                 <label
-                  className="text-sm font-medium text-white/90"
-                  htmlFor="usernameOrEmail"
+                  htmlFor="identifier"
+                  className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Email hoặc Tên đăng nhập
+                  Email or Username
                 </label>
-                <div className="relative group">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-white transition-colors duration-200" />
+                <div className="relative">
+                  <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                   <input
-                    id="usernameOrEmail"
-                    name="usernameOrEmail"
                     type="text"
+                    id="identifier"
+                    name="identifier"
+                    placeholder="Enter your email or username"
+                    className="pl-10 w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
                     required
                     disabled={isLoading}
-                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:border-white/30 focus:ring-2 focus:ring-white/10 text-white placeholder-white/30 transition-all duration-200 shadow-lg transform hover:translate-y-[-2px]"
-                    placeholder="Nhập email hoặc tên đăng nhập"
-                    value={formData.usernameOrEmail}
-                    onChange={handleChange}
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="relative">
                 <label
-                  className="text-sm font-medium text-white/90"
                   htmlFor="password"
+                  className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Mật khẩu
+                  Password
                 </label>
-                <div className="relative group">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-white transition-colors duration-200" />
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                   <input
+                    type={showPassword ? "text" : "password"}
                     id="password"
                     name="password"
-                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter your password"
+                    className="pl-10 pr-12 w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
                     required
                     disabled={isLoading}
-                    className="w-full pl-10 pr-12 py-3 bg-white/5 border border-white/10 rounded-lg focus:border-white/30 focus:ring-2 focus:ring-white/10 text-white placeholder-white/30 transition-all duration-200 shadow-lg transform hover:translate-y-[-2px]"
-                    placeholder="Nhập mật khẩu"
-                    value={formData.password}
-                    onChange={handleChange}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white focus:outline-none transition-colors duration-200"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
                   >
                     {showPassword ? (
                       <EyeOff className="h-5 w-5" />
@@ -216,51 +177,56 @@ const LoginPage = () => {
                 </div>
               </div>
 
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="w-full h-12 bg-white hover:bg-gray-100 text-black font-medium rounded-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed shadow-[0_10px_20px_rgba(255,255,255,0.15)] hover:shadow-[0_15px_30px_rgba(255,255,255,0.25)]"
-              >
-                {isLoading ? (
-                  <div className="flex items-center justify-center">
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    <span>Đang đăng nhập...</span>
-                  </div>
-                ) : (
-                  "Đăng Nhập"
-                )}
-              </Button>
-
-              <div className="space-y-4 text-center">
-                <Link
-                  href="/ForgotPassword"
-                  className="text-sm text-gray-400 hover:text-white transition-colors duration-200 inline-block transform hover:scale-105"
-                >
-                  Quên mật khẩu?
-                </Link>
-
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-white/10"></div>
-                  </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="px-2 bg-transparent text-white/50">
-                      Hoặc
-                    </span>
-                  </div>
-                </div>
-
-                <p className="text-white/80">
-                  Chưa có tài khoản?{" "}
-                  <Link
-                    href="/Register"
-                    className="text-white hover:text-gray-300 font-medium transition-colors duration-200 transform hover:scale-105 inline-block"
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <input
+                    id="remember-me"
+                    name="remember-me"
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <label
+                    htmlFor="remember-me"
+                    className="ml-2 block text-sm text-gray-700"
                   >
-                    Đăng ký ngay
-                  </Link>
-                </p>
+                    Remember me
+                  </label>
+                </div>
+                <Link
+                  href="/forgot-password"
+                  className="text-sm font-medium text-blue-600 hover:text-blue-500 transition-colors duration-200"
+                >
+                  Forgot password?
+                </Link>
               </div>
-            </form>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="relative w-full inline-flex items-center justify-center px-8 py-3 overflow-hidden text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg group focus:outline-none focus:ring-2 focus:ring-blue-500/20 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                "Sign in"
+              )}
+            </button>
+          </form>
+
+          <div className="text-center">
+            <p className="text-gray-600">
+              Don't have an account?{" "}
+              <Link
+                href="/Register"
+                className="font-medium text-blue-600 hover:text-blue-500 transition-colors duration-200"
+              >
+                Sign up
+              </Link>
+            </p>
           </div>
         </div>
       </div>

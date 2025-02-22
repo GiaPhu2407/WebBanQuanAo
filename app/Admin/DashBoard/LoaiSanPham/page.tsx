@@ -36,6 +36,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import ExportButtons from "./Excel/exportloaisanpham";
 
 interface LoaiSanPham {
   idloaisanpham: number;
@@ -59,26 +60,45 @@ export default function LoaiSanPhamManagementPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // const [loaisanphamList, setLoaisanphampList] = useState<LoaiSanPham[]>([]);
 
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchLoaiSanPham();
-  }, [reloadKey]);
+  // useEffect(() => {
+  //   fetchLoaiSanPham();
+  // }, [reloadKey]);
 
+  // const fetchLoaiSanPham = async () => {
+  //   try {
+  //     const response = await fetch("/api/loaisanpham");
+  //     const data = await response.json();
+  //     setLoaisanphamList(data);
+  //   } catch (err) {
+  //     toast({
+  //       title: "Lỗi",
+  //       description: "Không thể tải danh sách loại sản phẩm",
+  //       variant: "destructive",
+  //     });
+  //   }
+  // };
   const fetchLoaiSanPham = async () => {
     try {
       const response = await fetch("/api/loaisanpham");
       const data = await response.json();
       setLoaisanphamList(data);
     } catch (err) {
+      console.error("Failed to fetch nha cung cap:", err);
       toast({
-        title: "Lỗi",
-        description: "Không thể tải danh sách loại sản phẩm",
+        title: "Lỗi!",
+        description: "Không thể tải danh sách nhà cung cấp",
         variant: "destructive",
       });
     }
   };
+
+  useEffect(() => {
+    fetchLoaiSanPham();
+  }, [reloadKey]);
 
   const validateForm = (): string | null => {
     if (!formData.tenloai.trim()) return "Vui lòng nhập tên loại sản phẩm";
@@ -440,15 +460,8 @@ export default function LoaiSanPhamManagementPage() {
             </h1>
             <div className="flex space-x-2">
               <Button onClick={handleAddNewClick}>Thêm loại sản phẩm</Button>
-              <Button variant="outline" onClick={exportLoaiSanPhamToExcel}>
-                Xuất Excel
-              </Button>
-              <Button variant="outline" onClick={exportLoaiSanPhamToPDF}>
-                Xuất PDF
-              </Button>
-              <Button variant="outline" onClick={exportLoaiSanPhamToWord}>
-                Xuất Word
-              </Button>
+              <ExportButtons data={loaisanphamList} />
+
               <label className="cursor-pointer">
                 <Button variant="secondary" asChild>
                   <span>Nhập Excel</span>
