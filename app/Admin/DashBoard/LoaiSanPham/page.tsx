@@ -1,20 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import * as XLSX from "xlsx";
-import {
-  Document,
-  Packer,
-  Paragraph,
-  Table,
-  TableRow,
-  TableCell,
-  HeadingLevel,
-  TextRun,
-} from "docx";
-import jsPDF from "jspdf";
-import "jspdf-autotable";
 import SalesDashboard from "../NvarbarAdmin";
-import TableTypeProduct from "../../TableTypeProduct";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,7 +22,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import ExportButtons from "./Excel/exportloaisanpham";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import ExportOptions from "./component/ExportOptions";
+import LoaiSanPhamTable from "./component/LoaiSanPhamTable";
 
 interface LoaiSanPham {
   idloaisanpham: number;
@@ -44,14 +38,30 @@ interface LoaiSanPham {
   mota: string;
 }
 
+interface Meta {
+  page: number;
+  limit_size: number;
+  totalRecords: number;
+  totalPages: number;
+}
+
 export default function LoaiSanPhamManagementPage() {
+  // Thêm state cho phân trang
+  const [meta, setMeta] = useState<Meta>({
+    page: 1,
+    limit_size: 10,
+    totalRecords: 0,
+    totalPages: 1,
+  });
+
+  // Giữ nguyên các state hiện có
   const [formData, setFormData] = useState<LoaiSanPham>({
     idloaisanpham: 0,
     tenloai: "",
     mota: "",
   });
-
   const [loaisanphamList, setLoaisanphamList] = useState<LoaiSanPham[]>([]);
+  const [selectedItems, setSelectedItems] = useState<number[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [currentLoaiSanPhamId, setCurrentLoaiSanPhamId] = useState<
@@ -60,46 +70,92 @@ export default function LoaiSanPhamManagementPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  // const [loaisanphamList, setLoaisanphampList] = useState<LoaiSanPham[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const [allSelectedItems, setAllSelectedItems] = useState<{
+    [key: number]: LoaiSanPham;
+  }>({});
 
   const { toast } = useToast();
 
-  // useEffect(() => {
-  //   fetchLoaiSanPham();
-  // }, [reloadKey]);
-
-  // const fetchLoaiSanPham = async () => {
-  //   try {
-  //     const response = await fetch("/api/loaisanpham");
-  //     const data = await response.json();
-  //     setLoaisanphamList(data);
-  //   } catch (err) {
-  //     toast({
-  //       title: "Lỗi",
-  //       description: "Không thể tải danh sách loại sản phẩm",
-  //       variant: "destructive",
-  //     });
-  //   }
-  // };
+  // Cập nhật hàm fetchLoaiSanPham để hỗ trợ phân trang
   const fetchLoaiSanPham = async () => {
+    setLoading(true);
     try {
-      const response = await fetch("/api/loaisanpham");
-      const data = await response.json();
-      setLoaisanphamList(data);
+      const response = await fetch(
+        `/api/phantrangloaisanpham?page=${meta.page}&limit_size=${
+          meta.limit_size
+        }&search=${encodeURIComponent(searchText)}`
+      );
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+      const result = await response.json();
+      if (result.data) {
+        setLoaisanphamList(result.data);
+        setMeta({
+          page: result.meta.page,
+          limit_size: result.meta.limit_size,
+          totalRecords: result.meta.totalRecords,
+          totalPages: result.meta.totalPages,
+        });
+      }
     } catch (err) {
-      console.error("Failed to fetch nha cung cap:", err);
+      console.error("Failed to fetch loai san pham:", err);
       toast({
         title: "Lỗi!",
-        description: "Không thể tải danh sách nhà cung cấp",
+        description: "Không thể tải danh sách loại sản phẩm",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchLoaiSanPham();
-  }, [reloadKey]);
+  }, [meta.page, meta.limit_size, searchText, reloadKey]);
 
+  // Thêm useEffect cho searchText
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMeta((prev) => ({ ...prev, page: 1 }));
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchText]);
+
+  // Thêm hàm xử lý phân trang
+  const handlePageChange = (newPage: number) => {
+    setMeta((prev) => ({ ...prev, page: newPage }));
+  };
+
+  const renderPagination = () => {
+    const pages = [];
+    let startPage = Math.max(1, meta.page - 2);
+    let endPage = Math.min(meta.totalPages, startPage + 4);
+
+    if (endPage - startPage < 4) {
+      startPage = Math.max(1, endPage - 4);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(
+        <Button
+          key={i}
+          variant={i === meta.page ? "default" : "outline"}
+          onClick={() => handlePageChange(i)}
+          className="min-w-[40px]"
+        >
+          {i}
+        </Button>
+      );
+    }
+
+    return pages;
+  };
+
+  // Giữ nguyên các hàm xử lý hiện có
   const validateForm = (): string | null => {
     if (!formData.tenloai.trim()) return "Vui lòng nhập tên loại sản phẩm";
     if (!formData.mota.trim()) return "Vui lòng nhập mô tả";
@@ -145,10 +201,10 @@ export default function LoaiSanPhamManagementPage() {
 
       toast({
         title: "Thành công",
-        variant: "success",
         description: isEditing
           ? "Cập nhật loại sản phẩm thành công"
           : "Thêm loại sản phẩm thành công",
+        variant: "success",
       });
 
       handleCloseModal();
@@ -161,6 +217,72 @@ export default function LoaiSanPhamManagementPage() {
         variant: "destructive",
       });
     }
+  };
+
+  useEffect(() => {
+    const currentPageSelectedIds = loaisanphamList
+      .filter((item) => allSelectedItems[item.idloaisanpham])
+      .map((item) => item.idloaisanpham);
+    setSelectedItems(currentPageSelectedIds);
+  }, [meta.page, loaisanphamList, allSelectedItems]);
+
+  // Cập nhật hàm handleSelectAll
+  const handleSelectAll = (checked: boolean) => {
+    const newSelectedItems = { ...allSelectedItems };
+
+    if (checked) {
+      // Thêm tất cả items của trang hiện tại
+      loaisanphamList.forEach((item) => {
+        newSelectedItems[item.idloaisanpham] = item;
+      });
+    } else {
+      // Xóa tất cả items của trang hiện tại
+      loaisanphamList.forEach((item) => {
+        delete newSelectedItems[item.idloaisanpham];
+      });
+    }
+
+    setAllSelectedItems(newSelectedItems);
+    setSelectedItems(
+      checked ? loaisanphamList.map((item) => item.idloaisanpham) : []
+    );
+  };
+
+  // Cập nhật hàm handleSelectItem
+  const handleSelectItem = (id: number, checked: boolean) => {
+    const item = loaisanphamList.find((item) => item.idloaisanpham === id);
+    if (!item) return;
+
+    const newSelectedItems = { ...allSelectedItems };
+    if (checked) {
+      newSelectedItems[id] = item;
+    } else {
+      delete newSelectedItems[id];
+    }
+
+    setAllSelectedItems(newSelectedItems);
+    setSelectedItems((prev) =>
+      checked ? [...prev, id] : prev.filter((itemId) => itemId !== id)
+    );
+  };
+
+  // Cập nhật component ExportOptions để sử dụng allSelectedItems
+  const modifiedExportOptions = (
+    <ExportOptions
+      selectedItems={Object.keys(allSelectedItems).map(Number)}
+      loaisanphamList={loaisanphamList}
+      onDataImported={() => setReloadKey((prev) => prev + 1)}
+    />
+  );
+
+  // Thêm thông tin về số lượng item đã chọn
+  const renderSelectionInfo = () => {
+    const totalSelected = Object.keys(allSelectedItems).length;
+    return totalSelected > 0 ? (
+      <div className="text-sm text-blue-600">
+        Đã chọn {totalSelected} loại sản phẩm trên tất cả các trang
+      </div>
+    ) : null;
   };
 
   const handleEdit = (loaiSanPham: LoaiSanPham) => {
@@ -198,6 +320,7 @@ export default function LoaiSanPhamManagementPage() {
       });
 
       setReloadKey((prev) => prev + 1);
+      setSelectedItems((prev) => prev.filter((id) => id !== deleteConfirmId));
     } catch (error) {
       toast({
         title: "Lỗi",
@@ -227,227 +350,15 @@ export default function LoaiSanPhamManagementPage() {
     setIsModalOpen(true);
   };
 
-  // Excel Export Functionality
-  const exportLoaiSanPhamToExcel = () => {
-    const exportData = loaisanphamList.map((item) => ({
-      "Mã Loại": item.idloaisanpham,
-      "Tên Loại": item.tenloai,
-      "Mô Tả": item.mota,
-    }));
-
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Loại Sản Phẩm");
-
-    XLSX.writeFile(
-      workbook,
-      `loai_san_pham_${new Date().toISOString().split("T")[0]}.xlsx`
-    );
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchText(e.target.value);
   };
 
-  // PDF Export Functionality
-  // Hàm xuất PDF - cập nhật phần styles
-  const exportLoaiSanPhamToPDF = () => {
-    const doc = new jsPDF();
-
-    // Add title với font Times New Roman
-    doc.setFont("TimesNewRoman", "normal");
-    doc.setFontSize(16);
-    doc.text("Danh Sách Loại Sản Phẩm", 14, 20);
-
-    // Create table với Times New Roman
-    (doc as any).autoTable({
-      startY: 30,
-      head: [["Mã Loại", "Tên Loại", "Mô Tả"]],
-      body: loaisanphamList.map((item) => [
-        item.idloaisanpham,
-        item.tenloai,
-        item.mota,
-      ]),
-      styles: {
-        fontSize: 10,
-        cellPadding: 5,
-        font: "TimesNewRoman", // Thêm font Times New Roman
-        fontStyle: "normal",
-      },
-      headStyles: {
-        fillColor: [41, 128, 185],
-        textColor: 255,
-        font: "TimesNewRoman", // Font cho header
-        fontStyle: "bold",
-      },
-      alternateRowStyles: {
-        fillColor: [245, 245, 245],
-      },
-      margin: { top: 30 },
-    });
-
-    doc.save(`loai_san_pham_${new Date().toISOString().split("T")[0]}.pdf`);
-  };
-
-  // Hàm xuất Word - cập nhật styling cho paragraphs
-  const exportLoaiSanPhamToWord = async () => {
-    const doc = new Document({
-      sections: [
-        {
-          properties: {},
-          children: [
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: "Danh Sách Loại Sản Phẩm",
-                  bold: true,
-                  size: 32, // 16pt
-                  font: "Times New Roman",
-                }),
-              ],
-            }),
-            new Table({
-              rows: [
-                new TableRow({
-                  children: [
-                    new TableCell({
-                      children: [
-                        new Paragraph({
-                          children: [
-                            new TextRun({
-                              text: "Mã Loại",
-                              bold: true,
-                              font: "Times New Roman",
-                            }),
-                          ],
-                        }),
-                      ],
-                    }),
-                    new TableCell({
-                      children: [
-                        new Paragraph({
-                          children: [
-                            new TextRun({
-                              text: "Tên Loại",
-                              bold: true,
-                              font: "Times New Roman",
-                            }),
-                          ],
-                        }),
-                      ],
-                    }),
-                    new TableCell({
-                      children: [
-                        new Paragraph({
-                          children: [
-                            new TextRun({
-                              text: "Mô Tả",
-                              bold: true,
-                              font: "Times New Roman",
-                            }),
-                          ],
-                        }),
-                      ],
-                    }),
-                  ],
-                }),
-                ...loaisanphamList.map(
-                  (item) =>
-                    new TableRow({
-                      children: [
-                        new TableCell({
-                          children: [
-                            new Paragraph({
-                              text: item.idloaisanpham.toString(),
-                            }),
-                          ],
-                        }),
-                        new TableCell({
-                          children: [new Paragraph({ text: item.tenloai })],
-                        }),
-                        new TableCell({
-                          children: [new Paragraph({ text: item.mota })],
-                        }),
-                      ],
-                    })
-                ),
-              ],
-            }),
-          ],
-        },
-      ],
-    });
-
-    const buffer = await Packer.toBuffer(doc);
-    const blob = new Blob([buffer], {
-      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `loai_san_pham_${
-      new Date().toISOString().split("T")[0]
-    }.docx`;
-    link.click();
-  };
-  // Excel Import Functionality
-  const handleImportExcel = async (
-    data: Omit<LoaiSanPham, "idloaisanpham">[]
-  ) => {
-    try {
-      const response = await fetch("/api/loaisanpham/import", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        throw new Error("Không thể nhập loại sản phẩm");
-      }
-
-      setReloadKey((prev) => prev + 1);
-      toast({
-        title: "Thành công",
-        description: "Nhập loại sản phẩm từ Excel thành công",
-        variant: "success",
-      });
-    } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: error instanceof Error ? error.message : "Lỗi nhập Excel",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const fileReader = new FileReader();
-      fileReader.onload = async (e) => {
-        const bufferArray = e.target?.result;
-        const workbook = XLSX.read(bufferArray, { type: "buffer" });
-
-        const worksheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[worksheetName];
-
-        const data: any[] = XLSX.utils.sheet_to_json(worksheet);
-
-        const validatedData = data.map((row) => {
-          if (!row["Tên Loại"] || !row["Mô Tả"]) {
-            throw new Error(
-              'Invalid Excel format. Ensure columns "Tên Loại" and "Mô Tả" exist.'
-            );
-          }
-
-          return {
-            tenloai: row["Tên Loại"],
-            mota: row["Mô Tả"],
-          };
-        });
-
-        await handleImportExcel(validatedData);
-      };
-
-      fileReader.readAsArrayBuffer(file);
-    }
-  };
+  const filteredList = loaisanphamList.filter(
+    (item) =>
+      item.tenloai.toLowerCase().includes(searchText.toLowerCase()) ||
+      item.mota.toLowerCase().includes(searchText.toLowerCase())
+  );
 
   return (
     <div className="flex bg-gray-100">
@@ -460,31 +371,90 @@ export default function LoaiSanPhamManagementPage() {
             </h1>
             <div className="flex space-x-2">
               <Button onClick={handleAddNewClick}>Thêm loại sản phẩm</Button>
-              <ExportButtons data={loaisanphamList} />
-
-              <label className="cursor-pointer">
-                <Button variant="secondary" asChild>
-                  <span>Nhập Excel</span>
-                </Button>
-                <input
-                  type="file"
-                  accept=".xlsx, .xls"
-                  className="hidden"
-                  onChange={handleFileUpload}
-                />
-              </label>
+              {modifiedExportOptions}
             </div>
           </div>
 
-          <div className="">
-            <TableTypeProduct
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              reloadKey={reloadKey}
-            />
+          <div className="flex justify-between items-center gap-4 mb-4">
+            <div className="flex-1 max-w-md">
+              <Input
+                type="text"
+                placeholder="Tìm kiếm theo tên loại hoặc mô tả..."
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                className="w-full"
+              />
+            </div>
+
+            <div className="flex items-center gap-4">
+              {renderSelectionInfo()}
+              <div className="text-sm text-gray-600">
+                Tổng số: {meta.totalRecords} loại sản phẩm
+              </div>
+            </div>
           </div>
 
-          {/* Form Dialog */}
+          <LoaiSanPhamTable
+            categories={loaisanphamList}
+            loading={loading}
+            selectedItems={selectedItems}
+            onSelectAll={handleSelectAll}
+            onSelectItem={handleSelectItem}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            searchText={searchText}
+          />
+
+          {/* Thêm phân trang */}
+          <div className="flex items-center justify-between mt-4">
+            <div className="text-sm text-gray-600">
+              Hiển thị {(meta.page - 1) * meta.limit_size + 1} -{" "}
+              {Math.min(meta.page * meta.limit_size, meta.totalRecords)} trong{" "}
+              {meta.totalRecords} loại sản phẩm
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => handlePageChange(meta.page - 1)}
+                disabled={meta.page === 1}
+              >
+                <span className="sr-only">Previous</span>←
+              </Button>
+
+              {renderPagination()}
+
+              <Button
+                variant="outline"
+                onClick={() => handlePageChange(meta.page + 1)}
+                disabled={meta.page >= meta.totalPages}
+              >
+                <span className="sr-only">Next</span>→
+              </Button>
+
+              <Select
+                value={String(meta.limit_size)}
+                onValueChange={(value) =>
+                  setMeta((prev) => ({
+                    ...prev,
+                    limit_size: Number(value),
+                    page: 1,
+                  }))
+                }
+              >
+                <SelectTrigger className="w-20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
           <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
             <DialogContent>
               <DialogHeader>
@@ -536,7 +506,6 @@ export default function LoaiSanPhamManagementPage() {
             </DialogContent>
           </Dialog>
 
-          {/* Delete Confirmation Dialog */}
           <AlertDialog
             open={isDeleteDialogOpen}
             onOpenChange={setIsDeleteDialogOpen}

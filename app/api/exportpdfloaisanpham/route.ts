@@ -116,12 +116,10 @@ export async function POST(req: NextRequest) {
         <thead>
           <tr>
             <th style="width: 5%">STT</th>
-            <th style="width: 10%">Mã NCC</th>
-            <th style="width: 20%">Tên nhà cung cấp</th>
-            <th style="width: 15%">Số điện thoại</th>
-            <th style="width: 20%">Địa chỉ</th>
-            <th style="width: 15%">Email</th>
-            <th style="width: 15%">Trạng thái</th>
+            <th style="width: 10%">ID Loại sản phẩm</th>
+            <th style="width: 20%">Tên loại</th>
+            <th style="width: 15%">Mô tả</th>
+           
           </tr>
         </thead>
         <tbody>
