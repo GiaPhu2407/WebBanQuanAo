@@ -63,6 +63,8 @@
     "nodemailer": "^6.10.0",
     "pdfmake": "^0.2.18",
     "puppeteer": "^24.2.1",
+    "pusher": "^5.2.0",
+    "pusher-js": "^8.4.0",
     "react": "^18",
     "react-dom": "^18",
     "react-hot-toast": "^2.4.1",

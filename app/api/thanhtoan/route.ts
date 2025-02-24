@@ -3,10 +3,30 @@ import { getSession } from "@/lib/auth";
 import prisma from "@/prisma/client";
 import Stripe from "stripe";
 import { Prisma } from "@prisma/client";
+import { pusherServer } from "@/lib/pusher";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-01-27.acacia",
 });
+
+interface CartItem {
+  idsanpham: number;
+  soluong: number;
+  idSize?: number;
+  idgiohang?: number;
+  sanpham: {
+    gia: number;
+    Tensanpham: string;
+    hinhanh: string;
+  };
+}
+
+interface OrderData {
+  orders: any[];
+  orderDetails: any[];
+  payments: any[];
+  deliverySchedules: any[];
+}
 
 export async function POST(req: Request) {
   try {
@@ -16,8 +36,6 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    console.log("Received body:", body);
-
     const { cartItems, stripeSessionId, paymentMethod } = body;
 
     if (!cartItems && !stripeSessionId) {
@@ -27,104 +45,33 @@ export async function POST(req: Request) {
       );
     }
 
+    const userId =
+      typeof session.idUsers === "string"
+        ? parseInt(session.idUsers, 10)
+        : session.idUsers;
+
+    // Handle Stripe payment initiation
     if (paymentMethod === "stripe" && !stripeSessionId) {
-      const lineItems = cartItems.map((item: any) => ({
-        price_data: {
-          currency: "vnd",
-          product_data: {
-            Tensanpham: item.sanpham.Tensanpham,
-            hinhanh: [item.sanpham.hinhanh],
-          },
-          unit_amount: item.sanpham.gia,
-        },
-        quantity: item.soluong,
-      }));
-
-      const stripeSession = await stripe.checkout.sessions.create({
-        payment_method_types: ["card"],
-        line_items: lineItems,
-        mode: "payment",
-        success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/checkout/cancel`,
-        metadata: {
-          userId: session.idUsers.toString(),
-          cartItems: JSON.stringify(cartItems),
-        },
-      });
-
-      return NextResponse.json({ url: stripeSession.url });
+      return await handleStripePaymentInitiation(cartItems, userId);
     }
 
-    if (stripeSessionId && !cartItems) {
-      try {
-        const paymentIntent = await stripe.paymentIntents.retrieve(
-          stripeSessionId
-        );
-        console.log("Retrieved payment intent:", paymentIntent);
-
-        const existingPayment = await prisma.thanhtoan.findFirst({
-          where: {
-            trangthai: `STRIPE:${stripeSessionId}`,
-          },
-        });
-
-        if (existingPayment) {
-          console.log(
-            "Payment already processed for this payment intent:",
-            existingPayment
-          );
-          return NextResponse.json({
-            success: true,
-            message: "Payment already processed",
-            data: { existingPayment },
-          });
-        }
-
-        if (paymentIntent.metadata?.cartItems) {
-          const parsedCartItems = JSON.parse(paymentIntent.metadata.cartItems);
-          console.log("Parsed cart items from metadata:", parsedCartItems);
-
-          const userId =
-            typeof session.idUsers === "string"
-              ? parseInt(session.idUsers, 10)
-              : session.idUsers;
-          return await processOrder(
-            parsedCartItems,
-            paymentMethod || "stripe",
-            userId,
-            stripeSessionId
-          );
-        } else {
-          console.error(
-            "No cart items found in payment intent metadata:",
-            paymentIntent.metadata
-          );
-          throw new Error("No cart items found in payment metadata");
-        }
-      } catch (error) {
-        console.error("Error retrieving or processing payment intent:", error);
-        return NextResponse.json(
-          {
-            error: "Failed to retrieve or process payment details",
-            details: error instanceof Error ? error.message : String(error),
-          },
-          { status: 500 }
-        );
-      }
+    // Handle Stripe payment completion
+    if (stripeSessionId) {
+      return await handleStripePaymentCompletion(
+        stripeSessionId,
+        userId,
+        session.name,
+        paymentMethod
+      );
     }
 
+    // Handle direct order processing
     if (cartItems && Array.isArray(cartItems)) {
-      const userId =
-        typeof session.idUsers === "string"
-          ? parseInt(session.idUsers, 10)
-          : session.idUsers;
-      return await processOrder(cartItems, paymentMethod, userId);
+      return await processOrder(cartItems, paymentMethod, userId, session.name);
     }
 
     return NextResponse.json(
-      {
-        error: "Invalid request: either stripeSessionId or cartItems required",
-      },
+      { error: "Invalid request parameters" },
       { status: 400 }
     );
   } catch (error) {
@@ -139,14 +86,78 @@ export async function POST(req: Request) {
   }
 }
 
+async function handleStripePaymentInitiation(
+  cartItems: CartItem[],
+  userId: number
+) {
+  const lineItems = cartItems.map((item) => ({
+    price_data: {
+      currency: "vnd",
+      product_data: {
+        name: item.sanpham.Tensanpham,
+        images: [item.sanpham.hinhanh],
+      },
+      unit_amount: item.sanpham.gia,
+    },
+    quantity: item.soluong,
+  }));
+
+  const stripeSession = await stripe.checkout.sessions.create({
+    payment_method_types: ["card"],
+    line_items: lineItems,
+    mode: "payment",
+    success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/checkout/cancel`,
+    metadata: {
+      userId: userId.toString(),
+      cartItems: JSON.stringify(cartItems),
+    },
+  });
+
+  return NextResponse.json({ url: stripeSession.url });
+}
+
+async function handleStripePaymentCompletion(
+  stripeSessionId: string,
+  userId: number,
+  customerName: string,
+  paymentMethod: string
+) {
+  const existingPayment = await prisma.thanhtoan.findFirst({
+    where: { trangthai: `STRIPE:${stripeSessionId}` },
+  });
+
+  if (existingPayment) {
+    return NextResponse.json({
+      success: true,
+      message: "Payment already processed",
+      data: { existingPayment },
+    });
+  }
+
+  const paymentIntent = await stripe.paymentIntents.retrieve(stripeSessionId);
+  if (!paymentIntent.metadata?.cartItems) {
+    throw new Error("No cart items found in payment metadata");
+  }
+
+  const parsedCartItems = JSON.parse(paymentIntent.metadata.cartItems);
+  return await processOrder(
+    parsedCartItems,
+    paymentMethod || "stripe",
+    userId,
+    customerName,
+    stripeSessionId
+  );
+}
+
 async function processOrder(
-  cartItems: any[],
+  cartItems: CartItem[],
   paymentMethod: string,
   userId: number,
+  customerName: string,
   stripeSessionId?: string
-) {
+): Promise<NextResponse> {
   if (!Array.isArray(cartItems)) {
-    console.error("cartItems is not an array:", cartItems);
     return NextResponse.json(
       { error: "Invalid cart items data" },
       { status: 400 }
@@ -154,172 +165,200 @@ async function processOrder(
   }
 
   try {
-    if (stripeSessionId) {
-      const existingPayment = await prisma.thanhtoan.findFirst({
-        where: {
-          trangthai: `STRIPE:${stripeSessionId}`,
-        },
-        include: {
-          donhang: true,
-        },
-      });
+    const result = await prisma.$transaction<OrderData>(async (prisma) => {
+      const cartItemsWithDetails = await getCartItemsWithDetails(
+        prisma,
+        cartItems
+      );
+      const { totalAmount, totalQuantity } =
+        calculateOrderTotals(cartItemsWithDetails);
 
-      if (existingPayment) {
-        console.log(
-          "Found existing payment for this session:",
-          existingPayment
-        );
-        return NextResponse.json({
-          success: true,
-          message: "Payment already processed",
-          data: { existingPayment },
-        });
-      }
-    }
+      const order = await createOrder(
+        prisma,
+        userId,
+        totalAmount,
+        totalQuantity
+      );
+      await notifyNewOrder(order, totalAmount, customerName, paymentMethod);
 
-    const result = await prisma.$transaction(async (prisma) => {
-      // Fetch full product details for each cart item first
-      const cartItemsWithDetails = await Promise.all(
-        cartItems.map(async (item) => {
-          const product = await prisma.sanpham.findUnique({
-            where: { idsanpham: item.idsanpham },
-          });
-
-          if (!product) {
-            throw new Error(`Product with ID ${item.idsanpham} not found`);
-          }
-
-          return {
-            ...item,
-            sanpham: product,
-          };
-        })
+      const orderDetails = await createOrderDetails(
+        prisma,
+        order.iddonhang,
+        cartItemsWithDetails
+      );
+      const deliverySchedules = await createDeliverySchedules(
+        prisma,
+        order.iddonhang,
+        cartItemsWithDetails,
+        userId
+      );
+      const payment = await createPayment(
+        prisma,
+        order.iddonhang,
+        totalAmount,
+        paymentMethod,
+        stripeSessionId
       );
 
-      const allOrders = [];
-      const allPayments = [];
-      const allDeliverySchedules = [];
-      const allOrderDetails = [];
-
-      const totalAmount = cartItemsWithDetails.reduce((sum, item) => {
-        return sum + Number(item.sanpham.gia) * item.soluong;
-      }, 0);
-
-      const totalQuantity = cartItemsWithDetails.reduce((sum, item) => {
-        return sum + item.soluong;
-      }, 0);
-
-      const order = await prisma.donhang.create({
-        data: {
-          idUsers: userId,
-          ngaydat: new Date(),
-          trangthai: "Chờ xác nhận",
-          tongsotien: totalAmount,
-          tongsoluong: totalQuantity,
-        },
-      });
-      allOrders.push(order);
-
-      for (const item of cartItemsWithDetails) {
-        try {
-          if (!item.idsanpham || !item.soluong || !item.sanpham?.gia) {
-            console.error("Invalid item data:", item);
-            continue;
-          }
-
-          const orderDetail = await prisma.chitietDonhang.create({
-            data: {
-              iddonhang: order.iddonhang,
-              idsanpham: item.idsanpham,
-              idSize: item.idSize,
-              soluong: item.soluong,
-              dongia: Number(item.sanpham.gia),
-            },
-          });
-          allOrderDetails.push(orderDetail);
-
-          const deliverySchedule = await prisma.lichGiaoHang.create({
-            data: {
-              iddonhang: order.iddonhang,
-              idsanpham: item.idsanpham,
-              idKhachHang: userId,
-              NgayGiao: await calculateDeliveryDate(),
-              TrangThai: "Chờ giao",
-            },
-          });
-          allDeliverySchedules.push(deliverySchedule);
-        } catch (itemError) {
-          console.error(
-            `Error processing item with idsanpham ${item.idsanpham}:`,
-            itemError
-          );
-          throw itemError;
-        }
-      }
-
-      const payment = await prisma.thanhtoan.create({
-        data: {
-          iddonhang: order.iddonhang,
-          phuongthucthanhtoan: paymentMethod,
-          sotien: totalAmount,
-          trangthai: stripeSessionId
-            ? `STRIPE:${stripeSessionId}`
-            : "Đang xử lý",
-          ngaythanhtoan: new Date(),
-        },
-      });
-      allPayments.push(payment);
-
-      for (const item of cartItems) {
-        if (item.idgiohang) {
-          try {
-            await prisma.giohang.delete({
-              where: {
-                idgiohang: item.idgiohang,
-              },
-            });
-          } catch (err) {
-            console.warn(
-              `Item with idgiohang ${item.idgiohang} might have been already deleted`
-            );
-          }
-        }
-      }
+      await clearCart(prisma, cartItems);
 
       return {
-        orders: allOrders,
-        orderDetails: allOrderDetails,
-        payments: allPayments,
-        deliverySchedules: allDeliverySchedules,
+        orders: [order],
+        orderDetails,
+        payments: [payment],
+        deliverySchedules,
       };
     });
 
     return NextResponse.json({ success: true, data: result });
-  } catch (txError) {
-    console.error("Transaction error:", txError);
+  } catch (error) {
+    return handleProcessOrderError(error);
+  }
+}
 
-    let errorMessage = "Error processing order";
-    let errorDetails = "";
-
-    if (txError instanceof Prisma.PrismaClientKnownRequestError) {
-      errorMessage = `Database error: ${txError.message}`;
-      errorDetails = JSON.stringify({
-        code: txError.code,
-        meta: txError.meta,
-        model: (txError.meta as any)?.modelName || "unknown",
+async function getCartItemsWithDetails(prisma: any, cartItems: CartItem[]) {
+  return await Promise.all(
+    cartItems.map(async (item) => {
+      const product = await prisma.sanpham.findUnique({
+        where: { idsanpham: item.idsanpham },
       });
-    } else if (txError instanceof Error) {
-      errorMessage = txError.message;
-      errorDetails = txError.stack || "";
+
+      if (!product) {
+        throw new Error(`Product with ID ${item.idsanpham} not found`);
+      }
+
+      return { ...item, sanpham: product };
+    })
+  );
+}
+
+function calculateOrderTotals(cartItems: CartItem[]) {
+  const totalAmount = cartItems.reduce(
+    (sum, item) => sum + Number(item.sanpham.gia) * item.soluong,
+    0
+  );
+  const totalQuantity = cartItems.reduce((sum, item) => sum + item.soluong, 0);
+  return { totalAmount, totalQuantity };
+}
+
+async function createOrder(
+  prisma: any,
+  userId: number,
+  totalAmount: number,
+  totalQuantity: number
+) {
+  return await prisma.donhang.create({
+    data: {
+      idUsers: userId,
+      ngaydat: new Date(),
+      trangthai: "Chờ xác nhận",
+      tongsotien: totalAmount,
+      tongsoluong: totalQuantity,
+    },
+  });
+}
+
+async function notifyNewOrder(
+  order: any,
+  totalAmount: number,
+  customerName: string,
+  paymentMethod: string
+) {
+  await pusherServer.trigger("admin-channel", "new-order", {
+    type: "order",
+    title: "Đơn hàng mới",
+    message: `Có đơn hàng mới #${order.iddonhang}`,
+    data: {
+      orderId: order.iddonhang,
+      totalAmount,
+      customerName,
+      orderDate: order.ngaydat,
+      paymentMethod,
+      status: order.trangthai,
+    },
+    timestamp: new Date().toISOString(),
+  });
+}
+
+async function createOrderDetails(
+  prisma: any,
+  orderId: number,
+  cartItems: CartItem[]
+) {
+  const orderDetails = [];
+  for (const item of cartItems) {
+    if (!item.idsanpham || !item.soluong || !item.sanpham?.gia) {
+      console.error("Invalid item data:", item);
+      continue;
     }
 
-    return NextResponse.json(
-      {
-        error: errorMessage,
-        details: errorDetails,
+    const orderDetail = await prisma.chitietDonhang.create({
+      data: {
+        iddonhang: orderId,
+        idsanpham: item.idsanpham,
+        idSize: item.idSize,
+        soluong: item.soluong,
+        dongia: Number(item.sanpham.gia),
       },
-      { status: 500 }
-    );
+    });
+    orderDetails.push(orderDetail);
+  }
+  return orderDetails;
+}
+
+async function createDeliverySchedules(
+  prisma: any,
+  orderId: number,
+  cartItems: CartItem[],
+  userId: number
+) {
+  const deliverySchedules = [];
+  for (const item of cartItems) {
+    const deliverySchedule = await prisma.lichGiaoHang.create({
+      data: {
+        iddonhang: orderId,
+        idsanpham: item.idsanpham,
+        idKhachHang: userId,
+        NgayGiao: calculateDeliveryDate(),
+        TrangThai: "Chờ giao",
+      },
+    });
+    deliverySchedules.push(deliverySchedule);
+  }
+  return deliverySchedules;
+}
+
+async function createPayment(
+  prisma: any,
+  orderId: number,
+  totalAmount: number,
+  paymentMethod: string,
+  stripeSessionId?: string
+) {
+  return await prisma.thanhtoan.create({
+    data: {
+      iddonhang: orderId,
+      phuongthucthanhtoan: paymentMethod,
+      sotien: totalAmount,
+      trangthai: stripeSessionId ? `STRIPE:${stripeSessionId}` : "Đang xử lý",
+      ngaythanhtoan: new Date(),
+    },
+  });
+}
+
+async function clearCart(prisma: any, cartItems: CartItem[]) {
+  for (const item of cartItems) {
+    if (item.idgiohang) {
+      try {
+        await prisma.giohang.delete({
+          where: { idgiohang: item.idgiohang },
+        });
+      } catch (err) {
+        console.warn(
+          `Item with idgiohang ${item.idgiohang} might have been already deleted`
+        );
+      }
+    }
   }
 }
 
@@ -344,6 +383,33 @@ function calculateDeliveryDate(): Date {
     0
   );
   return deliveryDate;
+}
+
+function handleProcessOrderError(error: any) {
+  console.error("Transaction error:", error);
+
+  let errorMessage = "Error processing order";
+  let errorDetails = "";
+
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    errorMessage = `Database error: ${error.message}`;
+    errorDetails = JSON.stringify({
+      code: error.code,
+      meta: error.meta,
+      model: (error.meta as any)?.modelName || "unknown",
+    });
+  } else if (error instanceof Error) {
+    errorMessage = error.message;
+    errorDetails = error.stack || "";
+  }
+
+  return NextResponse.json(
+    {
+      error: errorMessage,
+      details: errorDetails,
+    },
+    { status: 500 }
+  );
 }
 
 export async function GET(req: Request) {
