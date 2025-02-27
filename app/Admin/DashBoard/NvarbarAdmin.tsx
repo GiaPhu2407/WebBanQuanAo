@@ -205,7 +205,7 @@ const SalesDashboard: React.FC = () => {
   return (
     <div>
       <Menu/>
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen bg-gray-100 mt-[120px]">
       {/* Sidebar Navigation */}
       <nav className="w-64 p-4 space-y-2">
         {/* Product Management Section */}

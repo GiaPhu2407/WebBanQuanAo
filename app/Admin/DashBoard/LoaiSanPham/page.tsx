@@ -363,7 +363,7 @@ export default function LoaiSanPhamManagementPage() {
   return (
     <div className="flex bg-gray-100">
       <SalesDashboard />
-      <div className="flex-1 p-8 pt-[100px]">
+      <div className="flex-1 p-8 pt-[140px]">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold text-gray-800">
