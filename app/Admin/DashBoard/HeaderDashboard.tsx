@@ -124,8 +124,8 @@ const Menu: React.FC = () => {
   };
 
   return (
-    <div className="fixed top-0 w-full z-50">
-      <div className="bg-white w-full h-20 shadow-md">
+    <div className="fixed top-0 w-full">
+      <div className="bg-white w-full h-12 shadow-md">
         <div className="container mx-auto px-4 h-full">
           <div className="flex items-center justify-between h-full">
             {/* Logo and Dashboard Title */}
@@ -135,43 +135,7 @@ const Menu: React.FC = () => {
               </h1>
             </div>
 
-            {/* Center Navigation - Visible on desktop */}
-            {/* <div className="hidden md:flex items-center space-x-6">
-              <Link
-                href="/Show"
-                className="hover:text-blue-600 transition-colors"
-              >
-                <div className="flex items-center">
-                  <Home className="mr-1 h-4 w-4" />
-                  <span>Trang Chủ</span>
-                </div>
-              </Link>
-              {userData?.role?.Tennguoidung === "Admin" && (
-                <Link
-                  href="/Admin/orders"
-                  className="hover:text-blue-600 transition-colors"
-                >
-                  <div className="flex items-center">
-                    <FaBagShopping className="mr-1 h-4 w-4" />
-                    <span>Đơn Hàng</span>
-                    {orderCount > 0 && (
-                      <span className="ml-1 bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
-                        {orderCount}
-                      </span>
-                    )}
-                  </div>
-                </Link>
-              )}
-              <Link
-                href="/Admin/settings"
-                className="hover:text-blue-600 transition-colors"
-              >
-                <div className="flex items-center">
-                  <Settings className="mr-1 h-4 w-4" />
-                  <span>Cài Đặt</span>
-                </div>
-              </Link>
-            </div> */}
+          
 
             {/* User Profile Section - Right side */}
             <div className="flex items-center space-x-4">
@@ -191,7 +155,7 @@ const Menu: React.FC = () => {
                   )}
                 </button>
               </div> */}
-              <Notification/>
+              <Notification />
 
               {/* User Avatar and Menu */}
               {userData ? (
@@ -328,7 +292,7 @@ const Menu: React.FC = () => {
       )}
 
       {/* Spacing for content below the fixed header */}
-      <div className="h-20"></div>
+      {/* <div className="h-20"></div> */}
     </div>
   );
 };

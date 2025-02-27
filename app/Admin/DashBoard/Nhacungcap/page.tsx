@@ -223,7 +223,7 @@ export default function NhaCungCapManagementPage() {
   return (
     <div className="flex">
       <SalesDashboard />
-      <div className="p-6 w-full max-w-5xl mx-auto">
+      <div className="p-6 w-full max-w-5xl mx-auto mt-[60px]">
         <Toaster />
 
         <div className="flex items-center justify-between mb-6 mt-16">

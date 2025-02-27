@@ -31,6 +31,8 @@ import {
 } from "@/components/ui/select";
 import ExportOptions from "./component/ExportOptions";
 import LoaiSanPhamTable from "./component/LoaiSanPhamTable";
+// Import icons
+import { Pencil, Trash2 } from "lucide-react";
 
 interface LoaiSanPham {
   idloaisanpham: number;
@@ -354,16 +356,114 @@ export default function LoaiSanPhamManagementPage() {
     setSearchText(e.target.value);
   };
 
-  const filteredList = loaisanphamList.filter(
-    (item) =>
-      item.tenloai.toLowerCase().includes(searchText.toLowerCase()) ||
-      item.mota.toLowerCase().includes(searchText.toLowerCase())
-  );
+  // Custom LoaiSanPhamTable component with icon buttons
+  const CustomLoaiSanPhamTable = () => {
+    return (
+      <div className="bg-white rounded-lg shadow overflow-hidden ">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <input
+                    type="checkbox"
+                    checked={
+                      selectedItems.length === loaisanphamList.length &&
+                      loaisanphamList.length > 0
+                    }
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  ID
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Tên loại
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Mô tả
+                </th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Thao tác
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {loaisanphamList.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="px-4 py-4 text-center text-sm text-gray-500"
+                  >
+                    {loading ? "Đang tải..." : "Không có dữ liệu"}
+                  </td>
+                </tr>
+              ) : (
+                loaisanphamList.map((item) => (
+                  <tr
+                    key={item.idloaisanpham}
+                    className={`hover:bg-gray-50 ${
+                      selectedItems.includes(item.idloaisanpham)
+                        ? "bg-blue-50"
+                        : ""
+                    }`}
+                  >
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        checked={selectedItems.includes(item.idloaisanpham)}
+                        onChange={(e) =>
+                          handleSelectItem(item.idloaisanpham, e.target.checked)
+                        }
+                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {item.idloaisanpham}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {item.tenloai}
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-500">
+                      {item.mota}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex justify-end space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEdit(item)}
+                          className="text-blue-600 hover:text-blue-800"
+                          title="Chỉnh sửa"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(item.idloaisanpham)}
+                          className="text-red-600 hover:text-red-800"
+                          title="Xóa"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="flex bg-gray-100">
       <SalesDashboard />
-      <div className="flex-1 p-8 pt-[140px]">
+      <div className="flex-1 p-8 pt-16">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold text-gray-800">
@@ -394,16 +494,8 @@ export default function LoaiSanPhamManagementPage() {
             </div>
           </div>
 
-          <LoaiSanPhamTable
-            categories={loaisanphamList}
-            loading={loading}
-            selectedItems={selectedItems}
-            onSelectAll={handleSelectAll}
-            onSelectItem={handleSelectItem}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            searchText={searchText}
-          />
+          {/* Sử dụng custom table với icon buttons thay vì LoaiSanPhamTable component */}
+          <CustomLoaiSanPhamTable />
 
           {/* Thêm phân trang */}
           <div className="flex items-center justify-between mt-4">

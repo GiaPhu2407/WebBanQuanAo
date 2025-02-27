@@ -3,7 +3,7 @@ import { getSession } from "@/lib/auth";
 import prisma from "@/prisma/client";
 import Stripe from "stripe";
 import { Prisma } from "@prisma/client";
-import { pusherServer } from "@/lib/pusher";
+// import { pusherServer } from "@/lib/pusher";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-01-27.acacia",
@@ -264,20 +264,20 @@ async function notifyNewOrder(
   customerName: string,
   paymentMethod: string
 ) {
-  await pusherServer.trigger("admin-channel", "new-order", {
-    type: "order",
-    title: "Đơn hàng mới",
-    message: `Có đơn hàng mới #${order.iddonhang}`,
-    data: {
-      orderId: order.iddonhang,
-      totalAmount,
-      customerName,
-      orderDate: order.ngaydat,
-      paymentMethod,
-      status: order.trangthai,
-    },
-    timestamp: new Date().toISOString(),
-  });
+  // await pusherServer.trigger("admin-channel", "new-order", {
+  //   type: "order",
+  //   title: "Đơn hàng mới",
+  //   message: `Có đơn hàng mới #${order.iddonhang}`,
+  //   data: {
+  //     orderId: order.iddonhang,
+  //     totalAmount,
+  //     customerName,
+  //     orderDate: order.ngaydat,
+  //     paymentMethod,
+  //     status: order.trangthai,
+  //   },
+  //   timestamp: new Date().toISOString(),
+  // });
 }
 
 async function createOrderDetails(
