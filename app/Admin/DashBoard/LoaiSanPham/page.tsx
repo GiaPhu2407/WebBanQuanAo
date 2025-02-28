@@ -359,12 +359,12 @@ export default function LoaiSanPhamManagementPage() {
   // Custom LoaiSanPhamTable component with icon buttons
   const CustomLoaiSanPhamTable = () => {
     return (
-      <div className="bg-white rounded-lg shadow overflow-hidden ">
+      <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   <input
                     type="checkbox"
                     checked={
@@ -375,16 +375,16 @@ export default function LoaiSanPhamManagementPage() {
                     className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-1text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   ID
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-1text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Tên loại
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Mô tả
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Thao tác
                 </th>
               </tr>
@@ -394,7 +394,7 @@ export default function LoaiSanPhamManagementPage() {
                 <tr>
                   <td
                     colSpan={5}
-                    className="px-4 py-4 text-center text-sm text-gray-500"
+                    className="px-3 py-1 text-center text-sm text-gray-500"
                   >
                     {loading ? "Đang tải..." : "Không có dữ liệu"}
                   </td>
@@ -409,7 +409,7 @@ export default function LoaiSanPhamManagementPage() {
                         : ""
                     }`}
                   >
-                    <td className="px-4 py-4 whitespace-nowrap">
+                    <td className="px-3 py-1 whitespace-nowrap">
                       <input
                         type="checkbox"
                         checked={selectedItems.includes(item.idloaisanpham)}
@@ -419,22 +419,22 @@ export default function LoaiSanPhamManagementPage() {
                         className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-3 py-1 whitespace-nowrap text-sm text-gray-500">
                       {item.idloaisanpham}
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <td className="px-3 py-1 whitespace-nowrap text-sm font-medium text-gray-900">
                       {item.tenloai}
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-500">
+                    <td className="px-3 py-1 text-sm text-gray-500">
                       {item.mota}
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td className="px-3 py-1 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end space-x-2">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleEdit(item)}
-                          className="text-blue-600 hover:text-blue-800"
+                          className="text-blue-600 hover:text-blue-800 h-8 w-8 p-0"
                           title="Chỉnh sửa"
                         >
                           <Pencil className="h-4 w-4" />
@@ -443,7 +443,7 @@ export default function LoaiSanPhamManagementPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDelete(item.idloaisanpham)}
-                          className="text-red-600 hover:text-red-800"
+                          className="text-red-600 hover:text-red-800 h-8 w-8 p-0"
                           title="Xóa"
                         >
                           <Trash2 className="h-4 w-4" />
