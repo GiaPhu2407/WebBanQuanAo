@@ -1,22 +1,37 @@
-import React from 'react';
-import { Eye, Pencil, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Product } from '@/app/Admin/type/product';
-import ProductDetailsDialog from './ProductDetails';
+import React, { Dispatch, SetStateAction } from "react";
+import { Eye, Pencil, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Product } from "@/app/Admin/type/product";
+import ProductDetailsDialog from "./ProductDetails";
 
 interface ProductTableProps {
   products: Product[];
   onEdit: (product: Product) => void;
   onDelete: (id: number) => void;
+  // Thêm các props mới
+  selectedItems: number[];
+  onSelectItem: (id: number, checked: boolean) => void;
+  onSelectAll: (checked: boolean) => void;
+  allSelected: boolean;
 }
 
-const ProductTable: React.FC<ProductTableProps> = ({ products, onEdit, onDelete }) => {
-  const [selectedProduct, setSelectedProduct] = React.useState<Product | null>(null);
+const ProductTable: React.FC<ProductTableProps> = ({
+  products,
+  onEdit,
+  onDelete,
+  selectedItems,
+  onSelectItem,
+  onSelectAll,
+  allSelected,
+}) => {
+  const [selectedProduct, setSelectedProduct] = React.useState<Product | null>(
+    null
+  );
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
     }).format(value);
   };
 
@@ -26,7 +41,15 @@ const ProductTable: React.FC<ProductTableProps> = ({ products, onEdit, onDelete 
         <table className="w-full">
           <thead className="bg-gradient-to-r from-red-500 to-pink-400">
             <tr>
-              <th className="py-3 px-4 text-white text-left">Tên Sản Phẩm</th>
+              <th className="py-3 px-4 text-white text-left">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={(e) => onSelectAll(e.target.checked)}
+                  className="mr-2"
+                />
+                Tên Sản Phẩm
+              </th>
               <th className="py-3 px-4 text-white text-right">Giá</th>
               <th className="py-3 px-4 text-white text-center">Số Lượng</th>
               <th className="py-3 px-4 text-white text-center">Thao Tác</th>
@@ -35,12 +58,25 @@ const ProductTable: React.FC<ProductTableProps> = ({ products, onEdit, onDelete 
           <tbody>
             {products.map((product) => (
               <tr key={product.idsanpham} className="hover:bg-gray-50">
-                <td className="py-3 px-4">{product.tensanpham}</td>
+                <td className="py-3 px-4">
+                  <input
+                    type="checkbox"
+                    checked={selectedItems.includes(product.idsanpham)}
+                    onChange={(e) =>
+                      onSelectItem(product.idsanpham, e.target.checked)
+                    }
+                    className="mr-2"
+                  />
+                  {product.tensanpham}
+                </td>
                 <td className="py-3 px-4 text-right">
                   {formatCurrency(Number(product.gia))}
                 </td>
                 <td className="py-3 px-4 text-center">
-                  {product.ProductSizes?.reduce((total, size) => total + size.soluong, 0) || 0}
+                  {product.ProductSizes?.reduce(
+                    (total, size) => total + size.soluong,
+                    0
+                  ) || 0}
                 </td>
                 <td className="py-3 px-4">
                   <div className="flex justify-center gap-2">

@@ -343,7 +343,7 @@ const SalesDashboard: React.FC = () => {
         </nav>
 
         {/* Main Content */}
-        <div className="flex-1 overflow-auto relative">
+        <div className="flex-1 overflow-auto relative mt-5">
           <div className="p-8 relative z-10 top-0">
             <div className="absolute -z-10 top-0 left-[600px]">
               <Globe />

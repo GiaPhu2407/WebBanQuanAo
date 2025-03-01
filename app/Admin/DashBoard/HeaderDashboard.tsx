@@ -124,7 +124,7 @@ const Menu: React.FC = () => {
   };
 
   return (
-    <div className="fixed top-0 w-full">
+    <div className="fixed top-0 w-full z-50">
       <div className="bg-white w-full h-12 shadow-md">
         <div className="container mx-auto px-4 h-full">
           <div className="flex items-center justify-between h-full">
