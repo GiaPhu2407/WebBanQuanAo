@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import ExportButtons from "./XuatExcel/exportButton";
-  
 
 interface NhaCungCap {
   idnhacungcap: number;
@@ -38,6 +37,7 @@ export default function NhaCungCapManagementPage() {
   });
 
   const [nhacungcapList, setNhacungcapList] = useState<NhaCungCap[]>([]);
+  const [selectedItems, setSelectedItems] = useState<number[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [currentNhaCungCapId, setCurrentNhaCungCapId] = useState<number | null>(
@@ -220,19 +220,51 @@ export default function NhaCungCapManagementPage() {
     }
   };
 
+  // Selection handling
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const allIds = nhacungcapList.map((item) => item.idnhacungcap);
+      setSelectedItems(allIds);
+    } else {
+      setSelectedItems([]);
+    }
+  };
+
+  const handleSelectItem = (id: number, checked: boolean) => {
+    if (checked) {
+      setSelectedItems((prev) => [...prev, id]);
+    } else {
+      setSelectedItems((prev) => prev.filter((itemId) => itemId !== id));
+    }
+  };
+
+  const handleDataImported = () => {
+    setReloadKey((prev) => prev + 1);
+  };
+
   return (
     <div className="flex">
       <SalesDashboard />
-      <div className="p-6 w-full max-w-5xl mx-auto mt-[60px]">
+      <div className="p-6 w-full max-w-5xl mx-auto ">
         <Toaster />
 
         <div className="flex items-center justify-between mb-6 mt-16">
           <h1 className="text-2xl font-bold whitespace-nowrap">
             Quản lý nhà cung cấp
           </h1>
-          <ExportButtons data={nhacungcapList} />
+          <ExportButtons
+            data={nhacungcapList}
+            selectedItems={selectedItems}
+            onDataImported={handleDataImported}
+          />
           <Button onClick={handleAddNewClick}>Thêm nhà cung cấp</Button>
         </div>
+
+        {selectedItems.length > 0 && (
+          <div className="mb-4 text-sm text-blue-600">
+            Đã chọn {selectedItems.length} nhà cung cấp
+          </div>
+        )}
 
         {/* Modal thêm/sửa nhà cung cấp */}
         <dialog
@@ -341,6 +373,9 @@ export default function NhaCungCapManagementPage() {
             onEdit={handleEdit}
             onDelete={handleDelete}
             reloadKey={reloadKey}
+            selectedItems={selectedItems}
+            onSelectItem={handleSelectItem}
+            onSelectAll={handleSelectAll}
           />
         </div>
 

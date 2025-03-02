@@ -3,7 +3,7 @@ import puppeteer from "puppeteer";
 
 export async function POST(req: NextRequest) {
   try {
-    const { data } = await req.json();
+    const { data, title } = await req.json();
     const currentDate = new Date();
     const day = currentDate.getDate();
     const month = currentDate.getMonth() + 1;
@@ -61,7 +61,6 @@ export async function POST(req: NextRequest) {
           font-weight: bold;
           text-transform: uppercase;
           font-size: 13px;
-          
         }
         td {
           border: 1px solid #000;
@@ -96,13 +95,6 @@ export async function POST(req: NextRequest) {
           margin-left: auto;
           margin-right: auto;
         }
-        .page-number {
-          text-align: center;
-          font-size: 10px;
-          position: fixed;
-          bottom: 10px;
-          width: 100%;
-        }
       </style>
     </head>
     <body>
@@ -117,18 +109,18 @@ export async function POST(req: NextRequest) {
       </div>
 
       <div class="report-title">
-        THÔNG TIN DANH SÁCH NHÀ CUNG CẤP
+        DANH SÁCH NHÀ CUNG CẤP
       </div>
 
       <table>
         <thead>
           <tr>
             <th style="width: 5%">STT</th>
-            <th style="width: 10%">Mã NCC</th>
+            <th style="width: 8%">Mã NCC</th>
             <th style="width: 20%">Tên nhà cung cấp</th>
             <th style="width: 15%">Số điện thoại</th>
             <th style="width: 20%">Địa chỉ</th>
-            <th style="width: 15%">Email</th>
+            <th style="width: 17%">Email</th>
             <th style="width: 15%">Trạng thái</th>
           </tr>
         </thead>
@@ -143,9 +135,9 @@ export async function POST(req: NextRequest) {
                 <td>${item.sodienthoai}</td>
                 <td>${item.diachi}</td>
                 <td>${item.email}</td>
-                <td style="text-align: center">
-                  ${item.trangthai ? "Đang cung cấp" : "Ngừng cung cấp"}
-                </td>
+                <td style="text-align: center">${
+                  item.trangthai ? "Đang cung cấp" : "Ngừng cung cấp"
+                }</td>
               </tr>
             `
             )
@@ -173,54 +165,26 @@ export async function POST(req: NextRequest) {
           <div class="signature-line"></div>
         </div>
       </div>
-
-      <div class="page-number"></div>
-
-      <script>
-        function addPageNumbers() {
-          var vars = {};
-          var x = document.location.search.substring(1).split('&');
-          for (var i in x) {
-            var z = x[i].split('=', 2);
-            vars[z[0]] = unescape(z[1]);
-          }
-          var x = ['frompage', 'topage', 'page', 'webpage', 'section', 'subsection', 'subsubsection'];
-          for (var i in x) {
-            var y = document.getElementsByClassName(x[i]);
-            for (var j = 0; j < y.length; ++j) {
-              y[j].textContent = vars[x[i]];
-            }
-          }
-        }
-        window.onload = addPageNumbers;
-      </script>
     </body>
     </html>
     `;
 
-    // Initialize Puppeteer and generate PDF
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
     await page.setContent(htmlContent);
 
     const pdfBuffer = await page.pdf({
       format: "A4",
-      margin: {
-        top: "20mm",
-        right: "20mm",
-        bottom: "20mm",
-        left: "20mm",
-      },
+      margin: { top: "20mm", right: "20mm", bottom: "20mm", left: "20mm" },
     });
 
     await browser.close();
 
-    // Return PDF response
     return new NextResponse(pdfBuffer, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename=hop-dong-nha-cung-cap.pdf`,
+        "Content-Disposition": `attachment; filename=danh-sach-nha-cung-cap.pdf`,
       },
     });
   } catch (error) {

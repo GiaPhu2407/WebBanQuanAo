@@ -1,4 +1,4 @@
-import React, { Dispatch, SetStateAction } from "react";
+import React from "react";
 import { Eye, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Product } from "@/app/Admin/type/product";
@@ -8,7 +8,6 @@ interface ProductTableProps {
   products: Product[];
   onEdit: (product: Product) => void;
   onDelete: (id: number) => void;
-  // Thêm các props mới
   selectedItems: number[];
   onSelectItem: (id: number, checked: boolean) => void;
   onSelectAll: (checked: boolean) => void;
@@ -38,10 +37,10 @@ const ProductTable: React.FC<ProductTableProps> = ({
   return (
     <>
       <div className="rounded-md border overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gradient-to-r from-red-500 to-pink-400">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
             <tr>
-              <th className="py-3 px-4 text-white text-left">
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <input
                   type="checkbox"
                   checked={allSelected}
@@ -50,15 +49,21 @@ const ProductTable: React.FC<ProductTableProps> = ({
                 />
                 Tên Sản Phẩm
               </th>
-              <th className="py-3 px-4 text-white text-right">Giá</th>
-              <th className="py-3 px-4 text-white text-center">Số Lượng</th>
-              <th className="py-3 px-4 text-white text-center">Thao Tác</th>
+              <th className="py-3 px-4 text-right w-[120px] text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Giá
+              </th>
+              <th className="py-3 px-4 text-center w-[80px] text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap ">
+                Số Lượng
+              </th>
+              <th className="py-3 px-4 text-center w-[150px] text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Thao Tác
+              </th>
             </tr>
           </thead>
           <tbody>
             {products.map((product) => (
               <tr key={product.idsanpham} className="hover:bg-gray-50">
-                <td className="py-3 px-4">
+                <td className="py-3 px-4 text-left">
                   <input
                     type="checkbox"
                     checked={selectedItems.includes(product.idsanpham)}
@@ -69,16 +74,16 @@ const ProductTable: React.FC<ProductTableProps> = ({
                   />
                   {product.tensanpham}
                 </td>
-                <td className="py-3 px-4 text-right">
+                <td className="py-3 px-4 text-right w-[120px] whitespace-nowrap">
                   {formatCurrency(Number(product.gia))}
                 </td>
-                <td className="py-3 px-4 text-center">
+                <td className="py-3 px-4 text-center w-[80px]">
                   {product.ProductSizes?.reduce(
                     (total, size) => total + size.soluong,
                     0
                   ) || 0}
                 </td>
-                <td className="py-3 px-4">
+                <td className="py-3 px-4 text-center w-[150px]">
                   <div className="flex justify-center gap-2">
                     <Button
                       variant="ghost"

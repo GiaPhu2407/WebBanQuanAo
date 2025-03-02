@@ -1,14 +1,19 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { FileSpreadsheet, FileText, File, X } from "lucide-react";
-import { exportToExcel } from "./xuatexcel";
+import { toast } from "@/components/ui/use-toast";
+import * as XLSX from "xlsx";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { exportToWord } from "./xuatword";
+  Document,
+  Packer,
+  Paragraph,
+  Table,
+  TableRow,
+  TableCell,
+  HeadingLevel,
+  TextRun,
+  AlignmentType,
+  WidthType,
+} from "docx";
 
 interface NhaCungCap {
   idnhacungcap: number;
@@ -21,257 +26,558 @@ interface NhaCungCap {
 
 interface ExportButtonsProps {
   data: NhaCungCap[];
+  selectedItems?: number[];
+  onDataImported?: () => void;
 }
 
-const ExportButtons = ({ data }: ExportButtonsProps) => {
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [previewType, setPreviewType] = useState<
-    "word" | "excel" | "pdf" | null
-  >(null);
+const ExportButtons: React.FC<ExportButtonsProps> = ({
+  data,
+  selectedItems = [],
+  onDataImported = () => {},
+}) => {
+  const exportToExcel = () => {
+    const dataToExport =
+      selectedItems.length > 0
+        ? data.filter((item) => selectedItems.includes(item.idnhacungcap))
+        : data;
 
-  const handlePreview = (type: "word" | "excel" | "pdf") => {
-    setPreviewType(type);
-    setIsPreviewOpen(true);
+    if (dataToExport.length === 0) {
+      toast({
+        title: "Thông báo",
+        description:
+          selectedItems.length > 0
+            ? "Vui lòng chọn ít nhất một nhà cung cấp để xuất"
+            : "Không có dữ liệu để xuất",
+        variant: "default",
+      });
+      return;
+    }
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(
+      dataToExport.map((item) => ({
+        "Mã nhà cung cấp": item.idnhacungcap,
+        "Tên nhà cung cấp": item.tennhacungcap,
+        "Số điện thoại": item.sodienthoai,
+        "Địa chỉ": item.diachi,
+        Email: item.email,
+        "Trạng thái": item.trangthai ? "Đang cung cấp" : "Ngừng cung cấp",
+      }))
+    );
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Nhà cung cấp");
+    XLSX.writeFile(workbook, "danh-sach-nha-cung-cap.xlsx");
   };
 
-  const generatePreviewContent = () => {
+  const exportToPdf = async () => {
+    const dataToExport =
+      selectedItems.length > 0
+        ? data.filter((item) => selectedItems.includes(item.idnhacungcap))
+        : data;
+
+    if (dataToExport.length === 0) {
+      toast({
+        title: "Thông báo",
+        description:
+          selectedItems.length > 0
+            ? "Vui lòng chọn ít nhất một nhà cung cấp để xuất"
+            : "Không có dữ liệu để xuất",
+        variant: "default",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/exportpdfncc", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          data: dataToExport,
+          title: "Danh sách nhà cung cấp",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Lỗi khi tạo PDF");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "danh-sach-nha-cung-cap.pdf";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Thành công",
+        description: "Đã xuất file PDF thành công",
+        variant: "success",
+      });
+    } catch (error) {
+      console.error("Lỗi khi xuất PDF:", error);
+      toast({
+        title: "Lỗi",
+        description: "Có lỗi xảy ra khi xuất PDF",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const exportToWord = async () => {
+    const dataToExport =
+      selectedItems.length > 0
+        ? data.filter((item) => selectedItems.includes(item.idnhacungcap))
+        : data;
+
+    if (dataToExport.length === 0) {
+      toast({
+        title: "Thông báo",
+        description:
+          selectedItems.length > 0
+            ? "Vui lòng chọn ít nhất một nhà cung cấp để xuất"
+            : "Không có dữ liệu để xuất",
+        variant: "default",
+      });
+      return;
+    }
+
     const currentDate = new Date();
     const day = currentDate.getDate();
     const month = currentDate.getMonth() + 1;
     const year = currentDate.getFullYear();
 
-    return (
-      <div className="bg-white p-8 min-h-full">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <p className="font-bold text-lg mb-2">
-            CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
-          </p>
-          <p className="font-bold text-lg mb-2">Độc lập - Tự do - Hạnh phúc</p>
-          <p className="text-lg">------------------------</p>
-        </div>
+    // Header paragraphs
+    const headerParagraphs = [
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children: [
+          new TextRun({
+            text: "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM",
+            bold: true,
+            size: 28,
+          }),
+        ],
+      }),
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children: [
+          new TextRun({
+            text: "Độc lập - Tự do - Hạnh phúc",
+            bold: true,
+            size: 28,
+          }),
+        ],
+      }),
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children: [
+          new TextRun({
+            text: "------------------------",
+            size: 28,
+          }),
+        ],
+      }),
+      new Paragraph({
+        alignment: AlignmentType.RIGHT,
+        children: [
+          new TextRun({
+            text: `Ngày ${day} tháng ${month} năm ${year}`,
+            italics: true,
+            size: 24,
+          }),
+        ],
+      }),
+      new Paragraph({ text: "" }),
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        heading: HeadingLevel.HEADING_1,
+        children: [
+          new TextRun({
+            text: "DANH SÁCH NHÀ CUNG CẤP",
+            bold: true,
+            size: 32,
+            color: "000000",
+          }),
+        ],
+      }),
+      new Paragraph({ text: "" }),
+    ];
 
-        {/* Date */}
-        <div className="text-right mb-8 italic">
-          <p>
-            Ngày {day} tháng {month} năm {year}
-          </p>
-        </div>
+    // Table rows
+    const tableRows = [
+      new TableRow({
+        children: [
+          "STT",
+          "Mã NCC",
+          "Tên nhà cung cấp",
+          "Số điện thoại",
+          "Địa chỉ",
+          "Email",
+          "Trạng thái",
+        ].map(
+          (text) =>
+            new TableCell({
+              children: [
+                new Paragraph({
+                  text,
+                  alignment: AlignmentType.CENTER,
+                }),
+              ],
+              shading: {
+                fill: "f5f5f5",
+              },
+            })
+        ),
+      }),
+      ...dataToExport.map(
+        (item, index) =>
+          new TableRow({
+            children: [
+              new TableCell({
+                children: [
+                  new Paragraph({
+                    text: (index + 1).toString(),
+                    alignment: AlignmentType.CENTER,
+                  }),
+                ],
+              }),
+              new TableCell({
+                children: [
+                  new Paragraph({
+                    text: item.idnhacungcap.toString(),
+                    alignment: AlignmentType.CENTER,
+                  }),
+                ],
+              }),
+              new TableCell({
+                children: [new Paragraph({ text: item.tennhacungcap })],
+              }),
+              new TableCell({
+                children: [new Paragraph({ text: item.sodienthoai })],
+              }),
+              new TableCell({
+                children: [new Paragraph({ text: item.diachi })],
+              }),
+              new TableCell({
+                children: [new Paragraph({ text: item.email })],
+              }),
+              new TableCell({
+                children: [
+                  new Paragraph({
+                    text: item.trangthai ? "Đang cung cấp" : "Ngừng cung cấp",
+                  }),
+                ],
+              }),
+            ],
+          })
+      ),
+    ];
 
-        {/* Title */}
-        <div className="text-center mb-8">
-          <h1 className="font-bold text-xl">DANH SÁCH NHÀ CUNG CẤP</h1>
-        </div>
+    // Terms and conditions
+    const termsSection = [
+      new Paragraph({ text: "" }),
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: "ĐIỀU KHOẢN THỎA THUẬN:",
+            bold: true,
+            size: 24,
+          }),
+        ],
+      }),
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: "1. Nhà cung cấp cam kết cung cấp đúng và đầy đủ thông tin như đã được liệt kê trong danh sách trên.",
+            size: 24,
+          }),
+        ],
+      }),
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: "2. Mọi thay đổi về thông tin liên hệ cần được thông báo bằng văn bản cho đơn vị quản lý trong vòng 07 ngày làm việc.",
+            size: 24,
+          }),
+        ],
+      }),
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: "3. Nhà cung cấp có trách nhiệm duy trì chất lượng dịch vụ và tuân thủ các quy định của đơn vị quản lý.",
+            size: 24,
+          }),
+        ],
+      }),
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: "4. Các bên cam kết thực hiện đúng các điều khoản đã thỏa thuận.",
+            size: 24,
+          }),
+        ],
+      }),
+    ];
 
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse border border-gray-300">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="border border-gray-300 p-2 text-center">STT</th>
-                <th className="border border-gray-300 p-2 text-center">
-                  Mã NCC
-                </th>
-                <th className="border border-gray-300 p-2 text-center">
-                  Tên nhà cung cấp
-                </th>
-                <th className="border border-gray-300 p-2 text-center">
-                  Số điện thoại
-                </th>
-                <th className="border border-gray-300 p-2 text-center">
-                  Địa chỉ
-                </th>
-                <th className="border border-gray-300 p-2 text-center">
-                  Email
-                </th>
-                <th className="border border-gray-300 p-2 text-center">
-                  Trạng thái
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.map((item, index) => (
-                <tr
-                  key={item.idnhacungcap}
-                  className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
-                >
-                  <td className="border border-gray-300 p-2 text-center">
-                    {index + 1}
-                  </td>
-                  <td className="border border-gray-300 p-2 text-center">
-                    {item.idnhacungcap}
-                  </td>
-                  <td className="border border-gray-300 p-2">
-                    {item.tennhacungcap}
-                  </td>
-                  <td className="border border-gray-300 p-2">
-                    {item.sodienthoai}
-                  </td>
-                  <td className="border border-gray-300 p-2">{item.diachi}</td>
-                  <td className="border border-gray-300 p-2">{item.email}</td>
-                  <td className="border border-gray-300 p-2 text-center">
-                    {item.trangthai ? "Đang cung cấp" : "Ngừng cung cấp"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    );
+    // Signature section
+    const signatureSection = [
+      new Paragraph({ text: "" }),
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: "NGƯỜI LẬP DANH SÁCH",
+            bold: true,
+            size: 24,
+          }),
+          new TextRun({ text: "\t\t\t\t\t\t\t\t" }),
+          new TextRun({
+            text: "NGƯỜI PHÊ DUYỆT",
+            bold: true,
+            size: 24,
+          }),
+        ],
+        alignment: AlignmentType.CENTER,
+      }),
+      new Paragraph({ text: "" }),
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: "(Ký, ghi rõ họ tên)",
+            italics: true,
+            size: 20,
+          }),
+          new TextRun({ text: "\t\t\t\t\t\t\t\t\t\t\t" }),
+          new TextRun({
+            text: "(Ký, ghi rõ họ tên)",
+            italics: true,
+            size: 20,
+          }),
+        ],
+        alignment: AlignmentType.CENTER,
+      }),
+    ];
+
+    const doc = new Document({
+      sections: [
+        {
+          properties: {},
+          children: [
+            ...headerParagraphs,
+            new Table({
+              rows: tableRows,
+              width: { size: 100, type: WidthType.PERCENTAGE },
+            }),
+            ...termsSection,
+            ...signatureSection,
+          ],
+        },
+      ],
+    });
+
+    const blob = await Packer.toBlob(doc);
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `danh-sach-nha-cung-cap-${day}${month}${year}.docx`;
+    link.click();
+    window.URL.revokeObjectURL(url);
   };
 
-  const handleExport = async () => {
-    switch (previewType) {
-      case "word":
-        exportToWord(data);
-        break;
-      case "excel":
-        exportToExcel(data);
-        break;
-      case "pdf":
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      const file = e.target.files?.[0];
+      if (!file) {
+        console.log("Không có file được chọn");
+        return;
+      }
+
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data);
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+        raw: false,
+        defval: "",
+      });
+
+      const formattedData = jsonData.map((item: any) => {
+        const tennhacungcap = (
+          item["Tên nhà cung cấp"] ||
+          item["TÊN NHÀ CUNG CẤP"] ||
+          item["tennhacungcap"] ||
+          item["TENNHACUNGCAP"] ||
+          item["Tên Nhà Cung Cấp"] ||
+          ""
+        ).trim();
+
+        const sodienthoai = (
+          item["Số điện thoại"] ||
+          item["SỐ ĐIỆN THOẠI"] ||
+          item["sodienthoai"] ||
+          item["SODIENTHOAI"] ||
+          item["Số Điện Thoại"] ||
+          ""
+        ).trim();
+
+        const diachi = (
+          item["Địa chỉ"] ||
+          item["ĐỊA CHỈ"] ||
+          item["diachi"] ||
+          item["DIACHI"] ||
+          item["Địa Chỉ"] ||
+          ""
+        ).trim();
+
+        const email = (
+          item["Email"] ||
+          item["EMAIL"] ||
+          item["email"] ||
+          ""
+        ).trim();
+
+        const trangthai = (
+          item["Trạng thái"] ||
+          item["TRẠNG THÁI"] ||
+          item["trangthai"] ||
+          item["TRANGTHAI"] ||
+          item["Trạng Thái"] ||
+          "Đang cung cấp"
+        ).trim();
+
+        return {
+          tennhacungcap,
+          sodienthoai,
+          diachi,
+          email,
+          trangthai:
+            trangthai === "Đang cung cấp" ||
+            trangthai === "true" ||
+            trangthai === "True",
+        };
+      });
+
+      const validData = formattedData.filter(
+        (item) =>
+          item.tennhacungcap !== "" &&
+          item.sodienthoai !== "" &&
+          item.diachi !== "" &&
+          item.email !== ""
+      );
+
+      if (validData.length === 0) {
+        toast({
+          title: "Thông báo",
+          description: "Không tìm thấy dữ liệu hợp lệ trong file Excel",
+          variant: "default",
+        });
+        return;
+      }
+
+      // Validate email and phone
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const phoneRegex = /(84|0[3|5|7|8|9])+([0-9]{8})\b/;
+
+      const validatedData = validData.filter((item) => {
+        const isEmailValid = emailRegex.test(item.email);
+        const isPhoneValid = phoneRegex.test(item.sodienthoai);
+
+        if (!isEmailValid || !isPhoneValid) {
+          console.log(
+            `Bỏ qua dữ liệu không hợp lệ: ${item.tennhacungcap} - Email: ${
+              isEmailValid ? "Hợp lệ" : "Không hợp lệ"
+            }, SĐT: ${isPhoneValid ? "Hợp lệ" : "Không hợp lệ"}`
+          );
+          return false;
+        }
+        return true;
+      });
+
+      if (validatedData.length === 0) {
+        toast({
+          title: "Thông báo",
+          description:
+            "Không có dữ liệu hợp lệ sau khi kiểm tra định dạng email và số điện thoại",
+          variant: "default",
+        });
+        return;
+      }
+
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const item of validatedData) {
         try {
-          const response = await fetch("/api/exportpdfncc", {
+          const response = await fetch("/api/nhacungcap", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ data }),
+            body: JSON.stringify(item),
           });
 
           if (!response.ok) {
-            throw new Error("PDF generation failed");
+            errorCount++;
+            console.error(
+              `Lỗi khi thêm "${item.tennhacungcap}": ${response.statusText}`
+            );
+          } else {
+            successCount++;
           }
-
-          // Get the blob from the response
-          const blob = await response.blob();
-
-          // Create a URL for the blob
-          const url = window.URL.createObjectURL(blob);
-
-          // Create a link element
-          const link = document.createElement("a");
-
-          // Set link properties
-          const currentDate = new Date();
-          const fileName = `danh-sach-nha-cung-cap-${currentDate.getDate()}${
-            currentDate.getMonth() + 1
-          }${currentDate.getFullYear()}.pdf`;
-
-          link.href = url;
-          link.download = fileName;
-
-          // Append link to body, click it, and remove it
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-
-          // Clean up the URL
-          window.URL.revokeObjectURL(url);
         } catch (error) {
-          console.error("Error generating PDF:", error);
-          // Handle error (you might want to show a notification to the user)
+          errorCount++;
+          console.error(`Lỗi khi thêm "${item.tennhacungcap}":`, error);
         }
-        break;
-    }
-  };
+      }
 
-  const getPreviewTitle = () => {
-    switch (previewType) {
-      case "word":
-        return "Xem trước tài liệu Word";
-      case "excel":
-        return "Xem trước tài liệu Excel";
-      case "pdf":
-        return "Xem trước tài liệu PDF";
-      default:
-        return "";
-    }
-  };
+      e.target.value = "";
 
-  const getExportButtonText = () => {
-    switch (previewType) {
-      case "word":
-        return "Tải xuống Word";
-      case "excel":
-        return "Tải xuống Excel";
-      case "pdf":
-        return "Tải xuống PDF";
-      default:
-        return "";
-    }
-  };
+      toast({
+        title: "Thành công",
+        description: `Đã nhập ${successCount} nhà cung cấp từ file Excel${
+          errorCount > 0 ? `, ${errorCount} lỗi` : ""
+        }`,
+        variant: "success",
+      });
 
-  const getExportIcon = () => {
-    switch (previewType) {
-      case "word":
-        return <FileText className="w-4 h-4" />;
-      case "excel":
-        return <FileSpreadsheet className="w-4 h-4" />;
-      case "pdf":
-        return <File className="w-4 h-4" />;
-      default:
-        return null;
+      // Call the callback to refresh data
+      onDataImported();
+    } catch (error) {
+      console.error("Lỗi khi xử lý file:", error);
+      toast({
+        title: "Lỗi",
+        description: "Có lỗi xảy ra khi nhập dữ liệu. Vui lòng kiểm tra lại.",
+        variant: "destructive",
+      });
     }
   };
 
   return (
-    <>
-      <div className="flex gap-2">
-        <Button
-          onClick={() => handlePreview("word")}
-          className="flex items-center gap-2 bg-white text-black border border-gray-200 shadow-sm hover:bg-blue-50"
-        >
-          <FileText className="w-4 h-4" />
-          Xem Word
+    <div className="flex space-x-2">
+      <Button onClick={exportToWord} variant="outline">
+        Xuất Word
+      </Button>
+      <Button onClick={exportToExcel} variant="outline">
+        Xuất Excel
+      </Button>
+      <Button onClick={exportToPdf} variant="outline">
+        Xuất PDF
+      </Button>
+      <label className="cursor-pointer">
+        <Button variant="secondary" asChild>
+          <span>Nhập Excel</span>
         </Button>
-        <Button
-          onClick={() => handlePreview("excel")}
-          className="flex items-center gap-2 bg-white text-black border border-gray-200 shadow-sm hover:bg-green-50"
-        >
-          <FileSpreadsheet className="w-4 h-4" />
-          Xem Excel
-        </Button>
-        <Button
-          onClick={() => handlePreview("pdf")}
-          className="flex items-center gap-2 bg-white text-black border border-gray-200 shadow-sm hover:bg-red-50"
-        >
-          <File className="w-4 h-4" />
-          Xem PDF
-        </Button>
-      </div>
-
-      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-        <DialogContent className="max-w-5xl h-[80vh] overflow-y-auto">
-          <DialogHeader className="sticky top-0 bg-white z-10 pb-4 mb-4 border-b">
-            <div className="flex justify-between items-center">
-              <DialogTitle>{getPreviewTitle()}</DialogTitle>
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleExport}
-                  variant="outline"
-                  className="flex items-center gap-2"
-                >
-                  {getExportIcon()}
-                  {getExportButtonText()}
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="h-8 w-8 p-0"
-                  onClick={() => {
-                    setIsPreviewOpen(false);
-                    setPreviewType(null);
-                  }}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </DialogHeader>
-          {generatePreviewContent()}
-        </DialogContent>
-      </Dialog>
-    </>
+        <input
+          type="file"
+          accept=".xlsx, .xls"
+          className="hidden"
+          onChange={handleFileUpload}
+        />
+      </label>
+    </div>
   );
 };
 
