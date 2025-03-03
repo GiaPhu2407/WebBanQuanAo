@@ -8,6 +8,14 @@ const config: Config = {
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
+    screens: {
+      vs: "320px",
+      sm: "576px",
+      md: "768px",
+      lg: "992px",
+      xl: "1200px",
+      xxl: "1600px",
+    },
     extend: {
       // animation: {
       //   slideTextColor:
@@ -173,9 +181,9 @@ const config: Config = {
         "50%": { opacity: "0.5", transform: "translateX(50px)" },
         "100%": { opacity: "1", transform: "translateX(0px)" },
       },
-      fontFamily:{
-        'Giaphu':['Roboto', 'Helvetica', 'Arial', 'sans-serif']
-      }
+      fontFamily: {
+        Giaphu: ["Roboto", "Helvetica", "Arial", "sans-serif"],
+      },
     },
   },
   plugins: [require("daisyui")],

@@ -123,46 +123,48 @@ const Menu: React.FC = () => {
     }
   };
 
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (isMobileMenuOpen) setIsMobileMenuOpen(false);
+    };
+
+    document.addEventListener("click", handleClickOutside);
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, [isMobileMenuOpen]);
+
   return (
     <div className="fixed top-0 w-full z-50">
-      <div className="bg-white w-full h-12 shadow-md">
-        <div className="container mx-auto px-4 h-full">
+      <div className="bg-white w-full h-14 md:h-12 shadow-md">
+        <div className="container mx-auto px-2 sm:px-4 h-full">
           <div className="flex items-center justify-between h-full">
             {/* Logo and Dashboard Title */}
-            <div className="flex items-center space-x-4">
-              <h1 className="font-Giaphu text-xl md:text-2xl font-bold tracking-wider">
+            <div className="flex items-center space-x-2 md:space-x-4">
+              <h1 className="font-Giaphu text-lg md:text-xl lg:text-2xl font-bold tracking-wider">
                 DASHBOARD
               </h1>
             </div>
 
-          
-
             {/* User Profile Section - Right side */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 md:space-x-4">
               {/* Search Button */}
-              <button className="p-2 hover:bg-gray-100 rounded-full">
-                <Search className="h-5 w-5" />
+              <button className="p-1.5 md:p-2 hover:bg-gray-100 rounded-full">
+                <Search className="h-4 w-4 md:h-5 md:w-5" />
               </button>
 
-              {/* Notification Button with Counter */}
-              {/* <div className="relative">
-                <button className="p-2 hover:bg-gray-100 rounded-full">
-                  <Bell className="h-5 w-5" />
-                  {orderCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                      {orderCount > 9 ? "9+" : orderCount}
-                    </span>
-                  )}
-                </button>
-              </div> */}
-              <Notification />
+              {/* Notification Component */}
+              <div className="hidden sm:block">
+                <Notification />
+              </div>
 
               {/* User Avatar and Menu */}
               {userData ? (
                 <HoverCard>
                   <HoverCardTrigger asChild>
-                    <div className="flex items-center gap-2 cursor-pointer">
-                      <Avatar className="h-8 w-8 ring-2 ring-offset-2 ring-gray-200">
+                    <div className="flex items-center gap-1 md:gap-2 cursor-pointer">
+                      <Avatar className="h-7 w-7 md:h-8 md:w-8 ring-2 ring-offset-1 md:ring-offset-2 ring-gray-200">
                         <AvatarImage
                           src="https://github.com/shadcn.png"
                           alt={userData.Hoten || "User"}
@@ -177,10 +179,10 @@ const Menu: React.FC = () => {
                     </div>
                   </HoverCardTrigger>
 
-                  <HoverCardContent className="w-72 p-0">
-                    <div className="p-4 border-b">
+                  <HoverCardContent className="w-64 md:w-72 p-0">
+                    <div className="p-3 md:p-4 border-b">
                       <div className="flex items-center gap-3">
-                        <Avatar className="h-12 w-12">
+                        <Avatar className="h-10 md:h-12 w-10 md:w-12">
                           <AvatarImage
                             src="https://github.com/shadcn.png"
                             alt={userData.Hoten || "User"}
@@ -237,7 +239,11 @@ const Menu: React.FC = () => {
                 </HoverCard>
               ) : (
                 <Link href="/login">
-                  <Button variant="outline" size="sm" className="text-sm">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs md:text-sm"
+                  >
                     Đăng nhập
                   </Button>
                 </Link>
@@ -245,8 +251,11 @@ const Menu: React.FC = () => {
 
               {/* Mobile Menu Button - Only visible on mobile */}
               <button
-                className="md:hidden p-2 hover:bg-gray-100 rounded-full"
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="md:hidden p-1.5 hover:bg-gray-100 rounded-full"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsMobileMenuOpen(!isMobileMenuOpen);
+                }}
               >
                 <MenuIcon className="h-5 w-5" />
               </button>
@@ -257,11 +266,14 @@ const Menu: React.FC = () => {
 
       {/* Mobile Navigation Menu - Only visible when toggled on mobile */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-white shadow-lg border-t">
+        <div className="md:hidden bg-white shadow-lg border-t animate-in slide-in-from-top duration-300">
           <div className="py-2 px-4">
+            <div className="sm:hidden mb-2">
+              <Notification />
+            </div>
             <Link
               href="/Show"
-              className="flex items-center py-3 hover:bg-gray-100 rounded px-2"
+              className="flex items-center py-2.5 hover:bg-gray-100 rounded px-2"
             >
               <Home className="mr-2 h-5 w-5" />
               <span>Trang Chủ</span>
@@ -269,7 +281,7 @@ const Menu: React.FC = () => {
             {userData?.role?.Tennguoidung === "Admin" && (
               <Link
                 href="/Admin/orders"
-                className="flex items-center py-3 hover:bg-gray-100 rounded px-2"
+                className="flex items-center py-2.5 hover:bg-gray-100 rounded px-2"
               >
                 <FaBagShopping className="mr-2 h-5 w-5" />
                 <span>Đơn Hàng</span>
@@ -282,7 +294,7 @@ const Menu: React.FC = () => {
             )}
             <Link
               href="/Admin/settings"
-              className="flex items-center py-3 hover:bg-gray-100 rounded px-2"
+              className="flex items-center py-2.5 hover:bg-gray-100 rounded px-2"
             >
               <Settings className="mr-2 h-5 w-5" />
               <span>Cài Đặt</span>
@@ -290,9 +302,6 @@ const Menu: React.FC = () => {
           </div>
         </div>
       )}
-
-      {/* Spacing for content below the fixed header */}
-      {/* <div className="h-20"></div> */}
     </div>
   );
 };

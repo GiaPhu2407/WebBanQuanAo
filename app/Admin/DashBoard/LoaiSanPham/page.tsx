@@ -32,7 +32,20 @@ import {
 import ExportOptions from "./component/ExportOptions";
 import LoaiSanPhamTable from "./component/LoaiSanPhamTable";
 // Import icons
-import { Pencil, Trash2 } from "lucide-react";
+import {
+  Pencil,
+  Trash2,
+  Plus,
+  Search,
+  Filter,
+  MoreHorizontal,
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface LoaiSanPham {
   idloaisanpham: number;
@@ -77,6 +90,7 @@ export default function LoaiSanPhamManagementPage() {
   const [allSelectedItems, setAllSelectedItems] = useState<{
     [key: number]: LoaiSanPham;
   }>({});
+  const [showExportOptions, setShowExportOptions] = useState(false);
 
   const { toast } = useToast();
 
@@ -134,11 +148,11 @@ export default function LoaiSanPhamManagementPage() {
 
   const renderPagination = () => {
     const pages = [];
-    let startPage = Math.max(1, meta.page - 2);
-    let endPage = Math.min(meta.totalPages, startPage + 4);
+    let startPage = Math.max(1, meta.page - 1);
+    let endPage = Math.min(meta.totalPages, startPage + 2);
 
-    if (endPage - startPage < 4) {
-      startPage = Math.max(1, endPage - 4);
+    if (endPage - startPage < 2) {
+      startPage = Math.max(1, endPage - 2);
     }
 
     for (let i = startPage; i <= endPage; i++) {
@@ -147,7 +161,8 @@ export default function LoaiSanPhamManagementPage() {
           key={i}
           variant={i === meta.page ? "default" : "outline"}
           onClick={() => handlePageChange(i)}
-          className="min-w-[40px]"
+          className="min-w-[32px] h-8 px-2 sm:min-w-[40px] sm:h-10 sm:px-3"
+          size="sm"
         >
           {i}
         </Button>
@@ -282,7 +297,7 @@ export default function LoaiSanPhamManagementPage() {
     const totalSelected = Object.keys(allSelectedItems).length;
     return totalSelected > 0 ? (
       <div className="text-sm text-blue-600">
-        Đã chọn {totalSelected} loại sản phẩm trên tất cả các trang
+        Đã chọn {totalSelected} loại sản phẩm
       </div>
     ) : null;
   };
@@ -375,10 +390,10 @@ export default function LoaiSanPhamManagementPage() {
                     className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
                 </th>
-                <th className="px-3 py-1text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   ID
                 </th>
-                <th className="px-3 py-1text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Tên loại
                 </th>
                 <th className="px-3 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -461,36 +476,68 @@ export default function LoaiSanPhamManagementPage() {
   };
 
   return (
-    <div className="flex bg-gray-100">
+    <div className="flex flex-col  bg-gray-100">
       <SalesDashboard />
-      <div className="flex-1 p-8 pt-16">
+      <div className="flex-1 -mt-[500px] p-4 sm:p-6 pt-16 sm:pt-20">
         <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-800">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-4">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
               Quản lý loại sản phẩm
             </h1>
-            <div className="flex space-x-2">
-              <Button onClick={handleAddNewClick}>Thêm loại sản phẩm</Button>
+
+            {/* Desktop Actions */}
+            <div className="hidden sm:flex space-x-2">
+              <Button onClick={handleAddNewClick}>
+                <Plus className="h-4 w-4 mr-1" />
+                Thêm loại sản phẩm
+              </Button>
               {modifiedExportOptions}
+            </div>
+
+            {/* Mobile Actions */}
+            <div className="flex sm:hidden w-full justify-between">
+              <Button onClick={handleAddNewClick} size="sm">
+                <Plus className="h-4 w-4 mr-1" />
+                Thêm mới
+              </Button>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => setShowExportOptions(!showExportOptions)}
+                  >
+                    Xuất/Nhập dữ liệu
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
 
-          <div className="flex justify-between items-center gap-4 mb-4">
-            <div className="flex-1 max-w-md">
+          {/* Mobile Export Options */}
+          {showExportOptions && (
+            <div className="sm:hidden mb-4">{modifiedExportOptions}</div>
+          )}
+
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+            <div className="w-full sm:max-w-md relative">
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 type="text"
                 placeholder="Tìm kiếm theo tên loại hoặc mô tả..."
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
-                className="w-full"
+                className="pl-8 w-full"
               />
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 text-xs sm:text-sm text-gray-600 w-full sm:w-auto">
               {renderSelectionInfo()}
-              <div className="text-sm text-gray-600">
-                Tổng số: {meta.totalRecords} loại sản phẩm
-              </div>
+              <div>Tổng số: {meta.totalRecords} loại sản phẩm</div>
             </div>
           </div>
 
@@ -498,18 +545,20 @@ export default function LoaiSanPhamManagementPage() {
           <CustomLoaiSanPhamTable />
 
           {/* Thêm phân trang */}
-          <div className="flex items-center justify-between mt-4">
-            <div className="text-sm text-gray-600">
+          <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-3">
+            <div className="text-xs sm:text-sm text-gray-600 order-2 sm:order-1">
               Hiển thị {(meta.page - 1) * meta.limit_size + 1} -{" "}
               {Math.min(meta.page * meta.limit_size, meta.totalRecords)} trong{" "}
               {meta.totalRecords} loại sản phẩm
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 order-1 sm:order-2">
               <Button
                 variant="outline"
                 onClick={() => handlePageChange(meta.page - 1)}
                 disabled={meta.page === 1}
+                size="sm"
+                className="h-8 w-8 p-0 sm:h-10 sm:w-10"
               >
                 <span className="sr-only">Previous</span>←
               </Button>
@@ -520,6 +569,8 @@ export default function LoaiSanPhamManagementPage() {
                 variant="outline"
                 onClick={() => handlePageChange(meta.page + 1)}
                 disabled={meta.page >= meta.totalPages}
+                size="sm"
+                className="h-8 w-8 p-0 sm:h-10 sm:w-10"
               >
                 <span className="sr-only">Next</span>→
               </Button>
@@ -534,7 +585,7 @@ export default function LoaiSanPhamManagementPage() {
                   }))
                 }
               >
-                <SelectTrigger className="w-20">
+                <SelectTrigger className="w-16 sm:w-20 h-8 sm:h-10 text-xs sm:text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -548,7 +599,7 @@ export default function LoaiSanPhamManagementPage() {
           </div>
 
           <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-            <DialogContent>
+            <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>
                   {isEditing

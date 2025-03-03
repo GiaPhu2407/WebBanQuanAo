@@ -5,16 +5,18 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { X, ChevronDown } from "lucide-react";
 import { MenuProps, User } from "@/app/Menu/type/menu";
 
-interface MobileMenuProps extends Pick<MenuProps, 
-  'userData' | 
-  'handleLogout' | 
-  'showMaleDropdown' | 
-  'setShowMaleDropdown' | 
-  'showFemaleDropdown' | 
-  'setShowFemaleDropdown' | 
-  'isMobileMenuOpen' | 
-  'setIsMobileMenuOpen'
-> {}
+interface MobileMenuProps
+  extends Pick<
+    MenuProps,
+    | "userData"
+    | "handleLogout"
+    | "showMaleDropdown"
+    | "setShowMaleDropdown"
+    | "showFemaleDropdown"
+    | "setShowFemaleDropdown"
+    | "isMobileMenuOpen"
+    | "setIsMobileMenuOpen"
+  > {}
 
 const MobileMenu: React.FC<MobileMenuProps> = ({
   userData,

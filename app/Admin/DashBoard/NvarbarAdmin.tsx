@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import {
@@ -31,6 +31,10 @@ import {
   ArrowUpRight,
   DollarSign,
   TrendingUp,
+  Menu as MenuIcon,
+  X,
+  ChevronRight,
+  ChevronLeft,
 } from "lucide-react";
 import Menu from "./HeaderDashboard";
 
@@ -41,12 +45,14 @@ interface SidebarSectionProps {
   children?: React.ReactNode;
   isOpen: boolean;
   onToggle: () => void;
+  isExpanded: boolean;
 }
 
 interface SidebarItemProps {
   icon: React.ReactNode;
   label: string;
   onClick: () => void;
+  isExpanded: boolean;
 }
 
 interface StatsCardProps {
@@ -84,23 +90,29 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({
   children,
   isOpen,
   onToggle,
+  isExpanded,
 }) => {
   return (
     <div className="text-white">
       <button
         onClick={onToggle}
-        className="w-full flex items-center px-4 py-2 text-black hover:bg-gray-800 hover:text-white transition-colors rounded-md"
+        className={`w-full flex items-center ${
+          isExpanded ? "px-3 sm:px-4" : "px-2 justify-center"
+        } py-2 text-black hover:bg-gray-800 hover:text-white transition-colors rounded-md`}
+        title={!isExpanded ? title : ""}
       >
-        {icon}
-        <span className="ml-2 flex-1 text-sm font-medium">{title}</span>
-        {children && (
-          <span className="ml-2">
-            {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        <span className={isExpanded ? "mr-2" : ""}>{icon}</span>
+        {isExpanded && (
+          <span className="flex-1 text-xs sm:text-sm font-medium">{title}</span>
+        )}
+        {children && isExpanded && (
+          <span className="ml-1">
+            {isOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </span>
         )}
       </button>
-      {children && isOpen && (
-        <div className="ml-8 space-y-1 mt-1 transition-all duration-200">
+      {children && isOpen && isExpanded && (
+        <div className="ml-4 sm:ml-8 space-y-1 mt-1 transition-all duration-200">
           {children}
         </div>
       )}
@@ -109,14 +121,22 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({
 };
 
 // Sidebar Item Component
-const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, onClick }) => {
+const SidebarItem: React.FC<SidebarItemProps> = ({
+  icon,
+  label,
+  onClick,
+  isExpanded,
+}) => {
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center px-4 py-2 text-black hover:bg-gray-800 hover:text-white transition-colors rounded-md text-sm"
+      className={`w-full flex items-center ${
+        isExpanded ? "px-3 sm:px-4 justify-start" : "px-2 justify-center"
+      } py-1.5 sm:py-2 text-black hover:bg-gray-800 hover:text-white transition-colors rounded-md text-xs sm:text-sm`}
+      title={!isExpanded ? label : ""}
     >
-      {icon}
-      <span className="ml-2">{label}</span>
+      <span className={isExpanded ? "mr-2" : ""}>{icon}</span>
+      {isExpanded && <span>{label}</span>}
     </button>
   );
 };
@@ -130,14 +150,14 @@ const StatsCard: React.FC<StatsCardProps> = ({
   trendValue,
 }) => {
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
+    <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-gray-500 text-sm mb-1">{title}</p>
-          <h3 className="text-2xl font-bold">{value}</h3>
+          <p className="text-gray-500 text-xs sm:text-sm mb-1">{title}</p>
+          <h3 className="text-lg sm:text-2xl font-bold">{value}</h3>
         </div>
         <div
-          className={`p-3 rounded-full ${
+          className={`p-2 sm:p-3 rounded-full ${
             trend === "up" ? "bg-green-100" : "bg-red-100"
           }`}
         >
@@ -145,19 +165,21 @@ const StatsCard: React.FC<StatsCardProps> = ({
         </div>
       </div>
       {trendValue && (
-        <div className="mt-4 flex items-center">
+        <div className="mt-3 sm:mt-4 flex items-center">
           <ArrowUpRight
             className={trend === "up" ? "text-green-500" : "text-red-500"}
-            size={16}
+            size={14}
           />
           <span
-            className={`ml-1 text-sm ${
+            className={`ml-1 text-xs sm:text-sm ${
               trend === "up" ? "text-green-500" : "text-red-500"
             }`}
           >
             {trendValue}
           </span>
-          <span className="text-gray-500 text-sm ml-1">vs last month</span>
+          <span className="text-gray-500 text-xs sm:text-sm ml-1">
+            vs last month
+          </span>
         </div>
       )}
     </div>
@@ -171,29 +193,30 @@ const SalesDashboard: React.FC = () => {
     customers: false,
     orders: false,
   });
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
 
-  // Sample data
-  // const salesData: SalesDataPoint[] = [
-  //   { name: "Jan", sales: 4000, revenue: 2400, profit: 2400 },
-  //   { name: "Feb", sales: 3000, revenue: 1398, profit: 2210 },
-  //   { name: "Mar", sales: 2000, revenue: 9800, profit: 2290 },
-  //   { name: "Apr", sales: 2780, revenue: 3908, profit: 2000 },
-  //   { name: "May", sales: 1890, revenue: 4800, profit: 2181 },
-  //   { name: "Jun", sales: 2390, revenue: 3800, profit: 2500 },
-  //   { name: "Jul", sales: 3490, revenue: 4300, profit: 2100 },
-  // ];
+  // Toggle sidebar for mobile view
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
 
-  // const recentTransactions: Transaction[] = [
-  //   { id: 1, customer: "John Doe", amount: "$524.99", status: "Completed" },
-  //   { id: 2, customer: "Jane Smith", amount: "$299.99", status: "Pending" },
-  //   { id: 3, customer: "Mike Johnson", amount: "$149.99", status: "Completed" },
-  //   {
-  //     id: 4,
-  //     customer: "Sarah Williams",
-  //     amount: "$749.99",
-  //     status: "Processing",
-  //   },
-  // ];
+  // Toggle sidebar expansion for desktop/tablet
+  const toggleSidebarExpansion = () => {
+    setSidebarExpanded(!sidebarExpanded);
+  };
+
+  // Close sidebar when route changes
+  useEffect(() => {
+    const handleRouteChange = () => {
+      setSidebarOpen(false);
+    };
+
+    window.addEventListener("popstate", handleRouteChange);
+    return () => {
+      window.removeEventListener("popstate", handleRouteChange);
+    };
+  }, []);
 
   const toggleSection = (section: keyof OpenSections): void => {
     setOpenSections((prev) => ({
@@ -203,100 +226,277 @@ const SalesDashboard: React.FC = () => {
   };
 
   return (
-    <div>
-      <Menu/>
-    <div className="flex h-screen bg-gray-100 mt-10">
-      {/* Sidebar Navigation */}
-      <nav className="w-64 p-4 space-y-2">
-        {/* Product Management Section */}
-        <SidebarSection
-          title="Quản Lý Sản Phẩm"
-          icon={<Package size={18} />}
-          isOpen={openSections.products}
-          onToggle={() => toggleSection("products")}
-        >
-          <SidebarItem
-            icon={<Tags size={16} />}
-            label="Category"
-            onClick={() => router.push("/category")}
-          />
-          <SidebarItem
-            icon={<Tags size={16} />}
-            label="Product Type"
-            onClick={() => router.push("/Admin/DashBoard/LoaiSanPham")}
-          />
-          <SidebarItem
-            icon={<ShoppingBag size={16} />}
-            label="Product"
-            onClick={() => router.push("/Admin/DashBoard/ProductManager")}
-          />
-          <SidebarItem
-            icon={<Truck size={16} />}
-            label="Supplier"
-            onClick={() => router.push("/Admin/DashBoard/Nhacungcap")}
-          />
-          <SidebarItem
-            icon={<Award size={16} />}
-            label="User"
-            onClick={() => router.push("/Admin/DashBoard/ManagerUser")}
-          />
-          <SidebarItem
-            icon={<Tags size={16} />}
-            label="Image"
-            onClick={() => router.push("/Admin/DashBoard/ManagerImage")}
-          />
-        </SidebarSection>
+    <div className="min-h-screen bg-gray-100">
+      <div className="relative">
+        <Menu />
 
-        {/* Customer Management Section */}
-        <SidebarSection
-          title="Quản Lý Khách Hàng"
-          icon={<Users size={18} />}
-          isOpen={openSections.customers}
-          onToggle={() => toggleSection("customers")}
+        {/* Mobile Menu Button - Top Left Corner */}
+        <button
+          onClick={toggleSidebar}
+          className="md:hidden fixed top-16 left-4 z-50 bg-white p-2 rounded-md shadow-md"
+          aria-label="Toggle menu"
         >
-          <SidebarItem
-            icon={<User size={16} />}
-            label="Customer"
-            onClick={() => router.push("/customer")}
-          />
-          <SidebarItem
-            icon={<ShoppingCart size={16} />}
-            label="Cart"
-            onClick={() => router.push("/")}
-          />
-          <SidebarItem
-            icon={<Heart size={16} />}
-            label="Wishlist"
-            onClick={() => router.push("/wishlist")}
-          />
-        </SidebarSection>
+          <MenuIcon size={24} />
+        </button>
+      </div>
 
-        {/* Order Management Section */}
-        <SidebarSection
-          title="Quản Lý Đơn Hàng"
-          icon={<ShoppingBag size={18} />}
-          isOpen={openSections.orders}
-          onToggle={() => toggleSection("orders")}
+      <div className="flex pt-14">
+        {/* Sidebar Navigation - Desktop/Tablet (Collapsible) */}
+        <nav
+          className={`hidden md:block ${
+            sidebarExpanded ? "w-64" : "w-16"
+          } bg-white shadow-md h-[calc(100vh-3.5rem)] overflow-y-auto transition-all duration-300 ease-in-out`}
         >
-          <SidebarItem
-            icon={<ShoppingBag size={16} />}
-            label="Order"
-            onClick={() => router.push("/Admin/DashBoard/ManagerDonhang")}
-          />
-          <SidebarItem
-            icon={<CreditCard size={16} />}
-            label="Payment"
-            onClick={() => router.push("/Admin/DashBoard/Managerpayment")}
-          />
-          <SidebarItem
-            icon={<RotateCcw size={16} />}
-            label="Return"
-            onClick={() => router.push("/return")}
-          />
-        </SidebarSection>
-      </nav>
-      {/* Main Content */}{" "}
-    </div>
+          {/* Expand/Collapse Button */}
+          <div className="flex justify-end p-2">
+            <button
+              onClick={toggleSidebarExpansion}
+              className="p-1 rounded-full hover:bg-gray-100"
+              title={sidebarExpanded ? "Collapse sidebar" : "Expand sidebar"}
+            >
+              {sidebarExpanded ? (
+                <ChevronLeft size={18} />
+              ) : (
+                <ChevronRight size={18} />
+              )}
+            </button>
+          </div>
+
+          <div className="p-2 space-y-2">
+            {/* Product Management Section */}
+            <SidebarSection
+              title="Quản Lý Sản Phẩm"
+              icon={<Package size={18} />}
+              isOpen={openSections.products}
+              onToggle={() => toggleSection("products")}
+              isExpanded={sidebarExpanded}
+            >
+              <SidebarItem
+                icon={<Tags size={16} />}
+                label="Category"
+                onClick={() => router.push("/category")}
+                isExpanded={sidebarExpanded}
+              />
+              <SidebarItem
+                icon={<Tags size={16} />}
+                label="Product Type"
+                onClick={() => router.push("/Admin/DashBoard/LoaiSanPham")}
+                isExpanded={sidebarExpanded}
+              />
+              <SidebarItem
+                icon={<ShoppingBag size={16} />}
+                label="Product"
+                onClick={() => router.push("/Admin/DashBoard/ProductManager")}
+                isExpanded={sidebarExpanded}
+              />
+              <SidebarItem
+                icon={<Truck size={16} />}
+                label="Supplier"
+                onClick={() => router.push("/Admin/DashBoard/Nhacungcap")}
+                isExpanded={sidebarExpanded}
+              />
+              <SidebarItem
+                icon={<Award size={16} />}
+                label="User"
+                onClick={() => router.push("/Admin/DashBoard/ManagerUser")}
+                isExpanded={sidebarExpanded}
+              />
+              <SidebarItem
+                icon={<Tags size={16} />}
+                label="Image"
+                onClick={() => router.push("/Admin/DashBoard/ManagerImage")}
+                isExpanded={sidebarExpanded}
+              />
+            </SidebarSection>
+
+            {/* Customer Management Section */}
+            <SidebarSection
+              title="Quản Lý Khách Hàng"
+              icon={<Users size={18} />}
+              isOpen={openSections.customers}
+              onToggle={() => toggleSection("customers")}
+              isExpanded={sidebarExpanded}
+            >
+              <SidebarItem
+                icon={<User size={16} />}
+                label="Customer"
+                onClick={() => router.push("/customer")}
+                isExpanded={sidebarExpanded}
+              />
+              <SidebarItem
+                icon={<ShoppingCart size={16} />}
+                label="Cart"
+                onClick={() => router.push("/")}
+                isExpanded={sidebarExpanded}
+              />
+              <SidebarItem
+                icon={<Heart size={16} />}
+                label="Wishlist"
+                onClick={() => router.push("/wishlist")}
+                isExpanded={sidebarExpanded}
+              />
+            </SidebarSection>
+
+            {/* Order Management Section */}
+            <SidebarSection
+              title="Quản Lý Đơn Hàng"
+              icon={<ShoppingBag size={18} />}
+              isOpen={openSections.orders}
+              onToggle={() => toggleSection("orders")}
+              isExpanded={sidebarExpanded}
+            >
+              <SidebarItem
+                icon={<ShoppingBag size={16} />}
+                label="Order"
+                onClick={() => router.push("/Admin/DashBoard/ManagerDonhang")}
+                isExpanded={sidebarExpanded}
+              />
+              <SidebarItem
+                icon={<CreditCard size={16} />}
+                label="Payment"
+                onClick={() => router.push("/Admin/DashBoard/Managerpayment")}
+                isExpanded={sidebarExpanded}
+              />
+              <SidebarItem
+                icon={<RotateCcw size={16} />}
+                label="Return"
+                onClick={() => router.push("/return")}
+                isExpanded={sidebarExpanded}
+              />
+            </SidebarSection>
+          </div>
+        </nav>
+
+        {/* Mobile Sidebar - Slide in from left */}
+        {sidebarOpen && (
+          <div className="fixed inset-0 z-40 md:hidden">
+            {/* Backdrop */}
+            <div
+              className="absolute inset-0 bg-gray-800 bg-opacity-50"
+              onClick={toggleSidebar}
+            ></div>
+
+            {/* Sidebar */}
+            <nav className="absolute left-0 top-10 w-64 h-full bg-white shadow-lg p-4 space-y-2 overflow-y-auto transform transition-transform duration-300 ease-in-out">
+              <div className="flex justify-between items-center mb-4 border-b pb-2">
+                <h2 className="font-bold text-lg">Menu</h2>
+                <button onClick={toggleSidebar} className="p-1">
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Product Management Section */}
+              <SidebarSection
+                title="Quản Lý Sản Phẩm"
+                icon={<Package size={18} />}
+                isOpen={openSections.products}
+                onToggle={() => toggleSection("products")}
+                isExpanded={true}
+              >
+                <SidebarItem
+                  icon={<Tags size={16} />}
+                  label="Category"
+                  onClick={() => router.push("/category")}
+                  isExpanded={true}
+                />
+                <SidebarItem
+                  icon={<Tags size={16} />}
+                  label="Product Type"
+                  onClick={() => router.push("/Admin/DashBoard/LoaiSanPham")}
+                  isExpanded={true}
+                />
+                <SidebarItem
+                  icon={<ShoppingBag size={16} />}
+                  label="Product"
+                  onClick={() => router.push("/Admin/DashBoard/ProductManager")}
+                  isExpanded={true}
+                />
+                <SidebarItem
+                  icon={<Truck size={16} />}
+                  label="Supplier"
+                  onClick={() => router.push("/Admin/DashBoard/Nhacungcap")}
+                  isExpanded={true}
+                />
+                <SidebarItem
+                  icon={<Award size={16} />}
+                  label="User"
+                  onClick={() => router.push("/Admin/DashBoard/ManagerUser")}
+                  isExpanded={true}
+                />
+                <SidebarItem
+                  icon={<Tags size={16} />}
+                  label="Image"
+                  onClick={() => router.push("/Admin/DashBoard/ManagerImage")}
+                  isExpanded={true}
+                />
+              </SidebarSection>
+
+              {/* Customer Management Section */}
+              <SidebarSection
+                title="Quản Lý Khách Hàng"
+                icon={<Users size={18} />}
+                isOpen={openSections.customers}
+                onToggle={() => toggleSection("customers")}
+                isExpanded={true}
+              >
+                <SidebarItem
+                  icon={<User size={16} />}
+                  label="Customer"
+                  onClick={() => router.push("/customer")}
+                  isExpanded={true}
+                />
+                <SidebarItem
+                  icon={<ShoppingCart size={16} />}
+                  label="Cart"
+                  onClick={() => router.push("/")}
+                  isExpanded={true}
+                />
+                <SidebarItem
+                  icon={<Heart size={16} />}
+                  label="Wishlist"
+                  onClick={() => router.push("/wishlist")}
+                  isExpanded={true}
+                />
+              </SidebarSection>
+
+              {/* Order Management Section */}
+              <SidebarSection
+                title="Quản Lý Đơn Hàng"
+                icon={<ShoppingBag size={18} />}
+                isOpen={openSections.orders}
+                onToggle={() => toggleSection("orders")}
+                isExpanded={true}
+              >
+                <SidebarItem
+                  icon={<ShoppingBag size={16} />}
+                  label="Order"
+                  onClick={() => router.push("/Admin/DashBoard/ManagerDonhang")}
+                  isExpanded={true}
+                />
+                <SidebarItem
+                  icon={<CreditCard size={16} />}
+                  label="Payment"
+                  onClick={() => router.push("/Admin/DashBoard/Managerpayment")}
+                  isExpanded={true}
+                />
+                <SidebarItem
+                  icon={<RotateCcw size={16} />}
+                  label="Return"
+                  onClick={() => router.push("/return")}
+                  isExpanded={true}
+                />
+              </SidebarSection>
+            </nav>
+          </div>
+        )}
+
+        {/* Main Content */}
+        <div
+          className={`flex-1  p-4 md:p-6 ml-0 transition-all duration-300 ease-in-out ${
+            sidebarExpanded ? "md:ml-0" : "md:ml-0"
+          }`}
+        ></div>
+      </div>
     </div>
   );
 };

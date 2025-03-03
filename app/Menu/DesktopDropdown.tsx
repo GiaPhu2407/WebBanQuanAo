@@ -2,12 +2,14 @@ import Link from "next/link";
 import React from "react";
 import { MenuProps } from "@/app/Menu/type/menu";
 
-interface DesktopDropdownsProps extends Pick<MenuProps, 
-  'showMaleDropdown' | 
-  'setShowMaleDropdown' | 
-  'showFemaleDropdown' | 
-  'setShowFemaleDropdown'
-> {}
+interface DesktopDropdownsProps
+  extends Pick<
+    MenuProps,
+    | "showMaleDropdown"
+    | "setShowMaleDropdown"
+    | "showFemaleDropdown"
+    | "setShowFemaleDropdown"
+  > {}
 
 const DesktopDropdowns: React.FC<DesktopDropdownsProps> = ({
   showMaleDropdown,
