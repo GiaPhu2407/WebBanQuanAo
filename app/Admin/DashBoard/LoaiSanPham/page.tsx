@@ -1,8 +1,8 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import SalesDashboard from "../NvarbarAdmin";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
+
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -46,6 +46,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { AdminDashboard } from "../NvarbarAdmin";
 
 interface LoaiSanPham {
   idloaisanpham: number;
@@ -477,7 +478,7 @@ export default function LoaiSanPhamManagementPage() {
 
   return (
     <div className="flex flex-col  bg-gray-100">
-      <SalesDashboard />
+      <AdminDashboard />
       <div className="flex-1 -mt-[500px] p-4 sm:p-6 pt-16 sm:pt-20">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-4">
