@@ -2,6 +2,7 @@ import React, { ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import * as XLSX from "xlsx";
+import * as QRCode from "qrcode";
 import {
   Document,
   Packer,
@@ -32,31 +33,44 @@ export const ExportOptions: React.FC<ExportOptionsProps> = ({
   loaisanphamList,
   onDataImported,
 }) => {
-  const exportToExcel = () => {
-    if (selectedItems.length === 0) {
-      toast({
-        title: "Thông báo",
-        description: "Vui lòng chọn ít nhất một mục để xuất",
-        variant: "default",
+  const generateQRCodeData = async (data: LoaiSanPham[]) => {
+    const currentDate = new Date();
+    // Cấu trúc dữ liệu QR phù hợp với QR Scanner
+    const qrData = {
+      tieuDe: "Danh sách loại sản phẩm",
+      ngayXuat: currentDate.toLocaleString("vi-VN"),
+      tongSoMuc: data.length,
+      danhSach: data.map((item) => ({
+        id: item.idloaisanpham,
+        ten: item.tenloai,
+        moTa: item.mota,
+      })),
+      thongTinThem: {
+        thoiGianTao: currentDate.toISOString(),
+        soTrang: "1/1",
+        nguoiTao: "Hệ thống quản lý",
+        maBaoCao: `LSP-${Math.floor(
+          Math.random() * 10000
+        )}-${currentDate.getFullYear()}`,
+      },
+    };
+
+    try {
+      // Tạo QR code với kích thước lớn hơn và thêm margin
+      const qrCodeDataUrl = await QRCode.toDataURL(JSON.stringify(qrData), {
+        width: 200, // Tăng kích thước
+        margin: 2, // Thêm margin
+        errorCorrectionLevel: "H", // Độ chính xác cao nhất
+        color: {
+          dark: "#000000", // Màu đen cho QR
+          light: "#FFFFFF", // Màu trắng cho nền
+        },
       });
-      return;
+      return { qrCodeDataUrl, qrData };
+    } catch (err) {
+      console.error("Lỗi khi tạo mã QR:", err);
+      return { qrCodeDataUrl: null, qrData: null };
     }
-
-    const selectedData = loaisanphamList.filter((item) =>
-      selectedItems.includes(item.idloaisanpham)
-    );
-
-    const workbook = XLSX.utils.book_new();
-    const worksheet = XLSX.utils.json_to_sheet(
-      selectedData.map((item) => ({
-        "Mã loại": item.idloaisanpham,
-        "Tên loại": item.tenloai,
-        "Mô tả": item.mota,
-      }))
-    );
-
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Loại sản phẩm");
-    XLSX.writeFile(workbook, "danh-sach-loai-san-pham.xlsx");
   };
 
   const exportToPdf = async () => {
@@ -74,6 +88,12 @@ export const ExportOptions: React.FC<ExportOptionsProps> = ({
     );
 
     try {
+      // Tạo mã QR và lấy dữ liệu
+      const { qrCodeDataUrl, qrData } = await generateQRCodeData(selectedData);
+      if (!qrCodeDataUrl) {
+        throw new Error("Không thể tạo mã QR");
+      }
+
       const response = await fetch("/api/exportpdfloaisanpham", {
         method: "POST",
         headers: {
@@ -82,6 +102,13 @@ export const ExportOptions: React.FC<ExportOptionsProps> = ({
         body: JSON.stringify({
           data: selectedData,
           loaisanpham: "Danh sách loại sản phẩm",
+          qrCode: qrCodeDataUrl,
+          metadata: {
+            ngayTao: new Date().toLocaleString("vi-VN"),
+            nguoiTao: "Hệ thống",
+            tongSoMuc: selectedData.length,
+            qrData: JSON.stringify(qrData), // Lưu dữ liệu QR vào metadata
+          },
         }),
       });
 
@@ -112,6 +139,33 @@ export const ExportOptions: React.FC<ExportOptionsProps> = ({
         variant: "destructive",
       });
     }
+  };
+
+  const exportToExcel = () => {
+    if (selectedItems.length === 0) {
+      toast({
+        title: "Thông báo",
+        description: "Vui lòng chọn ít nhất một mục để xuất",
+        variant: "default",
+      });
+      return;
+    }
+
+    const selectedData = loaisanphamList.filter((item) =>
+      selectedItems.includes(item.idloaisanpham)
+    );
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(
+      selectedData.map((item) => ({
+        "Mã loại": item.idloaisanpham,
+        "Tên loại": item.tenloai,
+        "Mô tả": item.mota,
+      }))
+    );
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Loại sản phẩm");
+    XLSX.writeFile(workbook, "danh-sach-loai-san-pham.xlsx");
   };
 
   const exportSelectedToWord = async () => {
@@ -433,36 +487,39 @@ export const ExportOptions: React.FC<ExportOptionsProps> = ({
       console.error("Lỗi khi xử lý file:", error);
       toast({
         title: "Lỗi",
-        description: "Có lỗi xảy ra khi nhập dữ liệu. Vui lòng kiểm tra lại.",
+        description:
+          "Có lỗi xảy ra khi nhập dữ liệu. Vui lòng kiểm tra định dạng file và thử lại",
         variant: "destructive",
       });
     }
   };
 
   return (
-    <div className="flex space-x-2">
-      <Button onClick={exportSelectedToWord} variant="outline">
-        Xuất Word
-      </Button>
-      <Button onClick={exportToExcel} variant="outline">
+    <div className="flex flex-wrap gap-2 my-2">
+      <Button variant="outline" onClick={exportToExcel}>
         Xuất Excel
       </Button>
-      <Button onClick={exportToPdf} variant="outline">
+      <Button variant="outline" onClick={exportToPdf}>
         Xuất PDF
       </Button>
-      <label className="cursor-pointer">
-        <Button variant="secondary" asChild>
-          <span>Nhập Excel</span>
-        </Button>
+      <Button variant="outline" onClick={exportSelectedToWord}>
+        Xuất Word
+      </Button>
+      <div className="relative">
         <input
           type="file"
-          accept=".xlsx, .xls"
+          id="fileUpload"
           className="hidden"
+          accept=".xlsx, .xls"
           onChange={handleFileUpload}
         />
-      </label>
+        <Button
+          variant="outline"
+          onClick={() => document.getElementById("fileUpload")?.click()}
+        >
+          Nhập Excel
+        </Button>
+      </div>
     </div>
   );
 };
-
-export default ExportOptions;

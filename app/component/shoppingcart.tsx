@@ -1,21 +1,26 @@
 "use client";
 import { useRouter } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
-
 import { useEffect, useState } from "react";
-
 import { CartItem as CartItemType } from "@/app/component/type/cart";
 import Footer from "./Footer";
 import { CartItem } from "./cart/CartItem";
-import { CartSummary } from "./cart/Cartsummary";
 import Header from "./Header";
 import { calculateDiscountedPrice } from "./utils/price";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import CheckoutForm from "@/components/ui/Stripecomponents";
+import { OnlinePayment } from "./OnlinePayment";
+import CartSummary from "./cart/Cartsummary";
+
+interface OrderDetails {
+  items: any[];
+  total: number;
+  orderId: number;
+}
 
 const stripePromise = loadStripe(
-  "pk_test_51QtqEE06jxx8upvnnLHhOPk8V0VmtKPrSKIuXOxSUP9rakNIWceNgtcT0zchmN9atOAP0EHCat3vuPVrH8FjBMPj00e3aLrrY3"
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 );
 
 export const ShoppingCart = () => {
@@ -27,6 +32,8 @@ export const ShoppingCart = () => {
   const [isAllSelected, setIsAllSelected] = useState(false);
   const [showStripeForm, setShowStripeForm] = useState(false);
   const [clientSecret, setClientSecret] = useState("");
+  const [showOnlinePayment, setShowOnlinePayment] = useState(false);
+  const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -62,7 +69,6 @@ export const ShoppingCart = () => {
         ? { ...item, isSelected: !item.isSelected }
         : item
     );
-
     setCartItems(updatedCartItems);
     setIsAllSelected(updatedCartItems.every((item) => item.isSelected));
   };
@@ -73,7 +79,6 @@ export const ShoppingCart = () => {
       ...item,
       isSelected: newSelectedState,
     }));
-
     setCartItems(updatedCartItems);
     setIsAllSelected(newSelectedState);
   };
@@ -173,18 +178,19 @@ export const ShoppingCart = () => {
   };
 
   const validateAmount = (total: number) => {
-    return total <= 200000000; // 200 million VND
+    return total <= 200000000;
   };
 
   const handleStripePayment = async () => {
     try {
+      const selectedItems = cartItems.filter((item) => item.isSelected);
       const response = await fetch("/api/check", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          cartItems,
+          cartItems: selectedItems,
           metadata: {
-            cartItems: JSON.stringify(cartItems), // Add this
+            cartItems: JSON.stringify(selectedItems),
           },
         }),
       });
@@ -209,21 +215,14 @@ export const ShoppingCart = () => {
       return;
     }
 
-    const calculateTotal = () => {
-      return cartItems
-        .filter((item) => item.isSelected && item.sanpham)
-        .reduce((total, item) => {
-          const originalPrice = item.sanpham?.gia ?? 0;
-          const discountPercent = item.sanpham?.giamgia ?? 0;
-          const discountedPrice = calculateDiscountedPrice(
-            originalPrice,
-            discountPercent
-          );
-          return total + discountedPrice * item.soluong;
-        }, 0);
-    };
+    const selectedItems = cartItems.filter((item) => item.isSelected);
+    if (selectedItems.length === 0) {
+      toast.error("Vui lòng chọn ít nhất một sản phẩm");
+      return;
+    }
 
-    if (paymentMethod === "STRIPE" && !validateAmount(calculateTotal())) {
+    const total = calculateTotal();
+    if (paymentMethod === "STRIPE" && !validateAmount(total)) {
       toast.error(
         "Giá trị đơn hàng vượt quá 200 triệu VND. Vui lòng chọn phương thức thanh toán khác hoặc chia nhỏ đơn hàng."
       );
@@ -238,45 +237,60 @@ export const ShoppingCart = () => {
         return;
       }
 
-      // Handle traditional payment methods
+      if (paymentMethod === "online") {
+        const response = await fetch("/api/thanhtoan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            cartItems: selectedItems,
+            paymentMethod: "online",
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Tạo đơn hàng thất bại");
+        }
+
+        const result = await response.json();
+        if (!result.success || !result.data?.donhang?.iddonhang) {
+          throw new Error("Không nhận được thông tin đơn hàng");
+        }
+
+        setOrderDetails({
+          items: selectedItems,
+          total: total,
+          orderId: result.data.donhang.iddonhang,
+        });
+        setShowOnlinePayment(true);
+        return;
+      }
+
+      // Handle cash payment
       const response = await fetch("/api/thanhtoan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cartItems, paymentMethod }),
-      });
-
-      if (!response.ok) throw new Error("Checkout failed");
-
-      const result = await response.json();
-      // Send notification
-      await fetch("/api/notifications", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({
-          orderId: result.orderId,
-          customerName: "Customer Name", // Replace with actual customer name
-          amount: calculateTotal(),
-          status: "completed",
+          cartItems: selectedItems,
+          paymentMethod: "cash",
         }),
       });
-      const toastPromise = toast.promise(
-        new Promise((resolve) => setTimeout(resolve, 2500)),
-        {
-          loading: "Đang thanh toán...",
-          success: "Đặt hàng thành công!",
-          error: "Có lỗi xảy ra",
-        },
-        { duration: 4000 }
-      );
 
-      await toastPromise;
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      if (!response.ok) {
+        throw new Error("Đặt hàng thất bại");
+      }
+
+      const result = await response.json();
+
+      await toast.promise(new Promise((resolve) => setTimeout(resolve, 2000)), {
+        loading: "Đang xử lý đơn hàng...",
+        success: "Đặt hàng thành công!",
+        error: "Có lỗi xảy ra",
+      });
+
       router.push("/component/Order");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error during checkout:", error);
-      toast.error("Có lỗi xảy ra trong quá trình thanh toán");
+      toast.error(error.message || "Có lỗi xảy ra trong quá trình thanh toán");
     } finally {
       setProcessing(false);
     }
@@ -287,6 +301,18 @@ export const ShoppingCart = () => {
       <div className="min-h-screen flex justify-center items-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
+    );
+  }
+
+  if (showOnlinePayment && orderDetails) {
+    return (
+      <OnlinePayment
+        orderDetails={orderDetails}
+        onPaymentComplete={() => {
+          setShowOnlinePayment(false);
+          router.push("/component/Order");
+        }}
+      />
     );
   }
 
@@ -397,3 +423,5 @@ export const ShoppingCart = () => {
     </div>
   );
 };
+
+export default ShoppingCart;

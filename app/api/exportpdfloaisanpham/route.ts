@@ -3,7 +3,7 @@ import puppeteer from "puppeteer";
 
 export async function POST(req: NextRequest) {
   try {
-    const { data, loaisanpham } = await req.json();
+    const { data, loaisanpham, qrCode, metadata } = await req.json();
     const currentDate = new Date();
     const day = currentDate.getDate();
     const month = currentDate.getMonth() + 1;
@@ -95,9 +95,43 @@ export async function POST(req: NextRequest) {
           margin-left: auto;
           margin-right: auto;
         }
+        .document-info {
+          position: absolute;
+          top: 20px;
+          right: 20px;
+          text-align: right;
+          font-size: 12px;
+          border: 1px solid #000;
+          padding: 10px;
+          background-color: #fff;
+        }
+        .qr-code {
+          position: absolute;
+          top: 20px;
+          right: 20px;
+          width: 100px;
+          height: 100px;
+        }
+        .qr-code img {
+          width: 100%;
+          height: 100%;
+        }
+        .metadata {
+          position: absolute;
+          top: 130px;
+          right: 20px;
+          font-size: 10px;
+          text-align: right;
+        }
       </style>
     </head>
     <body>
+      <div class="qr-code">
+        <img src="${qrCode}" alt="QR Code" />
+      </div>
+      
+     
+
       <div class="header">
         <div class="title">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
         <div class="subtitle">Độc lập - Tự do - Hạnh phúc</div>
@@ -119,7 +153,6 @@ export async function POST(req: NextRequest) {
             <th style="width: 10%">ID Loại sản phẩm</th>
             <th style="width: 20%">Tên loại</th>
             <th style="width: 15%">Mô tả</th>
-           
           </tr>
         </thead>
         <tbody>
@@ -131,8 +164,7 @@ export async function POST(req: NextRequest) {
                 <td style="text-align: center">${item.idloaisanpham}</td>
                 <td>${item.tenloai}</td>
                 <td>${item.mota}</td>
-               
-                
+              </tr>
             `
             )
             .join("")}
@@ -163,13 +195,16 @@ export async function POST(req: NextRequest) {
     </html>
     `;
 
-    const browser = await puppeteer.launch();
+    const browser = await puppeteer.launch({
+      headless: true,
+    });
     const page = await browser.newPage();
     await page.setContent(htmlContent);
 
     const pdfBuffer = await page.pdf({
       format: "A4",
       margin: { top: "20mm", right: "20mm", bottom: "20mm", left: "20mm" },
+      printBackground: true, // Quan trọng: cho phép in background
     });
 
     await browser.close();

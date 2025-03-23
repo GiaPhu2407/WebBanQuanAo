@@ -21,6 +21,8 @@ import {
 } from "lucide-react";
 import AdminNotification from "@/app/component/AdminNotification";
 import Notification from "@/app/component/Notification";
+import Noti from "./Noti";
+import { NotificationBell } from "@/components/ui/notification-bell";
 
 // Interfaces for type safety
 interface User {
@@ -158,6 +160,7 @@ const Menu: React.FC = () => {
               <div className="hidden sm:block">
                 <Notification />
               </div>
+              <NotificationBell />
 
               {/* User Avatar and Menu */}
               {userData ? (

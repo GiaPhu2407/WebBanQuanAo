@@ -5,9 +5,20 @@ import prisma from "@/prisma/client";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, username, password, fullname, phone, address } = body;
+    console.log("Request body:", body);
 
-    // Kiểm tra email và username có tồn tại hay không
+    const { email, username, password, fullname, phone, address, avatar } =
+      body;
+
+    // Kiểm tra các trường bắt buộc - removing address from required fields
+    if (!email || !username || !password || !fullname || !phone) {
+      return NextResponse.json(
+        { error: "Thiếu thông tin yêu cầu" },
+        { status: 400 }
+      );
+    }
+
+    // Kiểm tra email và username có tồn tại không
     const existingUser = await prisma.users.findFirst({
       where: {
         OR: [{ Email: email }, { Tentaikhoan: username }],
@@ -15,26 +26,29 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingUser) {
-      // Trả về lỗi nếu email hoặc username đã tồn tại
       return NextResponse.json(
         { error: "Email hoặc tên người dùng đã tồn tại" },
         { status: 400 }
       );
     }
 
-    // Tiến hành đăng ký người dùng mới nếu không có lỗi
+    // Log avatar để kiểm tra URL
+    console.log("Avatar URL:", avatar);
+
+    // Tiến hành đăng ký người dùng
     const user = await signUp(
       email,
       username,
       password,
       fullname,
       phone,
-      address
+      address || "",
+      avatar || null
     );
 
     return NextResponse.json(user);
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: "Đăng ký thất bại" }, { status: 400 });
+    console.error("Error during registration:", error);
+    return NextResponse.json({ error: "Đăng ký thất bại" }, { status: 500 });
   }
 }

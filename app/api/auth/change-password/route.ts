@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { verifyPassword, hashPassword } from "@/lib/auth/password";
 import prisma from "@/prisma/client";
+import { getSession } from "@/lib/auth"; // Đảm bảo đã có hàm getSession
 
 const ChangePasswordSchema = z.object({
   currentPassword: z.string().min(1, "Current password is required"),
@@ -18,23 +19,27 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const validatedData = ChangePasswordSchema.parse(body);
-    const token = request.cookies.get("token")?.value;
 
-    if (!token) {
+    // Lấy session người dùng
+    const session = await getSession(request); // Đảm bảo lấy session từ request
+
+    if (!session || !session.idUsers) {
       return NextResponse.json(
         { error: "Authentication required" },
         { status: 401 }
       );
     }
 
-    const user = await prisma.users.findFirst({
-      where: { Token: token },
+    // Tìm người dùng trong database dựa trên id từ session
+    const user = await prisma.users.findUnique({
+      where: { idUsers: session.idUsers },
     });
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    // Kiểm tra mật khẩu hiện tại của người dùng
     const isValidPassword = await verifyPassword(
       validatedData.currentPassword,
       user.Matkhau ?? ""
@@ -47,8 +52,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Mã hóa mật khẩu mới
     const hashedNewPassword = await hashPassword(validatedData.newPassword);
 
+    // Cập nhật mật khẩu mới vào database
     await prisma.users.update({
       where: { idUsers: user.idUsers },
       data: { Matkhau: hashedNewPassword },

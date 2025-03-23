@@ -100,6 +100,7 @@
 
 import { getSession } from "@/lib/auth";
 import prisma from "@/prisma/client";
+import { request } from "http";
 import { NextRequest, NextResponse } from "next/server";
 
 // API lấy danh sách sản phẩm trong giỏ hàng
@@ -108,7 +109,7 @@ export async function GET(request: NextRequest) {
     // Log toàn bộ request để debug
     console.log("Full Request Headers:", request.headers);
 
-    const session = await getSession();
+    const session = await getSession(request);
 
     // Log thông tin session để debug
     console.log("Session:", session);
@@ -185,7 +186,7 @@ export async function GET(request: NextRequest) {
 // API thêm sản phẩm vào giỏ hàng
 export async function POST(req: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getSession(request);
 
     // Kiểm tra session người dùng
     if (!session || !session.idUsers) {

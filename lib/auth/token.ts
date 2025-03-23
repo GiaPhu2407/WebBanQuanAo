@@ -55,6 +55,7 @@ export interface TokenPayload {
   username: string;
   phone?: string;
   address?: string;
+  // avatar?: string;
 }
 
 export async function generateToken(payload: TokenPayload): Promise<string> {

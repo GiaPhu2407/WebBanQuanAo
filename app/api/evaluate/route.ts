@@ -163,7 +163,7 @@ const ReviewSchema = z.object({
   noidung: z
     .string()
     .min(1, { message: "Nội dung đánh giá không được để trống" })
-    .max(45, { message: "Nội dung đánh giá tối đa 45 ký tự" }),
+    .max(256, { message: "Nội dung đánh giá tối đa 256 ký tự" }),
 });
 
 // GET - Lấy danh sách đánh giá cho sản phẩm

@@ -1,14 +1,52 @@
 import prisma from "@/prisma/client";
 import { NextRequest, NextResponse } from "next/server";
-import jwt from "jsonwebtoken";
 
-export async function GET(request: NextRequest, response: NextResponse) {
-  const user = await prisma.users.findMany();
-  return NextResponse.json({ user, message: "Tất cả các id", status: 200 });
+export async function GET() {
+  try {
+    const users = await prisma.users.findMany({
+      where: {
+        idRole: 3, // Chỉ lấy người dùng có idRole = 3 (nhân viên)
+      },
+      select: {
+        idUsers: true,
+        Tentaikhoan: true,
+        Hoten: true,
+        Email: true,
+        idRole: true,
+      },
+      orderBy: {
+        Hoten: "asc",
+      },
+    });
+
+    return NextResponse.json({
+      data: users,
+      message: "Lấy danh sách nhân viên thành công",
+    });
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    return NextResponse.json(
+      { error: "Không thể lấy danh sách nhân viên" },
+      { status: 500 }
+    );
+  }
 }
-export async function DELETE(request: NextRequest, response: NextResponse) {
-  const user = await prisma.users.deleteMany();
-  return NextResponse.json({ user, message: "Xoá cả các id", status: 200 });
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const users = await prisma.users.deleteMany();
+    return NextResponse.json({
+      users,
+      message: "Xoá tất cả users thành công",
+      status: 200,
+    });
+  } catch (error) {
+    console.error("Error deleting users:", error);
+    return NextResponse.json(
+      { error: "Failed to delete users" },
+      { status: 500 }
+    );
+  }
 }
 // import { NextRequest, NextResponse } from "next/server";
 // import prisma from "@/prisma/client";

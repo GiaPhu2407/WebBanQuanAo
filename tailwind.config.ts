@@ -17,6 +17,16 @@ const config: Config = {
       xxl: "1600px",
     },
     extend: {
+      animations: {
+        "scan-line": "scan 2s linear infinite",
+      },
+      keyframess: {
+        scan: {
+          "0%": { top: "0%" },
+          "50%": { top: "100%" },
+          "100%": { top: "0%" },
+        },
+      },
       // animation: {
       //   slideTextColor:
       //     "slideText 8s linear infinite, colorFlash 1s linear infinite", // Kết hợp cả hai animation

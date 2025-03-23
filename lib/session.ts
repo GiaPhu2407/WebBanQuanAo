@@ -101,7 +101,7 @@ export const sessionOptions: SessionOptions = {
 };
 
 // Hàm lấy session
-export async function getSession() {
+export async function getSession(request: unknown) {
   return getIronSession(cookies(), sessionOptions);
 }
 

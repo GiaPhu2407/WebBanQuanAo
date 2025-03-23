@@ -9,7 +9,7 @@ export default function Home() {
       <Header />
       <Carousel />
       <Content />
-      <CozeChat/>
+      {/* <CozeChat/> */}
       <Footer />
     </div>
   );

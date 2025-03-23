@@ -237,12 +237,14 @@
 //     );
 //   }
 
-import React from "react";
+import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Product, Size } from "@/app/Admin/type/product";
 import { FileUpload } from "@/components/ui/file-upload";
 import { ProductColorSelector } from "./ProductColor";
+import ReactQuill from "react-quill"; // Import ReactQuill
+import "react-quill/dist/quill.snow.css"; // Import Quill's styles
 
 interface ProductFormProps {
   product?: Product;
@@ -269,6 +271,7 @@ export function ProductForm({
   setImageUrl,
   isSubmitting = false,
 }: ProductFormProps) {
+  // Handle input field changes
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -290,6 +293,7 @@ export function ProductForm({
     }));
   };
 
+  // Handle size changes
   const handleSizeChange = (sizeId: number, quantity: number) => {
     setFormData((prev: any) => ({
       ...prev,
@@ -300,6 +304,7 @@ export function ProductForm({
     }));
   };
 
+  // Handle adding a color option
   const handleColorAdd = (color: { idmausac: number; hinhanh: string }) => {
     setFormData((prev: any) => ({
       ...prev,
@@ -307,6 +312,7 @@ export function ProductForm({
     }));
   };
 
+  // Handle removing a color option
   const handleColorRemove = (colorId: number) => {
     setFormData((prev: any) => ({
       ...prev,
@@ -316,12 +322,21 @@ export function ProductForm({
     }));
   };
 
+  // Handle image change for colors
   const handleColorImageChange = (colorId: number, imageUrl: string) => {
     setFormData((prev: any) => ({
       ...prev,
       productColors: prev.productColors.map((c: any) =>
         c.idmausac === colorId ? { ...c, hinhanh: imageUrl } : c
       ),
+    }));
+  };
+
+  // Handle changes in the description using Quill
+  const handleDescriptionChange = (value: string) => {
+    setFormData((prev: any) => ({
+      ...prev,
+      mota: value,
     }));
   };
 
@@ -432,28 +447,14 @@ export function ProductForm({
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Mô tả
             </label>
-            <textarea
-              name="mota"
+            <ReactQuill
               value={formData.mota || ""}
-              onChange={handleChange}
-              className="w-full p-2 border rounded-md"
-              rows={4}
+              onChange={handleDescriptionChange}
+              theme="snow"
+              className="w-full h-40 p-2 border rounded-md"
             />
           </div>
-
-          {/* <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Màu sắc và hình ảnh
-            </label>
-            <ProductColorSelector
-              selectedColors={formData.productColors || []}
-              onColorAdd={handleColorAdd}
-              onColorRemove={handleColorRemove}
-              // onImageChange={handleColorImageChange}
-            />
-          </div> */}
-
-          <div>
+          <div className="mt-10">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Sizes và số lượng
             </label>

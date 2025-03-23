@@ -1,5 +1,5 @@
 import Link from "next/link";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { FaMars, FaVenus } from "react-icons/fa";
 import {
   HoverCard,
@@ -9,16 +9,23 @@ import {
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { MenuProps } from "@/app/Menu/type/menu";
+import { ShoppingCart } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
-interface DesktopMenuProps extends Pick<MenuProps, 
-  'userData' | 
-  'orderCount' | 
-  'handleLogout' | 
-  'showMaleDropdown' | 
-  'setShowMaleDropdown' | 
-  'showFemaleDropdown' | 
-  'setShowFemaleDropdown'
-> {}
+interface DesktopMenuProps
+  extends Pick<
+    MenuProps,
+    | "userData"
+    | "orderCount"
+    | "handleLogout"
+    | "showMaleDropdown"
+    | "setShowMaleDropdown"
+    | "showFemaleDropdown"
+    | "setShowFemaleDropdown"
+  > {
+  dropRef: any;
+  isOverCart: boolean;
+}
 
 const DesktopMenu: React.FC<DesktopMenuProps> = ({
   userData,
@@ -28,9 +35,50 @@ const DesktopMenu: React.FC<DesktopMenuProps> = ({
   setShowMaleDropdown,
   showFemaleDropdown,
   setShowFemaleDropdown,
+  dropRef,
+  isOverCart,
 }) => {
+  const [showDragTip, setShowDragTip] = useState(false);
+
+  // Hiển thị thông báo mẹo khi người dùng mới vào trang
+  useEffect(() => {
+    const hasSeenTip = localStorage.getItem("hasSeenDragTip");
+    if (!hasSeenTip) {
+      setShowDragTip(true);
+      const timer = setTimeout(() => {
+        setShowDragTip(false);
+        localStorage.setItem("hasSeenDragTip", "true");
+      }, 8000); // Tự động ẩn sau 8 giây
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  const handleCloseTip = () => {
+    setShowDragTip(false);
+    localStorage.setItem("hasSeenDragTip", "true");
+  };
+
   return (
     <div className="hidden lg:block">
+      {showDragTip && (
+        <div className="fixed top-16 right-4 z-50 w-64 animate-fade-in">
+          <Alert className="bg-blue-50 border-blue-200">
+            <AlertDescription className="flex items-center justify-between">
+              <div className="text-sm text-blue-600">
+                Mẹo: Bạn có thể kéo thả sản phẩm vào giỏ hàng để thêm nhanh
+              </div>
+              <Button
+                variant="ghost"
+                className="h-6 w-6 p-0 text-blue-500"
+                onClick={handleCloseTip}
+              >
+                ✕
+              </Button>
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
+
       <div className="flex items-center justify-between h-full px-4">
         {/* Logo */}
         <Link href="/" className="text-xl font-bold mr-8">
@@ -41,17 +89,26 @@ const DesktopMenu: React.FC<DesktopMenuProps> = ({
         <div className="flex items-center justify-center flex-1">
           <ul className="flex gap-8 content-center">
             <li>
-              <Link href="/sale" className="hover:text-gray-600 transition-colors">
+              <Link
+                href="/sale"
+                className="hover:text-gray-600 transition-colors"
+              >
                 Sale
               </Link>
             </li>
             <li>
-              <Link href="/new-arrivals" className="hover:text-gray-600 transition-colors">
+              <Link
+                href="/new-arrivals"
+                className="hover:text-gray-600 transition-colors"
+              >
                 Mới về
               </Link>
             </li>
             <li>
-              <Link href="/bestsellers" className="hover:text-gray-600 transition-colors">
+              <Link
+                href="/bestsellers"
+                className="hover:text-gray-600 transition-colors"
+              >
                 Bán chạy
               </Link>
             </li>
@@ -85,22 +142,34 @@ const DesktopMenu: React.FC<DesktopMenuProps> = ({
             </li>
 
             <li>
-              <Link href="/children" className="hover:text-gray-600 transition-colors">
+              <Link
+                href="/children"
+                className="hover:text-gray-600 transition-colors"
+              >
                 Trẻ Em
               </Link>
             </li>
             <li>
-              <Link href="/collections" className="hover:text-gray-600 transition-colors">
+              <Link
+                href="/collections"
+                className="hover:text-gray-600 transition-colors"
+              >
                 Bộ sưu tập
               </Link>
             </li>
             <li>
-              <Link href="/uniform" className="hover:text-gray-600 transition-colors">
+              <Link
+                href="/uniform"
+                className="hover:text-gray-600 transition-colors"
+              >
                 Đồng phục
               </Link>
             </li>
             <li>
-              <Link href="/hot-news" className="hover:text-gray-600 transition-colors">
+              <Link
+                href="/hot-news"
+                className="hover:text-gray-600 transition-colors"
+              >
                 Tin Hot
               </Link>
             </li>
@@ -132,35 +201,51 @@ const DesktopMenu: React.FC<DesktopMenuProps> = ({
 
         {/* Right Side Icons (Cart and User) */}
         <div className="flex items-center gap-4">
-          {/* Shopping Cart */}
-          <div className="dropdown dropdown-end">
+          {/* Shopping Cart with Drop Zone */}
+          <div className="dropdown dropdown-end relative">
             <Link href="/component/shopping">
               <div
-                tabIndex={0}
-                role="button"
-                className="btn btn-ghost btn-circle"
+                ref={dropRef}
+                className={`relative p-2 transition-all duration-500 rounded-full cursor-pointer
+                  ${isOverCart ? "bg-blue-100 scale-110" : ""}
+                  hover:bg-blue-50
+                `}
+                style={{
+                  transform: isOverCart ? "scale(1.1)" : "scale(1)",
+                  transition: "all 0.5s ease-in-out",
+                }}
               >
-                <div className="indicator">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-                    />
-                  </svg>
-                  <span className="badge badge-sm indicator-item">
-                    {orderCount}
-                  </span>
-                </div>
+                <ShoppingCart
+                  className={`h-6 w-6 transition-all duration-500
+                    ${
+                      isOverCart
+                        ? "text-blue-600 animate-pulse"
+                        : "text-current"
+                    }
+                  `}
+                />
+                <span
+                  className={`absolute -top-1 -right-1 bg-red-500 text-white rounded-full text-xs 
+                    flex items-center justify-center transition-all duration-500
+                    ${isOverCart ? "w-6 h-6 animate-bounce" : "w-5 h-5"}
+                  `}
+                >
+                  {orderCount}
+                </span>
+                {isOverCart && (
+                  <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-blue-600 whitespace-nowrap font-medium">
+                    Thả để thêm vào giỏ
+                  </div>
+                )}
               </div>
             </Link>
+
+            {/* Tooltip hiển thị khi hover vào giỏ hàng */}
+            <div className="absolute -bottom-10 left-1/2 transform -translate-x-1/2 hidden group-hover:block">
+              <div className="bg-white px-2 py-1 rounded shadow-md text-xs text-gray-700 whitespace-nowrap">
+                Kéo và thả sản phẩm vào đây để thêm vào giỏ
+              </div>
+            </div>
           </div>
 
           {/* User Profile Section */}
@@ -171,16 +256,16 @@ const DesktopMenu: React.FC<DesktopMenuProps> = ({
                   <div className="flex items-center gap-2 cursor-pointer">
                     <Avatar className="h-8 w-8">
                       <AvatarImage
-                        src="https://github.com/shadcn.png"
-                        alt={userData.Hoten || "User"}
+                        src={
+                          userData?.avatar || "https://github.com/shadcn.png"
+                        }
+                        alt={userData?.Hoten || "User"}
                       />
                       <AvatarFallback>
                         {userData.Hoten ? userData.Hoten[0] : "JP"}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="text-sm font-medium">
-                      {userData.Hoten}
-                    </div>
+                    <div className="text-sm font-medium">{userData.Hoten}</div>
                     <div>
                       <Button variant="destructive" onClick={handleLogout}>
                         Logout
@@ -191,10 +276,12 @@ const DesktopMenu: React.FC<DesktopMenuProps> = ({
                 <HoverCardContent className="w-72">
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-3">
-                      <Avatar className="h-12 w-12">
+                      <Avatar className="h-8 w-8">
                         <AvatarImage
-                          src="https://github.com/shadcn.png"
-                          alt={userData.Hoten || "User"}
+                          src={
+                            userData?.avatar || "https://github.com/shadcn.png"
+                          }
+                          alt={userData?.Hoten || "User"}
                         />
                         <AvatarFallback>
                           {userData.Hoten ? userData.Hoten[0] : "JP"}
@@ -216,6 +303,7 @@ const DesktopMenu: React.FC<DesktopMenuProps> = ({
                       >
                         Profile
                       </Link>
+
                       {userData.role?.Tennguoidung === "Admin" && (
                         <Link
                           href="/Admin"
@@ -224,6 +312,12 @@ const DesktopMenu: React.FC<DesktopMenuProps> = ({
                           Dashboard
                         </Link>
                       )}
+                      <Link
+                        href="/ChangePassword"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        Đổi mật khẩu
+                      </Link>
                     </div>
                   </div>
                 </HoverCardContent>

@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import ExportOptions from "./component/ExportOptions";
+
 import LoaiSanPhamTable from "./component/LoaiSanPhamTable";
 // Import icons
 import {
@@ -46,8 +46,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { AdminDashboard } from "../NvarbarAdmin";
-
+import SalesDashboard from "../NvarbarAdmin";
+import { ExportOptions } from "./component/ExportOptions";
 interface LoaiSanPham {
   idloaisanpham: number;
   tenloai: string;
@@ -478,8 +478,8 @@ export default function LoaiSanPhamManagementPage() {
 
   return (
     <div className="flex flex-col  bg-gray-100">
-      <AdminDashboard />
-      <div className="flex-1 -mt-[500px] p-4 sm:p-6 pt-16 sm:pt-20">
+      <SalesDashboard />
+      <div className="flex-1  p-4 sm:p-6 pt-16 sm:pt-20">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-4">
             <h1 className="text-xl sm:text-2xl font-bold text-gray-800">

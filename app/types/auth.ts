@@ -20,6 +20,7 @@ export interface User {
   Sdt: string;
   Diachi: string;
   idRole: number;
+  avatar: string;
   Ngaydangky: string;
   role?: {
     Tennguoidung?: string;

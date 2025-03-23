@@ -1,136 +1,93 @@
-// import { NextResponse } from "next/server";
-// import { createClient } from "@supabase/supabase-js";
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/prisma/client";
+import { pusherServer } from "@/lib/pusher";
+import { getSession } from "@/lib/auth";
 
-// // Kiểm tra và sử dụng biến môi trường
-// const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-// const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-// if (!supabaseUrl || !supabaseKey) {
-//   throw new Error("Missing Supabase environment variables");
-// }
-
-// const supabase = createClient(supabaseUrl, supabaseKey);
-
-// export async function GET() {
-//   try {
-//     const { data, error } = await supabase
-//       .from("notifications")
-//       .select("*")
-//       .order("timestamp", { ascending: false });
-
-//     if (error) {
-//       console.error("Supabase error:", error);
-//       throw error;
-//     }
-
-//     return NextResponse.json(data);
-//   } catch (error) {
-//     console.error("Error fetching notifications:", error);
-//     return NextResponse.json(
-//       { error: "Failed to fetch notifications" },
-//       { status: 500 }
-//     );
-//   }
-// }
-
-// export async function POST(req: Request) {
-//   try {
-//     const body = await req.json();
-//     const { customerId, customerName, orderId, message } = body;
-
-//     // Validate required fields
-//     if (!customerId || !customerName || !orderId || !message) {
-//       return NextResponse.json(
-//         { error: "Missing required fields" },
-//         { status: 400 }
-//       );
-//     }
-
-//     const { data, error } = await supabase
-//       .from("notifications")
-//       .insert([
-//         {
-//           customerId,
-//           customerName,
-//           orderId,
-//           message,
-//           isRead: false,
-//           timestamp: new Date().toISOString(), // Thêm timestamp
-//         },
-//       ])
-//       .select();
-
-//     if (error) {
-//       // Log chi tiết hơn về lỗi
-//       console.error("Supabase insertion error:", {
-//         error,
-//         requestBody: body,
-//       });
-//       throw error;
-//     }
-
-//     return NextResponse.json(data[0]);
-//   } catch (error) {
-//     console.error("Error creating notification:", error);
-//     // Trả về thông tin lỗi chi tiết hơn
-//     return NextResponse.json(
-//       {
-//         error: "Failed to create notification",
-//         details: error instanceof Error ? error.message : String(error),
-//       },
-//       { status: 500 }
-//     );
-//   }
-// }
-import { NextResponse } from "next/server";
-import { headers } from "next/headers";
-import { Server as SocketIO } from "socket.io";
-import { Server as HTTPServer } from "http";
-import { NextApiResponse } from "next";
-
-let io: SocketIO | null = null; // Tránh tạo nhiều instance
-
-export async function POST(req: Request, res: NextApiResponse) {
+export async function GET(request: NextRequest) {
   try {
-    const body = await req.json();
-    const headersList = headers();
-    const socketPath = headersList.get("socket-path") || "/api/socket";
-
-    // Kiểm tra dữ liệu đầu vào
-    if (!body.orderId || !body.customerName || !body.amount) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
+    const session = await getSession(request);
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Tạo payload thông báo
-    const notification = {
-      orderId: body.orderId,
-      customerName: body.customerName,
-      amount: body.amount,
-      timestamp: new Date().toISOString(),
-      status: body.status || "completed",
-      message: `New payment received from ${body.customerName}`,
-    };
+    const notifications = await prisma.notification.findMany({
+      where: {
+        idUsers: session.idUsers,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: 50, // Lấy 50 thông báo mới nhất
+    });
 
-    // Kiểm tra nếu io chưa được khởi tạo
-    if (!io) {
-      const httpServer = new HTTPServer();
-      io = new SocketIO(httpServer, {
-        path: socketPath,
-        cors: { origin: "*" }, // CORS cho phép mọi nguồn
-      });
-    }
-
-    // Emit sự kiện đến tất cả client đã kết nối
-    io.emit("newPayment", notification);
-
-    return NextResponse.json({ success: true, notification });
+    return NextResponse.json(notifications);
   } catch (error) {
-    console.error("Socket API Error:", error);
+    console.error("Error fetching notifications:", error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: "Failed to fetch notifications" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { idUsers, title, message, type } = body;
+
+    const notification = await prisma.notification.create({
+      data: {
+        idUsers,
+        title,
+        message,
+        type,
+        isRead: false,
+        createdAt: new Date(),
+      },
+    });
+
+    // Trigger real-time notification
+    await pusherServer.trigger(
+      "notifications",
+      "new-notification",
+      notification
+    );
+
+    return NextResponse.json(notification);
+  } catch (error) {
+    console.error("Error creating notification:", error);
+    return NextResponse.json(
+      { error: "Failed to create notification" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getSession(request);
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    await prisma.notification.deleteMany({
+      where: {
+        idUsers: session.idUsers,
+      },
+    });
+
+    // Trigger real-time update
+    await pusherServer.trigger("notifications", "clear-all-notifications", {
+      idUsers: session.idUsers,
+    });
+
+    return NextResponse.json({
+      message: "All notifications deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting all notifications:", error);
+    return NextResponse.json(
+      { error: "Failed to delete notifications" },
       { status: 500 }
     );
   }

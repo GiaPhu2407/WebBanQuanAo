@@ -11,6 +11,8 @@ const UserSchema = z.object({
   Sdt: z.string().max(15).optional(),
   Diachi: z.string().max(45).optional(),
   Email: z.string().email().max(45).optional(),
+  avatar: z.string().optional(), // Avatar URL field is optional
+
   // idRole: z.number().optional(),
   Ngaydangky: z.string().datetime().optional(),
 });
@@ -49,7 +51,6 @@ export async function GET(
   }
 }
 
-  
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -69,6 +70,7 @@ export async function PUT(
       Hoten: data.Hoten,
       Sdt: data.Sdt,
       Diachi: data.Diachi,
+      avatar: data.avatar,
     };
 
     // Thêm idRole nếu có
@@ -91,10 +93,7 @@ export async function PUT(
     });
   } catch (error: any) {
     console.error("Lỗi khi cập nhật user:", error);
-    return NextResponse.json(
-      { error: "Cập nhật thất bại" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Cập nhật thất bại" }, { status: 500 });
   }
 }
 // DELETE user by ID

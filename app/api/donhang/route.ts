@@ -1,5 +1,6 @@
 import { getSession } from "@/lib/auth";
 import prisma from "@/prisma/client";
+import { request } from "http";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -51,7 +52,15 @@ export async function POST(request: NextRequest) {
         ngaydat: new Date().toISOString(),
       },
     });
-
+    await prisma.notification.create({
+      data: {
+        idUsers,
+        title: "Đơn hàng mới",
+        message: `Đơn hàng #${newDonhang.iddonhang} đã được tạo thành công`,
+        type: "order",
+        idDonhang: newDonhang.iddonhang,
+      },
+    });
     // Thêm chi tiết đơn hàng
     const createdChitietDonhang = await Promise.all(
       chitietDonhang.map(async (item: any) => {
@@ -84,35 +93,35 @@ export async function POST(request: NextRequest) {
 }
 export async function GET() {
   try {
-      const session = await getSession();
-      const donhang = await prisma.donhang.findMany({
-          where:{
-              idUsers: session.idUsers
-          },
+    const session = await getSession(request);
+    const donhang = await prisma.donhang.findMany({
+      where: {
+        idUsers: session.idUsers,
+      },
+      include: {
+        chitietdonhang: {
           include: {
-              chitietdonhang:{
-                  include: {
-                      sanpham: {
-                          select: {
-                              tensanpham: true,
-                              gia: true,
-                              hinhanh: true,
-                              gioitinh: true,
-                          }
-                      }
-                  }
+            sanpham: {
+              select: {
+                tensanpham: true,
+                gia: true,
+                hinhanh: true,
+                gioitinh: true,
               },
-              lichgiaohang:{
-                  select: {
-                      NgayGiao: true,
-                      TrangThai: true,
-                  }
-              }
-          }
-      })
-      return NextResponse.json(donhang)
+            },
+          },
+        },
+        lichgiaohang: {
+          select: {
+            NgayGiao: true,
+            TrangThai: true,
+          },
+        },
+      },
+    });
+    return NextResponse.json(donhang);
   } catch (error: any) {
-      return NextResponse.json({ error: error.message})
+    return NextResponse.json({ error: error.message });
   }
 }
 

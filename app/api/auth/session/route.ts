@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getSession(request);
 
     if (!session) {
       return NextResponse.json({ error: "No session found" }, { status: 401 });
@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
         Hoten: true,
         Sdt: true,
         Diachi: true,
+        avatar: true,
         idRole: true,
         role: {
           select: {
@@ -42,6 +43,7 @@ export async function GET(request: NextRequest) {
       Hoten: user.Hoten,
       Sdt: user.Sdt,
       Diachi: user.Diachi,
+      avatar: user.avatar,
       role: user.role,
     });
   } catch (error) {

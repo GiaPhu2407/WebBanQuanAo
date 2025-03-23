@@ -1,32 +1,61 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/prisma/client";
+import { pusherServer } from "@/lib/pusher";
+import { getSession } from "@/lib/auth";
 
 export async function PUT(
-  req: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const body = await req.json();
-    const { isRead } = body;
+    const id = parseInt(params.id);
+    const body = await request.json();
 
-    const { data, error } = await supabase
-      .from('notifications')
-      .update({ isRead })
-      .eq('id', params.id)
-      .select();
+    const notification = await prisma.notification.update({
+      where: { idNotification: id },
+      data: { isRead: body.isRead },
+    });
 
-    if (error) throw error;
-
-    return NextResponse.json(data[0]);
+    return NextResponse.json(notification);
   } catch (error) {
-    console.error('Error updating notification:', error);
+    console.error("Error updating notification:", error);
     return NextResponse.json(
-      { error: 'Failed to update notification' },
+      { error: "Failed to update notification" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getSession(request);
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const id = parseInt(params.id);
+
+    const notification = await prisma.notification.delete({
+      where: {
+        idNotification: id,
+        idUsers: session.idUsers, // Ensure user can only delete their own notifications
+      },
+    });
+
+    // Trigger real-time update
+    await pusherServer.trigger("notifications", "delete-notification", {
+      idNotification: id,
+      idUsers: session.idUsers,
+    });
+
+    return NextResponse.json({ message: "Notification deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting notification:", error);
+    return NextResponse.json(
+      { error: "Failed to delete notification" },
       { status: 500 }
     );
   }

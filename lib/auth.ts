@@ -13,7 +13,8 @@ export async function signUp(
   password: string,
   fullName?: string,
   phone?: string,
-  address?: string
+  address?: string,
+  avatar?: string
 ) {
   try {
     // Check if user already exists
@@ -54,6 +55,7 @@ export async function signUp(
         Hoten: fullName || "",
         Sdt: phone || "",
         Diachi: address || "",
+        avatar: avatar || null, // Make sure avatar is stored
         idRole: defaultRole.idrole,
         Ngaydangky: new Date(),
       },
@@ -63,6 +65,7 @@ export async function signUp(
         Tentaikhoan: true,
         Hoten: true,
         idRole: true,
+        avatar: true, // Include avatar in the returned data
         role: {
           select: {
             Tennguoidung: true,
@@ -131,6 +134,7 @@ export async function login(usernameOrEmail: string, password: string) {
       email: user.Email,
       role: user.role?.Tennguoidung,
       name: user.Hoten,
+      avatar: user.avatar, // Include avatar in the JWT token
     })
       .setProtectedHeader({ alg: "HS256" })
       .setExpirationTime("24h")
@@ -150,17 +154,19 @@ export async function login(usernameOrEmail: string, password: string) {
       username: user.Tentaikhoan,
       fullName: user.Hoten,
       role: user.role?.Tennguoidung,
+      avatar: user.avatar, // Include avatar in the returned data
     };
   } catch (error) {
     console.error("Login error:", error);
     throw new Error("Authentication failed");
   }
 }
+
 export async function logout() {
   cookies().delete("session-token");
 }
 
-export async function getSession() {
+export async function getSession(request: unknown) {
   try {
     const token = cookies().get("session-token")?.value;
     if (!token) return null;
@@ -172,14 +178,11 @@ export async function getSession() {
   }
 }
 
-// import bcryptjs from "bcryptjs";
-
-// const compare = bcryptjs.compare;
-// const hash = bcryptjs.hash;
-
-// import prisma from "@/prisma/client";
-
-export async function changePassword(userId: number, oldPassword: string, newPassword: string) {
+export async function changePassword(
+  userId: number,
+  oldPassword: string,
+  newPassword: string
+) {
   try {
     // 1. Tìm người dùng dựa trên `userId`
     const user = await prisma.users.findUnique({
@@ -191,7 +194,7 @@ export async function changePassword(userId: number, oldPassword: string, newPas
     }
 
     // 2. Kiểm tra mật khẩu cũ
-    const isOldPasswordValid = compare(oldPassword, user.Matkhau!);
+    const isOldPasswordValid = await compare(oldPassword, user.Matkhau!);
     if (!isOldPasswordValid) {
       throw new Error("Old password is incorrect");
     }

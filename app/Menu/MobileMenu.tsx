@@ -1,9 +1,9 @@
 import Link from "next/link";
-import React from "react";
+import React, { useRef } from "react";
 import { FaMars, FaVenus } from "react-icons/fa";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { X, ChevronDown } from "lucide-react";
-import { MenuProps, User } from "@/app/Menu/type/menu";
+import { X, ChevronDown, Info } from "lucide-react";
+import { MenuProps, User, Product } from "@/app/Menu/type/menu";
 
 interface MobileMenuProps
   extends Pick<
@@ -16,7 +16,12 @@ interface MobileMenuProps
     | "setShowFemaleDropdown"
     | "isMobileMenuOpen"
     | "setIsMobileMenuOpen"
-  > {}
+  > {
+  dropRef: React.RefObject<HTMLDivElement>;
+  isOverCart: boolean;
+  // Add the following props for long press functionality
+  onProductLongPress?: (product: Product) => void;
+}
 
 const MobileMenu: React.FC<MobileMenuProps> = ({
   userData,
@@ -27,17 +32,80 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
   setShowFemaleDropdown,
   isMobileMenuOpen,
   setIsMobileMenuOpen,
+  dropRef,
+  isOverCart,
+  onProductLongPress,
 }) => {
-  // Mobile user profile dropdown
-  const renderMobileUserProfile = () => {
+  // Use refs to store touch data instead of dataset
+  const touchStartTimeRef = useRef<number>(0);
+  const touchPositionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const longPressTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const currentProductRef = useRef<Product | null>(null);
+
+  // Mobile touch handlers for product cards
+  const handleTouchStart = (product: Product, e: React.TouchEvent) => {
+    // Store the current timestamp to calculate press duration
+    touchStartTimeRef.current = Date.now();
+
+    // Store the touch position to detect movement
+    touchPositionRef.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+    };
+
+    // Store the current product
+    currentProductRef.current = product;
+
+    // Clear any existing timeout
+    if (longPressTimeoutRef.current) {
+      clearTimeout(longPressTimeoutRef.current);
+    }
+
+    // Set up a timeout for the long press
+    longPressTimeoutRef.current = setTimeout(() => {
+      if (onProductLongPress && currentProductRef.current) {
+        onProductLongPress(currentProductRef.current);
+        // Provide haptic feedback when available
+        if (navigator.vibrate) {
+          navigator.vibrate(50);
+        }
+      }
+    }, 500); // 500ms for long press
+  };
+
+  const handleTouchEnd = () => {
+    // Clear the long press timeout
+    if (longPressTimeoutRef.current) {
+      clearTimeout(longPressTimeoutRef.current);
+      longPressTimeoutRef.current = null;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    // Get the current touch position
+    const currentTouchX = e.touches[0].clientX;
+    const currentTouchY = e.touches[0].clientY;
+
+    // Calculate the distance moved
+    const moveDistance = Math.sqrt(
+      Math.pow(currentTouchX - touchPositionRef.current.x, 2) +
+        Math.pow(currentTouchY - touchPositionRef.current.y, 2)
+    );
+
+    // If moved more than a small threshold, cancel the long press
+    if (moveDistance > 10 && longPressTimeoutRef.current) {
+      clearTimeout(longPressTimeoutRef.current);
+      longPressTimeoutRef.current = null;
+    }
+  };
+
+  // Render mobile user profile section
+  const renderUserProfile = () => {
     if (!userData) {
       return (
-        <div className="py-4 border-t border-gray-200">
-          <Link href="/auth/login" className="block py-2 px-4">
-            Login
-          </Link>
-          <Link href="/auth/register" className="block py-2 px-4">
-            Register
+        <div className="border-t border-gray-200 py-4">
+          <Link href="/login" className="block px-4 py-2 hover:bg-gray-100">
+            Login / Register
           </Link>
         </div>
       );
@@ -46,10 +114,10 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
     return (
       <div className="py-4 border-t border-gray-200">
         <div className="flex items-center gap-3 px-4 mb-3">
-          <Avatar className="h-10 w-10">
+          <Avatar className="h-8 w-8">
             <AvatarImage
-              src="https://github.com/shadcn.png"
-              alt={userData.Hoten || "User"}
+              src={userData?.avatar || "https://github.com/shadcn.png"}
+              alt={userData?.Hoten || "User"}
             />
             <AvatarFallback>
               {userData.Hoten ? userData.Hoten[0] : "JP"}
@@ -320,7 +388,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
           </div>
 
           {/* Mobile User Profile */}
-          {renderMobileUserProfile()}
+          {renderUserProfile()}
         </div>
       </div>
     </div>

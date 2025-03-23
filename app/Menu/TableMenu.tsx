@@ -13,6 +13,8 @@ interface TabletMenuProps
     | "isMobileMenuOpen"
     | "setIsMobileMenuOpen"
   > {
+  dropRef: any; // Add this
+  isOverCart: boolean; // Add this
   isMobileProfileOpen: boolean;
   setIsMobileProfileOpen: (open: boolean) => void;
 }

@@ -3,7 +3,8 @@ import { getSession } from "@/lib/auth";
 import prisma from "@/prisma/client";
 import Stripe from "stripe";
 import { Prisma } from "@prisma/client";
-// import { pusherServer } from "@/lib/pusher";
+import { request } from "http";
+import { pusherServer } from "@/lib/pusher";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-01-27.acacia",
@@ -26,30 +27,76 @@ interface OrderData {
   orderDetails: any[];
   payments: any[];
   deliverySchedules: any[];
+  notification?: any; // Add this line
 }
 
 export async function POST(req: Request) {
   try {
-    const session = await getSession();
+    const session = await getSession(req); // Fix: use req instead of request
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await req.json();
-    const { cartItems, stripeSessionId, paymentMethod } = body;
-
-    if (!cartItems && !stripeSessionId) {
-      return NextResponse.json(
-        { error: "Cart items or stripeSessionId are required" },
-        { status: 400 }
-      );
-    }
+    const { cartItems, stripeSessionId, paymentMethod, imageURL, orderId } =
+      body;
 
     const userId =
       typeof session.idUsers === "string"
         ? parseInt(session.idUsers, 10)
         : session.idUsers;
 
+    // Handle payment proof submission
+    if (imageURL && orderId) {
+      const orderIdNumber = parseInt(orderId);
+      const totalAmount = cartItems.reduce(
+        (total: number, item: any) => total + item.sanpham.gia * item.soluong,
+        0
+      );
+
+      const payment = await prisma.thanhtoan.create({
+        data: {
+          iddonhang: orderIdNumber,
+          phuongthucthanhtoan: paymentMethod,
+          sotien: totalAmount,
+          trangthai: "Chờ xác nhận",
+          ngaythanhtoan: new Date(),
+          hinhanhthanhtoan: imageURL,
+        },
+      });
+
+      await prisma.donhang.update({
+        where: { iddonhang: orderIdNumber },
+        data: { trangthai: "Chờ xác nhận thanh toán" },
+      });
+
+      // Create notification
+      const notification = await prisma.notification.create({
+        data: {
+          idUsers: userId,
+          title: "Thanh toán mới",
+          message: `Thanh toán cho đơn hàng #${orderIdNumber} đã được xác nhận`,
+          type: "payment",
+          idDonhang: orderIdNumber,
+          idThanhtoan: payment.idthanhtoan,
+          isRead: false,
+          createdAt: new Date(),
+        },
+      });
+
+      // Trigger real-time notification
+      await pusherServer.trigger(
+        "notifications",
+        "new-notification",
+        notification
+      );
+
+      return NextResponse.json({
+        success: true,
+        message: "Đã cập nhật chứng từ thanh toán",
+        payment,
+      });
+    }
     // Handle Stripe payment initiation
     if (paymentMethod === "stripe" && !stripeSessionId) {
       return await handleStripePaymentInitiation(cartItems, userId);
@@ -75,12 +122,9 @@ export async function POST(req: Request) {
       { status: 400 }
     );
   } catch (error) {
-    console.error("Checkout error:", error);
+    console.error("Payment error:", error);
     return NextResponse.json(
-      {
-        error: "Internal server error during checkout",
-        details: error instanceof Error ? error.message : String(error),
-      },
+      { error: "Internal server error during payment processing" },
       { status: 500 }
     );
   }
@@ -179,8 +223,6 @@ async function processOrder(
         totalAmount,
         totalQuantity
       );
-      await notifyNewOrder(order, totalAmount, customerName, paymentMethod);
-
       const orderDetails = await createOrderDetails(
         prisma,
         order.iddonhang,
@@ -202,13 +244,38 @@ async function processOrder(
 
       await clearCart(prisma, cartItems);
 
+      // Create notification
+      const notification = await prisma.notification.create({
+        data: {
+          idUsers: userId,
+          title: "Thanh toán mới",
+          message: `Thanh toán cho đơn hàng #${order.iddonhang} đã được xác nhận`,
+          type: "payment",
+          idDonhang: order.iddonhang,
+          idThanhtoan: payment.idthanhtoan,
+          isRead: false,
+          createdAt: new Date(),
+        },
+      });
+
+      // Return the notification with the transaction result
       return {
         orders: [order],
         orderDetails,
         payments: [payment],
         deliverySchedules,
+        notification,
       };
     });
+
+    // Trigger real-time notification after transaction
+    if (result.notification) {
+      await pusherServer.trigger(
+        "notifications",
+        "new-notification",
+        result.notification
+      );
+    }
 
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
@@ -256,28 +323,6 @@ async function createOrder(
       tongsoluong: totalQuantity,
     },
   });
-}
-
-async function notifyNewOrder(
-  order: any,
-  totalAmount: number,
-  customerName: string,
-  paymentMethod: string
-) {
-  // await pusherServer.trigger("admin-channel", "new-order", {
-  //   type: "order",
-  //   title: "Đơn hàng mới",
-  //   message: `Có đơn hàng mới #${order.iddonhang}`,
-  //   data: {
-  //     orderId: order.iddonhang,
-  //     totalAmount,
-  //     customerName,
-  //     orderDate: order.ngaydat,
-  //     paymentMethod,
-  //     status: order.trangthai,
-  //   },
-  //   timestamp: new Date().toISOString(),
-  // });
 }
 
 async function createOrderDetails(
@@ -414,7 +459,7 @@ function handleProcessOrderError(error: any) {
 
 export async function GET(req: Request) {
   try {
-    const session = await getSession();
+    const session = await getSession(request);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -442,3 +487,315 @@ export async function GET(req: Request) {
     );
   }
 }
+
+
+// import { NextResponse } from "next/server";
+// import { getSession } from "@/lib/auth";
+// import prisma from "@/prisma/client";
+// import Stripe from "stripe";
+// import { Prisma } from "@prisma/client";
+// import { pusherServer } from "@/lib/pusher";
+
+// const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+//   apiVersion: "2025-01-27.acacia",
+// });
+
+// interface CartItem {
+//   idsanpham: number;
+//   soluong: number;
+//   idSize?: number;
+//   idgiohang?: number;
+//   sanpham: {
+//     gia: number;
+//     Tensanpham: string;
+//     hinhanh: string;
+//   };
+// }
+
+// interface OrderData {
+//   donhang: any;
+//   chitietdonhang: any[];
+//   thanhtoan?: any;
+//   lichgiaohang: any[];
+//   notification?: any;
+// }
+
+// export async function POST(req: Request) {
+//   try {
+//     const session = await getSession(req);
+//     if (!session) {
+//       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+//     }
+
+//     const body = await req.json();
+//     const { cartItems, paymentMethod, imageURL, orderId } = body;
+
+//     const userId =
+//       typeof session.idUsers === "string"
+//         ? parseInt(session.idUsers, 10)
+//         : session.idUsers;
+
+//     // Handle payment proof submission
+//     if (imageURL && orderId) {
+//       const orderIdNumber = parseInt(orderId);
+
+//       // Verify order exists and belongs to user
+//       const order = await prisma.donhang.findFirst({
+//         where: {
+//           iddonhang: orderIdNumber,
+//           idUsers: userId,
+//         },
+//       });
+
+//       if (!order) {
+//         return NextResponse.json(
+//           { error: "Order not found or unauthorized" },
+//           { status: 404 }
+//         );
+//       }
+
+//       // Check if payment already exists
+//       const existingPayment = await prisma.thanhtoan.findFirst({
+//         where: {
+//           iddonhang: orderIdNumber,
+//           hinhanhthanhtoan: { not: null },
+//         },
+//       });
+
+//       if (existingPayment) {
+//         return NextResponse.json(
+//           {
+//             error: "Payment proof already submitted for this order",
+//           },
+//           { status: 400 }
+//         );
+//       }
+
+//       const payment = await prisma.thanhtoan.create({
+//         data: {
+//           iddonhang: orderIdNumber,
+//           phuongthucthanhtoan: "online",
+//           sotien: order.tongsotien,
+//           trangthai: "Chờ xác nhận",
+//           ngaythanhtoan: new Date(),
+//           hinhanhthanhtoan: imageURL,
+//         },
+//       });
+
+//       await prisma.donhang.update({
+//         where: { iddonhang: orderIdNumber },
+//         data: { trangthai: "Chờ xác nhận thanh toán" },
+//       });
+
+//       const notification = await prisma.notification.create({
+//         data: {
+//           idUsers: userId,
+//           title: "Thanh toán mới",
+//           message: `Thanh toán cho đơn hàng #${orderIdNumber} đã được xác nhận`,
+//           type: "payment",
+//           idDonhang: orderIdNumber,
+//           idThanhtoan: payment.idthanhtoan,
+//           isRead: false,
+//           createdAt: new Date(),
+//         },
+//       });
+
+//       await pusherServer.trigger(
+//         "notifications",
+//         "new-notification",
+//         notification
+//       );
+
+//       return NextResponse.json({
+//         success: true,
+//         message: "Đã cập nhật chứng từ thanh toán",
+//         data: { payment, notification },
+//       });
+//     }
+
+//     // Handle new order creation
+//     if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
+//       return NextResponse.json(
+//         { error: "Invalid cart items" },
+//         { status: 400 }
+//       );
+//     }
+
+//     const result = await prisma.$transaction<OrderData>(async (prisma) => {
+//       // 1. Create order first
+//       const { totalAmount, totalQuantity } = calculateOrderTotals(cartItems);
+
+//       const donhang = await prisma.donhang.create({
+//         data: {
+//           idUsers: userId,
+//           ngaydat: new Date(),
+//           trangthai: "Chờ xác nhận",
+//           tongsotien: totalAmount,
+//           tongsoluong: totalQuantity,
+//         },
+//       });
+
+//       // 2. Create order details
+//       const chitietdonhang = await Promise.all(
+//         cartItems.map((item) =>
+//           prisma.chitietDonhang.create({
+//             data: {
+//               iddonhang: donhang.iddonhang,
+//               idsanpham: item.idsanpham,
+//               idSize: item.idSize,
+//               soluong: item.soluong,
+//               dongia: Number(item.sanpham.gia),
+//             },
+//           })
+//         )
+//       );
+
+//       // 3. Create delivery schedules
+//       const lichgiaohang = await Promise.all(
+//         cartItems.map((item) =>
+//           prisma.lichGiaoHang.create({
+//             data: {
+//               iddonhang: donhang.iddonhang,
+//               idsanpham: item.idsanpham,
+//               idKhachHang: userId,
+//               NgayGiao: calculateDeliveryDate(),
+//               TrangThai: "Chờ giao",
+//             },
+//           })
+//         )
+//       );
+
+//       // 4. Create initial payment record
+//       const thanhtoan = await prisma.thanhtoan.create({
+//         data: {
+//           iddonhang: donhang.iddonhang,
+//           phuongthucthanhtoan: paymentMethod,
+//           sotien: totalAmount,
+//           trangthai: "Đang xử lý",
+//           ngaythanhtoan: new Date(),
+//         },
+//       });
+
+//       // 5. Clear cart items safely
+//       for (const item of cartItems) {
+//         if (item.idgiohang) {
+//           try {
+//             await prisma.giohang.delete({
+//               where: { idgiohang: item.idgiohang },
+//             });
+//           } catch (error) {
+//             console.log(`Cart item ${item.idgiohang} already removed`);
+//             // Continue with the next item
+//           }
+//         }
+//       }
+
+//       // 6. Create notification
+//       const notification = await prisma.notification.create({
+//         data: {
+//           idUsers: userId,
+//           title: "Đơn hàng mới",
+//           message: `Đơn hàng #${donhang.iddonhang} đã được tạo thành công`,
+//           type: "order",
+//           idDonhang: donhang.iddonhang,
+//           isRead: false,
+//           createdAt: new Date(),
+//         },
+//       });
+
+//       return {
+//         donhang,
+//         chitietdonhang,
+//         thanhtoan,
+//         lichgiaohang,
+//         notification,
+//       };
+//     });
+
+//     // Send notification after transaction completes
+//     if (result.notification) {
+//       await pusherServer.trigger(
+//         "notifications",
+//         "new-notification",
+//         result.notification
+//       );
+//     }
+
+//     return NextResponse.json({
+//       success: true,
+//       data: result,
+//     });
+//   } catch (error) {
+//     console.error("Payment error:", error);
+//     return NextResponse.json(
+//       {
+//         error: "Internal server error during payment processing",
+//         details: error instanceof Error ? error.message : "Unknown error",
+//       },
+//       { status: 500 }
+//     );
+//   }
+// }
+
+// function calculateOrderTotals(cartItems: CartItem[]) {
+//   const totalAmount = cartItems.reduce(
+//     (sum, item) => sum + Number(item.sanpham.gia) * item.soluong,
+//     0
+//   );
+//   const totalQuantity = cartItems.reduce((sum, item) => sum + item.soluong, 0);
+//   return { totalAmount, totalQuantity };
+// }
+
+// function calculateDeliveryDate(): Date {
+//   const orderDate = new Date();
+//   const earliestDeliveryDate = new Date(orderDate);
+//   earliestDeliveryDate.setDate(orderDate.getDate() + 3);
+
+//   const maxDeliveryDate = new Date(orderDate);
+//   maxDeliveryDate.setDate(orderDate.getDate() + 6);
+
+//   const deliveryDate = new Date(
+//     earliestDeliveryDate.getTime() +
+//       Math.random() *
+//         (maxDeliveryDate.getTime() - earliestDeliveryDate.getTime())
+//   );
+
+//   deliveryDate.setHours(
+//     8 + Math.floor(Math.random() * 10),
+//     Math.floor(Math.random() * 60),
+//     0,
+//     0
+//   );
+//   return deliveryDate;
+// }
+
+// export async function GET(req: Request) {
+//   try {
+//     const session = await getSession(req);
+//     if (!session) {
+//       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+//     }
+
+//     const orders = await prisma.donhang.findMany({
+//       where: { idUsers: session.idUsers },
+//       include: {
+//         chitietdonhang: {
+//           include: {
+//             sanpham: true,
+//           },
+//         },
+//         thanhtoan: true,
+//         lichgiaohang: true,
+//       },
+//       orderBy: { ngaydat: "desc" },
+//     });
+
+//     return NextResponse.json({ success: true, data: orders });
+//   } catch (error) {
+//     console.error("Error fetching orders:", error);
+//     return NextResponse.json(
+//       { error: "Internal Server Error" },
+//       { status: 500 }
+//     );
+//   }
+// }

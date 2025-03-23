@@ -1,26 +1,32 @@
 import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { UploadThingError } from "uploadthing/server";
 
+// Tạo UploadThing
 const f = createUploadthing();
 
+// Mô phỏng hàm xác thực người dùng
 const auth = (req: Request) => ({ id: "user1" }); // Fake auth function
 
-// FileRouter for your app, can contain multiple FileRoutes
+// FileRouter cho ứng dụng của bạn, có thể chứa nhiều FileRoutes
 export const ourFileRouter = {
-  // Define as many FileRoutes as you like, each with a unique routeSlug
+  // Định nghĩa một FileRoute với routeSlug duy nhất
   imageUploader: f({ image: { maxFileSize: "4MB" } })
-    // Set permissions and file types for this FileRoute
+    // Thiết lập quyền truy cập và loại tệp cho FileRoute này
     .middleware(async ({ req }) => {
-      // This code runs on your server before upload
-      const user = await auth(req);
+      // Code này chạy trên server trước khi tải lên
+      const user = await auth(req); // Kiểm tra người dùng đã xác thực
 
-      // If you throw, the user will not be able to upload
+      // Nếu không xác thực, ném lỗi
       if (!user) throw new UploadThingError("Unauthorized");
 
-      // Whatever is returned here is accessible in onUploadComplete as `metadata`
+      // Trả về metadata có thể truy cập trong onUploadComplete
       return { userId: user.id };
     })
-    .onUploadComplete(()=>{})
+    .onUploadComplete(({ metadata, file }) => {
+      // Xử lý sau khi tệp đã được tải lên, ví dụ: lưu thông tin vào CSDL
+      console.log("Upload complete:", file);
+      console.log("Metadata:", metadata);
+    }),
 } satisfies FileRouter;
 
 export type OurFileRouter = typeof ourFileRouter;

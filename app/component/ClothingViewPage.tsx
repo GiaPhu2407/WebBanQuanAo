@@ -4,8 +4,8 @@ import ClothingViewer360 from "./ClothingView360";
 
 export default function Home() {
   // State for current clothing item and color
-  const [currentItem, setCurrentItem] = useState("dress");
-  const [currentColor, setCurrentColor] = useState("blue");
+  const [currentItem, setCurrentItem] = useState("Shoe");
+  const [currentColor, setCurrentColor] = useState("blackred");
   const [isDebugMode, setIsDebugMode] = useState(false);
 
   // Available clothing items
@@ -13,7 +13,8 @@ export default function Home() {
     { id: "tshirt", name: "T-Shirt" },
     { id: "jacket", name: "Jacket" },
     { id: "pants", name: "Pants" },
-    { id: "dress", name: "dress" },
+    { id: "dress", name: "Dress" },
+    { id: "shoe", name: "Shoe" },
   ];
 
   // Available colors
@@ -23,6 +24,7 @@ export default function Home() {
     { id: "black", name: "Black", hex: "#000000" },
     { id: "white", name: "White", hex: "#FFFFFF" },
     { id: "green", name: "Green", hex: "#00FF00" },
+    { id: "blackred", name: "BlackRed", hex: "#4F4C50" },
   ];
 
   // Generate the correct image path
@@ -34,7 +36,7 @@ export default function Home() {
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">360° Clothing Viewer</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* 360 Viewer */}
         <div className="bg-white shadow-lg rounded-lg p-6">
           <ClothingViewer360
@@ -57,7 +59,7 @@ export default function Home() {
         </div>
 
         {/* Customization Panel */}
-        <div className="bg-white shadow-lg rounded-lg p-6">
+        <div className="bg-white shadow-lg rounded-lg p-6 lg:self-start">
           <h2 className="text-2xl font-bold mb-4">Customize View</h2>
 
           {/* Item Selection */}
@@ -122,6 +124,31 @@ export default function Home() {
               <button className="w-full bg-blue-600 text-white py-2 rounded-lg mt-4 hover:bg-blue-700">
                 Add to Cart
               </button>
+            </div>
+          </div>
+
+          {/* Usage Instructions */}
+          <div className="mt-6 bg-blue-50 p-4 rounded-lg">
+            <h3 className="text-lg font-semibold mb-2 text-blue-700">
+              Viewing Instructions
+            </h3>
+            <div className="space-y-2 text-gray-700 text-sm">
+              <p>
+                <span className="font-medium">Rotate:</span> Drag left/right or
+                use arrow keys
+              </p>
+              <p>
+                <span className="font-medium">Zoom:</span> Click zoom button
+                then use mouse wheel or +/- keys
+              </p>
+              <p>
+                <span className="font-medium">Pan:</span> When zoomed in, drag
+                to move around the image
+              </p>
+              <p>
+                <span className="font-medium">Auto-rotate:</span> Click rotate
+                button or press spacebar
+              </p>
             </div>
           </div>
 

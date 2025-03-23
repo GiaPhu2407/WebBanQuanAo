@@ -108,8 +108,8 @@ import React, { useEffect, useState } from "react";
 import FeaturedCollection from "./Bosutap";
 import Carousel from "./CarouselAfterLogin";
 import Filter from "./Filter";
-import ProductGrid from "./ProductCard";
 import DailyNewsModal from "./Daily";
+import { ProductGrid } from "./ProductCard";
 
 interface Product {
   idsanpham: number;
@@ -183,15 +183,10 @@ export default function Home() {
         product.gia <= filters.priceRange[1]
     );
 
-    if (filters.sizes.length > 0) {
+    if (filters.sizes && filters.sizes.length > 0) {
       filtered = filtered.filter((product) => {
-        // Check if product.size exists and is not empty
         if (!product.size) return false;
-
-        // Split the sizes and trim each size
         const productSizes = product.size.split(",").map((s) => s.trim());
-
-        // Check if any of the selected sizes match the product sizes
         return filters.sizes.some((selectedSize) =>
           productSizes.includes(selectedSize)
         );
@@ -228,17 +223,17 @@ export default function Home() {
         <div className="flex justify-center items-center gap-24 mt-10">
           <img
             src="https://m.yodycdn.com/fit-in/filters:format(webp)//products/tet-2025-2512-05.jpg"
-            alt=""
+            alt="Promotion banner 1"
             className="w-96"
           />
           <img
             src="https://m.yodycdn.com/fit-in/filters:format(webp)//products/tet-2025-2512-03.jpg"
-            alt=""
+            alt="Promotion banner 2"
             className="w-96"
           />
           <img
             src="https://m.yodycdn.com/fit-in/filters:format(webp)//products/tet-2025-2512-03.jpg"
-            alt=""
+            alt="Promotion banner 3"
             className="w-96"
           />
         </div>

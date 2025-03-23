@@ -59,7 +59,9 @@ const TableUserDashboard: React.FC<TableUserDashboardProps> = ({
     setLoading(true);
     try {
       const response = await fetch(
-        `/api/phantranguser?page=${meta.page}&limit_size=${meta.limit_size}&search=${encodeURIComponent(searchText)}`
+        `/api/phantranguser?page=${meta.page}&limit_size=${
+          meta.limit_size
+        }&search=${encodeURIComponent(searchText)}`
       );
       if (!response.ok) {
         throw new Error("Network response was not ok");
@@ -89,14 +91,14 @@ const TableUserDashboard: React.FC<TableUserDashboardProps> = ({
   // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => {
-      setMeta(prev => ({ ...prev, page: 1 }));
+      setMeta((prev) => ({ ...prev, page: 1 }));
     }, 300);
 
     return () => clearTimeout(timer);
   }, [searchText]);
 
   const handlePageChange = (newPage: number) => {
-    setMeta(prev => ({ ...prev, page: newPage }));
+    setMeta((prev) => ({ ...prev, page: newPage }));
   };
 
   const formatDate = (dateString: string) => {
@@ -142,7 +144,7 @@ const TableUserDashboard: React.FC<TableUserDashboardProps> = ({
           />
           <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
         </div>
-        
+
         <div className="text-sm text-gray-600">
           Tổng số: {meta.totalRecords} người dùng
         </div>
@@ -196,13 +198,23 @@ const TableUserDashboard: React.FC<TableUserDashboardProps> = ({
                               ? "bg-red-100 text-red-800"
                               : user.idRole === 2
                               ? "bg-blue-100 text-blue-800"
-                              : "bg-gray-100 text-gray-800"
+                              : user.idRole === 3
+                              ? "bg-blue-100 text-gray-800"
+                              : "bg-gray-100  text-green-400"
                           }`}
                         >
-                          {user.idRole === 1 ? "User" : user.idRole === 2 ? "Admin" : "Chưa phân quyền"}
+                          {user.idRole === 1
+                            ? "User"
+                            : user.idRole === 2
+                            ? "Admin"
+                            : user.idRole === 3
+                            ? "NhanVien"
+                            : "Chưa phân quyền"}
                         </span>
                       </td>
-                      <td className="px-4 py-3">{formatDate(user.Ngaydangky)}</td>
+                      <td className="px-4 py-3">
+                        {formatDate(user.Ngaydangky)}
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex justify-center space-x-2">
                           <Button
@@ -230,7 +242,9 @@ const TableUserDashboard: React.FC<TableUserDashboardProps> = ({
                       colSpan={9}
                       className="px-6 py-4 text-center text-gray-500"
                     >
-                      {searchText ? "Không tìm thấy kết quả phù hợp" : "Không có người dùng nào"}
+                      {searchText
+                        ? "Không tìm thấy kết quả phù hợp"
+                        : "Không có người dùng nào"}
                     </td>
                   </tr>
                 )}
@@ -254,8 +268,7 @@ const TableUserDashboard: React.FC<TableUserDashboardProps> = ({
             onClick={() => handlePageChange(meta.page - 1)}
             disabled={meta.page === 1}
           >
-            <span className="sr-only">Previous</span>
-            ←
+            <span className="sr-only">Previous</span>←
           </Button>
 
           {renderPagination()}
@@ -265,8 +278,7 @@ const TableUserDashboard: React.FC<TableUserDashboardProps> = ({
             onClick={() => handlePageChange(meta.page + 1)}
             disabled={meta.page >= meta.totalPages}
           >
-            <span className="sr-only">Next</span>
-            →
+            <span className="sr-only">Next</span>→
           </Button>
 
           <Select
