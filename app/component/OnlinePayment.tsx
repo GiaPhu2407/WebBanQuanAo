@@ -4,13 +4,25 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-
 import Fileupload from "@/components/ui/Fileupload";
 import qr from "@/app/image/qr.jpg";
 import { formatCurrency } from "./utils/currency";
 
+interface OrderItem {
+  idsanpham: number;
+  soluong: number;
+  size: {
+    tenSize: string;
+  };
+  sanpham: {
+    tensanpham: string;
+    gia: number;
+    hinhanh: string;
+  };
+}
+
 interface OrderDetails {
-  items: any[];
+  items: OrderItem[];
   total: number;
   orderId: number;
 }
@@ -30,10 +42,9 @@ export const OnlinePayment = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
-  // Kiểm tra dữ liệu đầu vào khi component được tạo
   useEffect(() => {
     if (!orderDetails || !orderDetails.orderId) {
-      console.error("Dữ liệu đơn hàng không hợp lệ:", orderDetails);
+      console.error("Invalid order details:", orderDetails);
       toast.error("Thông tin đơn hàng không hợp lệ");
     }
   }, [orderDetails]);
@@ -44,33 +55,16 @@ export const OnlinePayment = ({
       return;
     }
 
-    if (isSubmitting) {
-      return;
-    }
+    if (isSubmitting) return;
 
-    // Kiểm tra hợp lệ trước khi gửi
     if (!orderDetails || !orderDetails.orderId) {
       toast.error("Thông tin đơn hàng không hợp lệ");
-      console.error("Invalid order details:", orderDetails);
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      // Đảm bảo orderId được chuyển thành số nguyên
-      const orderId = parseInt(orderDetails.orderId.toString(), 10);
-
-      if (isNaN(orderId)) {
-        throw new Error("Mã đơn hàng không hợp lệ");
-      }
-
-      console.log("Gửi yêu cầu thanh toán:", {
-        paymentMethod: "online",
-        imageURL: paymentProofImage,
-        orderId: orderId,
-      });
-
       const response = await fetch("/api/thanhtoan", {
         method: "POST",
         headers: {
@@ -79,27 +73,23 @@ export const OnlinePayment = ({
         body: JSON.stringify({
           paymentMethod: "online",
           imageURL: paymentProofImage,
-          orderId: orderId,
+          orderId: orderDetails.orderId,
+          cartItems: orderDetails.items,
         }),
       });
 
-      // Log toàn bộ response để debug
-      console.log("Status code:", response.status);
       const result = await response.json();
-      console.log("Response data:", result);
 
       if (!response.ok) {
         throw new Error(result.error || "Thanh toán thất bại");
       }
 
       if (result.success) {
-        toast.success("Thanh toán thành công");
+        toast.success("Gửi xác nhận thanh toán thành công");
         setTimeout(() => {
           onPaymentComplete();
           router.push("/component/Order");
         }, 1500);
-      } else {
-        throw new Error(result.error || "Thanh toán thất bại");
       }
     } catch (error: any) {
       console.error("Payment error:", error);
@@ -109,7 +99,6 @@ export const OnlinePayment = ({
     }
   };
 
-  // Nếu không có dữ liệu đơn hàng, hiển thị thông báo lỗi
   if (!orderDetails || !orderDetails.orderId) {
     return (
       <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -146,15 +135,47 @@ export const OnlinePayment = ({
 
             <div className="space-y-6">
               <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Thông tin đơn hàng
+                <h3 className="text-lg font-medium text-gray-900 mb-4">
+                  Chi tiết đơn hàng #{orderDetails.orderId}
                 </h3>
-                <p className="text-gray-600">
-                  Mã đơn hàng: #{orderDetails.orderId}
-                </p>
-                <p className="text-gray-600">
-                  Tổng tiền: {formatCurrency(orderDetails.total)}
-                </p>
+                <div className="space-y-4">
+                  {orderDetails.items.map((item, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between border-b pb-4"
+                    >
+                      <div className="flex items-center space-x-4">
+                        <Image
+                          src={item.sanpham.hinhanh}
+                          alt={item.sanpham.tensanpham}
+                          width={60}
+                          height={60}
+                          className="rounded-md"
+                        />
+                        <div>
+                          <p className="font-medium">
+                            {item.sanpham.tensanpham}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            Size: {item.size.tenSize || "Default"}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            Số lượng: {item.soluong}
+                          </p>
+                        </div>
+                      </div>
+                      <p className="font-medium">
+                        {formatCurrency(item.sanpham.gia * item.soluong)}
+                      </p>
+                    </div>
+                  ))}
+                  <div className="flex justify-between pt-4">
+                    <span className="font-bold">Tổng tiền:</span>
+                    <span className="font-bold text-xl text-blue-600">
+                      {formatCurrency(orderDetails.total)}
+                    </span>
+                  </div>
+                </div>
               </div>
 
               <div className="text-center">
@@ -182,6 +203,7 @@ export const OnlinePayment = ({
                 <div className="grid grid-cols-1 gap-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Ngân hàng:</span>
+
                     <span className="font-medium">Techcombank</span>
                   </div>
                   <div className="flex justify-between">

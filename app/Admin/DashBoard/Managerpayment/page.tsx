@@ -76,12 +76,14 @@ const PaymentManagementPage: React.FC = () => {
     { value: "Thành công", label: "Thành Công" },
     { value: "Đang chờ", label: "Đang Chờ" },
     { value: "Thất bại", label: "Thất Bại" },
+    { value: "Đã thanh toán", label: "Đã Thanh Toán" }, // Added for online payments
   ];
 
   const paymentMethods = [
     { value: "Chuyển khoản", label: "Chuyển Khoản" },
     { value: "Tiền mặt", label: "Tiền Mặt" },
     { value: "Thẻ", label: "Thẻ" },
+    { value: "Online", label: "Thanh Toán Online" }, // Added for online payments
   ];
 
   const [donHangs, setDonHangs] = useState<{ iddonhang: number }[]>([]);
@@ -99,7 +101,7 @@ const PaymentManagementPage: React.FC = () => {
         setError("");
         setSuccess("");
       }, 3000);
-      
+
       return () => clearTimeout(timer);
     }
   }, [error, success]);
@@ -139,10 +141,16 @@ const PaymentManagementPage: React.FC = () => {
 
   // Handle form input changes
   const handleChange = (name: string, value: string | number | null) => {
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => {
+      const newData = { ...prev, [name]: value };
+
+      // Automatically set status to "Đã thanh toán" for online payments
+      if (name === "phuongthucthanhtoan" && value === "Online") {
+        newData.trangthai = "Đã thanh toán";
+      }
+
+      return newData;
+    });
   };
 
   // Handle edit payment
@@ -156,8 +164,10 @@ const PaymentManagementPage: React.FC = () => {
     });
     setEditingId(payment.idthanhtoan);
     setIsEditing(true);
-    
-    const dialog = document.getElementById("payment-modal") as HTMLDialogElement;
+
+    const dialog = document.getElementById(
+      "payment-modal"
+    ) as HTMLDialogElement;
     if (dialog) {
       dialog.showModal();
     }
@@ -166,8 +176,8 @@ const PaymentManagementPage: React.FC = () => {
   // Submit form (create/update payment)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
 
     // Validation
     if (
@@ -177,6 +187,11 @@ const PaymentManagementPage: React.FC = () => {
     ) {
       setError("Vui lòng điền đầy đủ thông tin");
       return;
+    }
+
+    // Set default status for online payments
+    if (formData.phuongthucthanhtoan === "Online" && !formData.trangthai) {
+      formData.trangthai = "Đã thanh toán";
     }
 
     try {
@@ -191,33 +206,46 @@ const PaymentManagementPage: React.FC = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || `Lỗi ${isEditing ? 'cập nhật' : 'tạo'} thanh toán`);
+        throw new Error(
+          errorData.error || `Lỗi ${isEditing ? "cập nhật" : "tạo"} thanh toán`
+        );
       }
 
       const data = await response.json();
-      setSuccess(data.message || `${isEditing ? 'Cập nhật' : 'Thêm mới'} thanh toán thành công`);
-      
+      setSuccess(
+        data.message ||
+          `${isEditing ? "Cập nhật" : "Thêm mới"} thanh toán thành công`
+      );
+
       resetForm();
       refreshData();
 
-      const dialog = document.getElementById("payment-modal") as HTMLDialogElement;
+      const dialog = document.getElementById(
+        "payment-modal"
+      ) as HTMLDialogElement;
       if (dialog) {
         dialog.close();
       }
 
       toast({
-        title: 'Thành Công!',
-        description: data.message || `${isEditing ? 'Cập nhật' : 'Thêm mới'} thanh toán thành công`,
-        variant: 'success',
+        title: "Thành Công!",
+        description:
+          data.message ||
+          `${isEditing ? "Cập nhật" : "Thêm mới"} thanh toán thành công`,
+        variant: "success",
       });
-
     } catch (err) {
-      setError(err instanceof Error ? err.message : `Lỗi ${isEditing ? 'cập nhật' : 'tạo'} thanh toán`);
-      
+      setError(
+        err instanceof Error
+          ? err.message
+          : `Lỗi ${isEditing ? "cập nhật" : "tạo"} thanh toán`
+      );
+
       toast({
-        title: 'Lỗi!',
-        description: err instanceof Error ? err.message : 'Lỗi khi thực hiện thao tác',
-        variant: 'destructive',
+        title: "Lỗi!",
+        description:
+          err instanceof Error ? err.message : "Lỗi khi thực hiện thao tác",
+        variant: "destructive",
       });
     }
   };
@@ -227,31 +255,32 @@ const PaymentManagementPage: React.FC = () => {
     if (deleteConfirmId) {
       try {
         const response = await fetch(`/api/thanhtoan/${deleteConfirmId}`, {
-          method: 'DELETE',
+          method: "DELETE",
         });
 
         if (!response.ok) {
-          throw new Error('Không thể xóa thanh toán');
+          throw new Error("Không thể xóa thanh toán");
         }
 
         const data = await response.json();
-        setSuccess(data.message || 'Xóa thanh toán thành công');
+        setSuccess(data.message || "Xóa thanh toán thành công");
         refreshData();
         setDeleteConfirmId(null);
 
-        // toast({
-        //   title: 'Thành Công!',
-        //   description: 'Thanh toán đã được xóa thành công',
-        //   variant: 'success',
-        // });
-      } catch (err) {
-        console.error('Lỗi xóa thanh toán:', err);
-        setError(err instanceof Error ? err.message : 'Lỗi khi xóa thanh toán');
-        
         toast({
-          title: 'Lỗi!',
-          description: err instanceof Error ? err.message : 'Lỗi khi xóa thanh toán',
-          variant: 'destructive',
+          title: "Thành Công!",
+          description: "Thanh toán đã được xóa thành công",
+          variant: "success",
+        });
+      } catch (err) {
+        console.error("Lỗi xóa thanh toán:", err);
+        setError(err instanceof Error ? err.message : "Lỗi khi xóa thanh toán");
+
+        toast({
+          title: "Lỗi!",
+          description:
+            err instanceof Error ? err.message : "Lỗi khi xóa thanh toán",
+          variant: "destructive",
         });
       }
     }
@@ -261,17 +290,23 @@ const PaymentManagementPage: React.FC = () => {
     if (!isEditing) {
       resetForm();
     }
-    const dialog = document.getElementById("payment-modal") as HTMLDialogElement;
+    const dialog = document.getElementById(
+      "payment-modal"
+    ) as HTMLDialogElement;
     if (dialog) {
       dialog.close();
     }
   };
 
-  if (loading) return (
-    <div className="flex justify-center items-center h-screen" data-theme="light">
-      <span className="loading loading-spinner text-blue-600 loading-lg"></span>
-    </div>
-  );
+  if (loading)
+    return (
+      <div
+        className="flex justify-center items-center h-screen"
+        data-theme="light"
+      >
+        <span className="loading loading-spinner text-blue-600 loading-lg"></span>
+      </div>
+    );
 
   return (
     <div className="flex">
@@ -345,14 +380,16 @@ const PaymentManagementPage: React.FC = () => {
                       </label>
                       <select
                         value={formData.iddonhang?.toString() || ""}
-                        onChange={(e) => handleChange("iddonhang", parseInt(e.target.value))}
+                        onChange={(e) =>
+                          handleChange("iddonhang", parseInt(e.target.value))
+                        }
                         className="w-full px-3 py-2 border text-black bg-white border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
                       >
                         <option value="">Chọn đơn hàng</option>
                         {donHangs.map((donHang) => (
-                          <option 
-                            key={donHang.iddonhang} 
+                          <option
+                            key={donHang.iddonhang}
                             value={donHang.iddonhang.toString()}
                           >
                             {donHang.iddonhang}
@@ -370,7 +407,9 @@ const PaymentManagementPage: React.FC = () => {
                       </label>
                       <select
                         value={formData.phuongthucthanhtoan || ""}
-                        onChange={(e) => handleChange("phuongthucthanhtoan", e.target.value)}
+                        onChange={(e) =>
+                          handleChange("phuongthucthanhtoan", e.target.value)
+                        }
                         className="w-full px-3 py-2 border text-black bg-white border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
                       >
@@ -393,9 +432,9 @@ const PaymentManagementPage: React.FC = () => {
                       <input
                         type="number"
                         value={formData.sotien || ""}
-                        onChange={(e) => 
+                        onChange={(e) =>
                           handleChange(
-                            "sotien", 
+                            "sotien",
                             e.target.value ? parseFloat(e.target.value) : null
                           )
                         }
@@ -414,9 +453,12 @@ const PaymentManagementPage: React.FC = () => {
                       </label>
                       <select
                         value={formData.trangthai || ""}
-                        onChange={(e) => handleChange("trangthai", e.target.value)}
+                        onChange={(e) =>
+                          handleChange("trangthai", e.target.value)
+                        }
                         className="w-full px-3 py-2 border text-black bg-white border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
+                        disabled={formData.phuongthucthanhtoan === "Online"} // Disable for online payments
                       >
                         <option value="">Chọn trạng thái</option>
                         {paymentStatuses.map((status) => (
@@ -437,7 +479,9 @@ const PaymentManagementPage: React.FC = () => {
                       <input
                         type="date"
                         value={formData.ngaythanhtoan || ""}
-                        onChange={(e) => handleChange("ngaythanhtoan", e.target.value || null)}
+                        onChange={(e) =>
+                          handleChange("ngaythanhtoan", e.target.value || null)
+                        }
                         className="w-full px-3 py-2 border text-black bg-white border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
@@ -477,16 +521,15 @@ const PaymentManagementPage: React.FC = () => {
             <AlertDialogHeader>
               <AlertDialogTitle>Xác Nhận Xóa</AlertDialogTitle>
               <AlertDialogDescription>
-                Bạn có chắc chắn muốn xóa thanh toán này? Hành động này không thể hoàn tác.
+                Bạn có chắc chắn muốn xóa thanh toán này? Hành động này không
+                thể hoàn tác.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel onClick={() => setDeleteConfirmId(null)}>
                 Hủy
               </AlertDialogCancel>
-              <AlertDialogAction onClick={handleDelete}>
-                Xóa
-              </AlertDialogAction>
+              <AlertDialogAction onClick={handleDelete}>Xóa</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>

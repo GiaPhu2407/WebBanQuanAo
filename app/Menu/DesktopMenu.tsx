@@ -254,7 +254,7 @@ const DesktopMenu: React.FC<DesktopMenuProps> = ({
               <HoverCard>
                 <HoverCardTrigger asChild>
                   <div className="flex items-center gap-2 cursor-pointer">
-                    <Avatar className="h-8 w-8">
+                    <Avatar className="h-9 w-9">
                       <AvatarImage
                         src={
                           userData?.avatar || "https://github.com/shadcn.png"
@@ -276,7 +276,7 @@ const DesktopMenu: React.FC<DesktopMenuProps> = ({
                 <HoverCardContent className="w-72">
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
+                      <Avatar className="h-12 w-14">
                         <AvatarImage
                           src={
                             userData?.avatar || "https://github.com/shadcn.png"
@@ -312,6 +312,12 @@ const DesktopMenu: React.FC<DesktopMenuProps> = ({
                           Dashboard
                         </Link>
                       )}
+                      <Link
+                        href="/component/Yeuthich"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        Yêu Thích
+                      </Link>
                       <Link
                         href="/ChangePassword"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
