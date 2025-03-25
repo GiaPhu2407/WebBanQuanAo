@@ -8,17 +8,22 @@ import Fileupload from "@/components/ui/Fileupload";
 import qr from "@/app/image/qr.jpg";
 import { formatCurrency } from "./utils/currency";
 
+interface Size {
+  tenSize: string;
+}
+
+interface Sanpham {
+  tensanpham: string;
+  gia: number;
+  hinhanh: string;
+}
+
 interface OrderItem {
   idsanpham: number;
   soluong: number;
-  size: {
-    tenSize: string;
-  };
-  sanpham: {
-    tensanpham: string;
-    gia: number;
-    hinhanh: string;
-  };
+  size: Size;
+  sanpham: Sanpham;
+  idgiohang?: number;
 }
 
 interface OrderDetails {
@@ -29,7 +34,7 @@ interface OrderDetails {
 
 interface OnlinePaymentProps {
   orderDetails: OrderDetails;
-  onPaymentComplete: () => void;
+  onPaymentComplete?: () => void;
 }
 
 export const OnlinePayment = ({
@@ -42,14 +47,17 @@ export const OnlinePayment = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
+  // Detailed validation of order details
   useEffect(() => {
     if (!orderDetails || !orderDetails.orderId) {
       console.error("Invalid order details:", orderDetails);
       toast.error("Thông tin đơn hàng không hợp lệ");
+      router.push("/component/Order");
     }
-  }, [orderDetails]);
+  }, [orderDetails, router]);
 
   const handleSubmitPayment = async () => {
+    // Comprehensive validation before submission
     if (!paymentProofImage) {
       toast.error("Vui lòng tải lên ảnh chứng minh thanh toán");
       return;
@@ -85,20 +93,36 @@ export const OnlinePayment = ({
       }
 
       if (result.success) {
-        toast.success("Gửi xác nhận thanh toán thành công");
-        setTimeout(() => {
+        // Improved success handling
+        toast.success("Gửi xác nhận thanh toán thành công", {
+          duration: 3000,
+          position: "top-center",
+        });
+
+        // Trigger payment complete callback if provided
+        if (onPaymentComplete) {
           onPaymentComplete();
+        }
+
+        // Delayed navigation to ensure toast is visible
+        setTimeout(() => {
           router.push("/component/Order");
-        }, 1500);
+        }, 2000);
+      } else {
+        // Handle case where success is false but no error was thrown
+        toast.error("Không thể xác nhận thanh toán. Vui lòng thử lại.");
       }
     } catch (error: any) {
       console.error("Payment error:", error);
-      toast.error(error.message || "Có lỗi xảy ra khi xử lý thanh toán");
+      toast.error(error.message || "Có lỗi xảy ra khi xử lý thanh toán", {
+        duration: 4000,
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // Enhanced error state rendering
   if (!orderDetails || !orderDetails.orderId) {
     return (
       <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -112,10 +136,10 @@ export const OnlinePayment = ({
             </p>
             <div className="flex justify-center">
               <button
-                onClick={() => router.back()}
+                onClick={() => router.push("/component/Order")}
                 className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
               >
-                Quay lại
+                Về trang đơn hàng
               </button>
             </div>
           </div>
@@ -134,6 +158,7 @@ export const OnlinePayment = ({
             </h2>
 
             <div className="space-y-6">
+              {/* Order Details Section */}
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">
                   Chi tiết đơn hàng #{orderDetails.orderId}
@@ -157,7 +182,7 @@ export const OnlinePayment = ({
                             {item.sanpham.tensanpham}
                           </p>
                           <p className="text-sm text-gray-500">
-                            Size: {item.size.tenSize || "Default"}
+                            Size: {item.size?.tenSize || "Không xác định"}
                           </p>
                           <p className="text-sm text-gray-500">
                             Số lượng: {item.soluong}
@@ -178,6 +203,7 @@ export const OnlinePayment = ({
                 </div>
               </div>
 
+              {/* QR Code Section */}
               <div className="text-center">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">
                   Quét mã QR để thanh toán
@@ -196,6 +222,7 @@ export const OnlinePayment = ({
                 </p>
               </div>
 
+              {/* Bank Transfer Details */}
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
                   Thông tin chuyển khoản
@@ -203,7 +230,6 @@ export const OnlinePayment = ({
                 <div className="grid grid-cols-1 gap-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Ngân hàng:</span>
-
                     <span className="font-medium">Techcombank</span>
                   </div>
                   <div className="flex justify-between">
@@ -229,6 +255,7 @@ export const OnlinePayment = ({
                 </div>
               </div>
 
+              {/* Payment Proof Upload */}
               <div className="mt-8">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">
                   Tải lên ảnh chứng minh thanh toán
@@ -266,6 +293,7 @@ export const OnlinePayment = ({
                 </div>
               </div>
 
+              {/* Action Buttons */}
               <div className="flex justify-end space-x-4 mt-8">
                 <button
                   onClick={() => router.back()}

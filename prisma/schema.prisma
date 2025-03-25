@@ -41,6 +41,8 @@ model Users {
   calamviec      CaLamViec[]
   luong          Luong[]
     lichlamviec   LichLamViec[]
+    UserBehavior  UserBehavior[]
+
   avatar        String?  // Thêm trường avatar để lưu URL của ảnh
 
 }
@@ -127,6 +129,8 @@ model Loaisanpham {
   idloaisanpham   Int?            
   giamgia         Decimal?         @db.Decimal(5,2)
   gioitinh        Boolean?
+  totalViews    Int      @default(0)
+
   size            String?          @db.VarChar(255)
   loaisanpham     Loaisanpham?     @relation(fields: [idloaisanpham], references: [idloaisanpham])
   chitietnhap     Chitietnhap[]
@@ -139,7 +143,8 @@ model Loaisanpham {
   lichgiaohang    LichGiaoHang[]
   ProductSizes    ProductSize[]     // New relationship
   ProductColors   ProductColor[]    // Thêm relation với bảng trung gian
- 
+   UserBehavior  UserBehavior[]
+
 }
 // model Sanpham {
 //   idsanpham       Int              @id @default(autoincrement())
@@ -464,244 +469,19 @@ model ProductSize {
 
   @@id([idsanpham, idSize])
 }
-// Corrected Prisma Schema
+enum UserAction {
+view
+add_to_cart
+purchase
+}
 
-// datasource db {
-//   provider = "mysql"
-//   url      = env("DATABASE_URL")
-// }
-
-// generator client {
-//   provider = "prisma-client-js"
-// }
-
-// model Role {
-//   idrole        Int      @id 
-//   Tennguoidung  String?  @db.VarChar(255)
-//   Khachhang     Khachhang[]
-//   Nhanvien      Nhanvien[]
-//   Admin         Admin[]
-//   RolePermission RolePermission[]
-// }
-
-// model Khachhang {
-//   idkhachhang     Int       @id @default(autoincrement())
-//   hoten           String?   @db.VarChar(255)
-//   sodienthoai     String?   @db.VarChar(45)
-//   email           String?   @db.VarChar(255)  @unique // giữ unique vì email nên là duy nhất
-//   gioitinh        Boolean?  @db.TinyInt
-//   diachi          String?   @db.VarChar(45)
-//   ngaysinh        DateTime?
-//   tendangnhap     String?   @db.VarChar(45) @unique // thêm unique vì tên đăng nhập nên là duy nhất
-//   matkhau         String?   @db.VarChar(45)
-//   idrolekhachhang Int?
-//   role            Role?     @relation(fields: [idrolekhachhang], references: [idrole])
-//   donhang         Donhang[]
-//   giohang         Giohang[]
-//   danhgia         Danhgia[]
-//   Admin           Admin[]
-//   tuvanhotro      Tuvanhotro[]
-// }
-
-// model Donhang {
-//   iddonhang    Int       @id @default(autoincrement())
-//   tongsoluong  Int?
-//   trangthai    String?  @db.VarChar(45)
-//   tongsotien   Int?
-//   ngaydat      String?   @db.VarChar(45)
-//   idkhachhang  Int?      // bỏ unique vì 1 khách hàng có thể có nhiều đơn hàng
-//   khachhang    Khachhang? @relation(fields: [idkhachhang], references: [idkhachhang])
-//   chitietdonhang ChitietDonhang[]
-//   thanhtoan    Thanhtoan[]
-// }
-
-// model Loaisanpham {
-//   idloaisanpham Int       @id @default(autoincrement())
-//   tenloai       String?   @db.VarChar(255) @unique // thêm unique vì tên loại sản phẩm nên là duy nhất
-//   mota          String?   @db.VarChar(255)
-//   sanpham       Sanpham[]
-// }
-
-// model Sanpham {
-//   idsanpham       Int              @id @default(autoincrement())
-//   tensanpham      String?          @db.VarChar(255) @unique // thêm unique vì tên sản phẩm nên là duy nhất
-//   mota            String?          @db.VarChar(255)
-//   gia             String?          @db.VarChar(255)
-//   hinhanh         String?          @db.VarChar(255)
-//   idloaisanpham   Int?            // bỏ unique vì 1 loại sản phẩm có thể có nhiều sản phẩm
-//   giamgia         Decimal?         @db.Decimal(5,2)
-//   gioitinh        Boolean?
-//   size            String?          @db.VarChar(255)
-//   loaisanpham     Loaisanpham?    @relation(fields: [idloaisanpham], references: [idloaisanpham])
-//   chitietnhap     Chitietnhap[]
-//   chitietdonhang  ChitietDonhang[]
-//   giohang         Giohang[]
-//   danhgia         Danhgia[]
-//   kho             Kho[]
-// }
-
-// model Nhacungcap {
-//   idnhacungcap  Int       @id @default(autoincrement())
-//   tennhacungcap String?   @db.VarChar(255) @unique // thêm unique vì tên nhà cung cấp nên là duy nhất
-//   sodienthoai   String?   @db.VarChar(10)
-//   diachi        String?   @db.VarChar(45)
-//   email         String?   @db.VarChar(45) @unique // thêm unique vì email nên là duy nhất
-//   trangthai     Boolean?  @db.TinyInt
-//   nhaphang      Nhaphang[]
-// }
-
-// model Nhaphang {
-//   idnhaphang   Int       @id @default(autoincrement())
-//   ngaynhap     String?   @db.VarChar(45)
-//   tongtien     String?   @db.VarChar(255)
-//   tongsoluong  Int?
-//   idnhacungcap Int?      // bỏ unique vì 1 nhà cung cấp có thể có nhiều đơn nhập hàng
-//   nhacungcap   Nhacungcap? @relation(fields: [idnhacungcap], references: [idnhacungcap])
-//   chitietnhap  Chitietnhap[]
-// }
-
-// model Chitietnhap {
-//   idchitietnhap Int       @id @default(autoincrement())
-//   idnhaphang    Int?      // bỏ unique vì 1 đơn nhập có thể có nhiều chi tiết nhập
-//   idsanpham     Int?      // bỏ unique vì 1 sản phẩm có thể được nhập nhiều lần
-//   soluong       String?   @db.VarChar(255)
-//   dongia        String?   @db.VarChar(255)
-//   nhaphang      Nhaphang? @relation(fields: [idnhaphang], references: [idnhaphang])
-//   sanpham       Sanpham?  @relation(fields: [idsanpham], references: [idsanpham])
-// }
-
-// model ChitietDonhang {
-//   idchitietdathang Int       @id @default(autoincrement())
-//   iddonhang        Int?      // bỏ unique vì 1 đơn hàng có thể có nhiều chi tiết đơn hàng
-//   soluong          Int?
-//   dongia           Decimal?  @db.Decimal(5,2)
-//   idsanpham        Int?
-//   donhang          Donhang?  @relation(fields: [iddonhang], references: [iddonhang])
-//   sanpham          Sanpham?  @relation(fields: [idsanpham], references: [idsanpham])
-// }
-
-// model Giohang {
-//   idgiohang   Int       @id @default(autoincrement())
-//   soluong     Int?
-//   idkhachhang Int?      // bỏ unique vì 1 khách hàng có thể có nhiều sản phẩm trong giỏ hàng
-//   idsanpham   Int?      // bỏ unique vì 1 sản phẩm có thể nằm trong nhiều giỏ hàng
-//   khachhang   Khachhang? @relation(fields: [idkhachhang], references: [idkhachhang])
-//   sanpham     Sanpham?  @relation(fields: [idsanpham], references: [idsanpham])
-// }
-
-// model Nhanvien {
-//   idNhanvien     Int       @id @default(autoincrement())
-//   tennhanvien    String?   @db.VarChar(45)
-//   sodienthoai    String?   @db.VarChar(45) @unique // thêm unique vì số điện thoại nên là duy nhất
-//   email          String?   @db.VarChar(45) @unique // thêm unique vì email nên là duy nhất
-//   gioitinh       Boolean?  @db.TinyInt
-//   ngaysinh       DateTime?
-//   diachi         String?   @db.VarChar(45)
-//   ngayvaolam     DateTime? @db.Date
-//   idrolenhanvien Int?
-//   role           Role?     @relation(fields: [idrolenhanvien], references: [idrole])
-//   calamviec      CaLamViec[]
-//   luong          Luong[]
-//   Admin          Admin[]
-//   tuvanhotro     Tuvanhotro[]
-// }
-
-// model CaLamViec {
-//   idCaLamViec Int       @id @default(autoincrement())
-//   idnhanvien  Int?      // bỏ unique vì 1 nhân viên có thể có nhiều ca làm việc
-//   ngaylam     DateTime? @db.Date
-//   giobatdau   String?   @db.VarChar(45)
-//   gioketthuc  String?   @db.VarChar(45)
-//   nhanvien    Nhanvien? @relation(fields: [idnhanvien], references: [idNhanvien])
-// }
-
-// model Luong {
-//   idLuong        Int       @id @default(autoincrement())
-//   idnhanvien     Int?      // bỏ unique vì 1 nhân viên có thể có nhiều bảng lương (theo tháng)
-//   luongcoban     Decimal?  @db.Decimal(10,2)
-//   thuong         Decimal?  @db.Decimal(6,2)
-//   ngaytinhluong  DateTime? @db.Date
-//   tongluong      Decimal?  @db.Decimal(10,2)
-//   nhanvien       Nhanvien? @relation(fields: [idnhanvien], references: [idNhanvien])
-// }
-
-// model Thanhtoan {
-//   idthanhtoan          Int       @id @default(autoincrement())
-//   iddonhang            Int?      @unique // giữ unique vì 1 đơn hàng chỉ có 1 thanh toán
-//   phuongthucthanhtoan  String?   @db.VarChar(45)
-//   sotien               Decimal?  @db.Decimal(10,2)
-//   trangthai            String?   @db.VarChar(255)
-//   ngaythanhtoan        DateTime? @db.Date
-//   donhang              Donhang?  @relation(fields: [iddonhang], references: [iddonhang])
-// }
-
-// model Danhgia {
-//   iddanhgia    Int       @id @default(autoincrement())
-//   idsanpham    Int?      // bỏ unique vì 1 sản phẩm có thể có nhiều đánh giá
-//   idkhachang   Int?      // bỏ unique vì 1 khách hàng có thể đánh giá nhiều sản phẩm
-//   sao          Int?
-//   noidung      String?   @db.VarChar(45)
-//   ngaydanhgia  DateTime? @db.Date
-//   sanpham      Sanpham?  @relation(fields: [idsanpham], references: [idsanpham])
-//   khachhang    Khachhang? @relation(fields: [idkhachang], references: [idkhachhang])
-// }
-
-// model Kho {
-//   idKho      Int       @id @default(autoincrement())
-//   idsanpham  Int?      @unique // giữ unique vì 1 sản phẩm chỉ nên có 1 bản ghi trong kho
-//   soluong    Int?
-//   sanpham    Sanpham?  @relation(fields: [idsanpham], references: [idsanpham])
-//   vung       Vung[]
-// }
-
-// model Vung {
-//   idVung   Int       @id @default(autoincrement())
-//   idkho    Int?      // bỏ unique vì 1 kho có thể có nhiều vùng
-//   tenvung  String?   @db.VarChar(45) @unique // thêm unique vì tên vùng nên là duy nhất
-//   kho      Kho?      @relation(fields: [idkho], references: [idKho])
-//   ke       Ke[]
-// }
-
-// model Ke {
-//   idke    Int       @id @default(autoincrement())
-//   idvung  Int?      // bỏ unique vì 1 vùng có thể có nhiều kệ
-//   tenke   String?   @db.VarChar(45) @unique // thêm unique vì tên kệ nên là duy nhất
-//   vung    Vung?     @relation(fields: [idvung], references: [idVung])
-//   tang    Tang[]
-// }
-
-// model Tang {
-//   idtang   Int     @id
-//   idke     Int?    // bỏ unique vì 1 kệ có thể có nhiều tầng
-//   tentang  String? @db.VarChar(255) @unique // thêm unique vì tên tầng nên là duy nhất
-//   ke       Ke?     @relation(fields: [idke], references: [idke])
-// }
-
-// model Tuvanhotro {
-//   idtuvanhotro Int       @id @default(autoincrement())
-//   idkhachang   Int?      // bỏ unique vì 1 khách hàng có thể có nhiều yêu cầu tư vấn
-//   noidung      String?   @db.VarChar(255)
-//   hinhthuc     String?   @db.VarChar(45)
-//   trangthai    String?   @db.VarChar(45)
-//   idnhanvien   Int?
-//   khachhang    Khachhang? @relation(fields: [idkhachang], references: [idkhachhang])
-//   nhanvien     Nhanvien? @relation(fields: [idnhanvien], references: [idNhanvien])
-// }
-
-// model Admin {
-//   idadmin      Int       @id @default(autoincrement())
-//   idnhanvien   Int?      @unique // giữ unique vì 1 nhân viên chỉ có 1 tài khoản admin
-//   idkhachhang  Int?      @unique // giữ unique vì 1 khách hàng chỉ có 1 tài khoản admin
-//   username     String?   @db.VarChar(45) @unique // thêm unique vì username nên là duy nhất
-//   pasword      String?   @db.VarChar(45)
-//   idroleAdmin  Int?
-//   nhanvien     Nhanvien? @relation(fields: [idnhanvien], references: [idNhanvien])
-//   khachhang    Khachhang? @relation(fields: [idkhachhang], references: [idkhachhang])
-//   role         Role?     @relation(fields: [idroleAdmin], references: [idrole])
-// }
-
-// model Permission {
-//   idPermission Int       @id
-//   TenQuyen     String?   @db.VarChar(45) @unique // thêm unique vì tên quyền nên là duy nhất
-//   RolePermission RolePermission[]
-// }
+model UserBehavior {
+  id        Int        @id @default(autoincrement())
+  idUsers   Int
+  idsanpham Int
+  action    UserAction
+  timestamp DateTime   @default(now())
+  score     Int        @default(0) // Thêm trường 'score' để lưu điểm cho sản phẩm
+  user        Users     @relation(fields: [idUsers], references: [idUsers])
+  product     Sanpham   @relation(fields: [idsanpham], references: [idsanpham])
+}
