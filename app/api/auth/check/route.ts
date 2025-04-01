@@ -3,7 +3,7 @@ import { getSession } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";     // Điều chỉnh import theo setup của bạn
 export async function GET(request: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getSession(request);
 
     if (!session || !session.user) {
       return NextResponse.json(null, { status: 401 });

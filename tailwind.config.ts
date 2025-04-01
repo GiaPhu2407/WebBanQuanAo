@@ -197,6 +197,9 @@ const config: Config = {
     },
   },
   plugins: [require("daisyui")],
+  daisyui: {
+    themes: true, // this activates all themes
+  },
 };
 export default config;
 // tailwindcss-animate ,

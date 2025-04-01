@@ -81,7 +81,7 @@ const DesktopMenu: React.FC<DesktopMenuProps> = ({
 
       <div className="flex items-center justify-between h-full px-4">
         {/* Logo */}
-        <Link href="/" className="text-xl font-bold mr-8">
+        <Link href="/Show" className="text-xl font-bold mr-8">
           Logo
         </Link>
 
@@ -310,6 +310,14 @@ const DesktopMenu: React.FC<DesktopMenuProps> = ({
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         >
                           Dashboard
+                        </Link>
+                      )}
+                      {userData.role?.Tennguoidung === "NhanVien" && (
+                        <Link
+                          href="/Staff/DashBoard"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          StaffDashboard
                         </Link>
                       )}
                       <Link

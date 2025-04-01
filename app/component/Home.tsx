@@ -122,6 +122,12 @@ interface Product {
   giamgia: number;
   gioitinh: boolean;
   size: string;
+  popularity: number;
+  totalViews: number;
+  ProductColors?: {
+    idmausac: number;
+    hinhanh: string;
+  }[];
 }
 
 export default function Home() {
@@ -215,7 +221,13 @@ export default function Home() {
                 <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent" />
               </div>
             ) : (
-              <ProductGrid products={filteredProducts} />
+              <ProductGrid
+                products={filteredProducts}
+                userId={0}
+                onAddToCart={function (product: Product): void {
+                  throw new Error("Function not implemented.");
+                }}
+              />
             )}
           </section>
         </div>

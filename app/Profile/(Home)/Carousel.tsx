@@ -10,13 +10,14 @@ import { PiBuildingApartment } from "react-icons/pi";
 
 import AOS from "aos";
 import "aos/dist/aos.css";
+import SoLieu from "./SoLieu";
 export default function Carousel() {
   useEffect(() => {
     AOS.init({ duration: 2500 });
   }, []);
   return (
     <div
-      className="w-full h-[300px] md:h-[400px] mb-10 mt-36"
+      className="w-full h-[300px] md:h-[400px] mb-56 mt-24"
       data-aos="fade-down"
     >
       {" "}
@@ -101,6 +102,7 @@ export default function Carousel() {
           </div>
         </SwiperSlide>
       </Swiper>
+      
     </div>
   );
 }

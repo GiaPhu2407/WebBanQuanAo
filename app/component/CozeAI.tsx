@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { MessageCircleQuestion, X } from "lucide-react";
+import { div } from "@tensorflow/tfjs";
 
 // Previous interfaces remain the same
 interface CozeConfig {
@@ -76,15 +77,17 @@ const CozeChat: React.FC = () => {
     if (isAdminDashboard || !showNotification) return null;
 
     return (
-      <div className="fixed bottom-24 right-4 z-50 max-w-xs bg-white shadow-lg rounded-lg p-4 border flex items-start">
-        <MessageCircleQuestion
-          className="text-blue-600 mr-3  flex-shrink-0"
-          size={24}
-        />
-        <div>
-          <p className="text-sm font-medium text-gray-900 mb-2">
-            Tư vấn bằng Ai
-          </p>
+      <div className="">
+        <div className="fixed bottom-24 right-4 z-50 max-w-xs bg-white shadow-lg rounded-lg p-4 border flex items-start">
+          <MessageCircleQuestion
+            className="text-blue-600 mr-3  flex-shrink-0"
+            size={24}
+          />
+          <div>
+            <p className="text-sm font-medium text-gray-900 mb-2">
+              Tư vấn bằng Ai
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -92,7 +95,7 @@ const CozeChat: React.FC = () => {
 
   return (
     <>
-      <div id="coze-chat-container"></div>
+      <div id="coze-chat-container" className=""></div>
       <AiAdvisoryNotification />
     </>
   );

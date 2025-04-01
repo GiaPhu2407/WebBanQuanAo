@@ -1,13 +1,16 @@
 {
   "compilerOptions": {
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-
     "module": "esnext",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
@@ -20,8 +23,11 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
-    }
+      "@/*": [
+        "./*"
+      ]
+    },
+    "target": "ES2017"
   },
   "include": [
     "next-env.d.ts",
@@ -29,7 +35,10 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "app/(auth)/sign-in/[[...sign-in]]/page.tsx",
-    "app/(auth)/sign-up/[[...sign-up]]/page.tsx"
-, "components/ui/hover-card.rsx"  ],
-  "exclude": ["node_modules"]
+    "app/(auth)/sign-up/[[...sign-up]]/page.tsx",
+    "components/ui/hover-card.rsx"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

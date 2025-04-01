@@ -1,19 +1,56 @@
-import * as tf from "@tensorflow/tfjs";
+import { useState, useCallback } from "react";
 
-// Dữ liệu giả lập: Số lần xem và điểm cho sản phẩm
-const productViews = tf.tensor([1, 2, 3, 4, 5]); // Số lần xem sản phẩm
-const productScores = tf.tensor([1, 2, 3, 4, 5]); // Điểm sản phẩm
+interface UseProductBehaviorProps {
+  userId: number;
+}
 
-// Tạo mô hình tuyến tính đơn giản để tính điểm
-const model = tf.sequential();
-model.add(tf.layers.dense({ units: 1, inputShape: [1] }));
+export const useProductBehavior = ({ userId }: UseProductBehaviorProps) => {
+  const [loading, setLoading] = useState(false);
 
-model.compile({ loss: "meanSquaredError", optimizer: "sgd" });
+  const trackBehavior = useCallback(
+    async (productId: number, action: "view" | "add_to_cart" | "purchase") => {
+      if (!userId || !productId) {
+        console.error("Missing required parameters:", { userId, productId });
+        return;
+      }
 
-// Huấn luyện mô hình với dữ liệu
-model.fit(productViews, productScores, { epochs: 10 }).then(() => {
-  // Dự đoán điểm cho sản phẩm dựa trên số lần xem mới
-  const prediction = model.predict(tf.tensor([6])) as tf.Tensor; // Dự đoán điểm cho sản phẩm với 6 lần xem
-  prediction.dataSync(); // Truy xuất dữ liệu từ Tensor
-  console.log(prediction.dataSync()); // In kết quả dự đoán
-});
+      try {
+        setLoading(true);
+        console.log("Sending behavior tracking request:", {
+          userId,
+          productId,
+          action,
+        });
+
+        const response = await fetch("/api/product-behavior", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId,
+            productId,
+            action,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(`Failed to track behavior: ${errorData.error}`);
+        }
+
+        const data = await response.json();
+        console.log("Behavior tracked successfully:", data);
+        return data;
+      } catch (error) {
+        console.error("Error tracking behavior:", error);
+        throw error;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [userId]
+  );
+
+  return { trackBehavior, loading };
+};

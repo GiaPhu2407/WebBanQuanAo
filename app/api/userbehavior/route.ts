@@ -1,146 +1,56 @@
-// import { NextRequest, NextResponse } from "next/server";
-// import prisma from "@/prisma/client";
-// import { UserAction } from "@prisma/client"; // Đảm bảo rằng bạn đã import UserAction từ Prisma model
+import { useState, useCallback } from "react";
 
-// export async function POST(req: NextRequest) {
-//   const { idsanpham, idUsers, action } = await req.json();
-
-//   // Kiểm tra sự tồn tại của người dùng
-//   const user = await prisma.users.findUnique({
-//     where: {
-//       idUsers: idUsers,
-//     },
-//   });
-//   if (!user) {
-//     return NextResponse.json(
-//       { message: "Người dùng không tồn tại" },
-//       { status: 404 }
-//     );
-//   }
-
-//   // Tính điểm dựa trên hành động (view < add_to_cart < purchase)
-//   let points = 0;
-//   switch (action) {
-//     case UserAction.view:
-//       points = 1; // Sản phẩm được xem
-//       break;
-//     case UserAction.add_to_cart:
-//       points = 2; // Sản phẩm được thêm vào giỏ
-//       break;
-//     case UserAction.purchase:
-//       points = 3; // Sản phẩm được mua
-//       break;
-//     default:
-//       points = 0;
-//   }
-
-//   // Lưu hành vi của người dùng và tính điểm cho sản phẩm
-//   await prisma.userBehavior.create({
-//     data: {
-//       idsanpham,
-//       idUsers,
-//       action,
-//       score: points,
-//     },
-//   });
-
-//   return NextResponse.json(
-//     { message: "Theo dõi hành vi thành công và tính điểm sản phẩm" },
-//     { status: 200 }
-//   );
-// }
-// // Hàm này sẽ được gọi khi người dùng xem một sản phẩm
-// export const trackProductView = async (productId: number, userId: number) => {
-//   try {
-//     const response = await fetch("/api/userBehavior", {
-//       method: "POST",
-//       headers: {
-//         "Content-Type": "application/json",
-//       },
-//       body: JSON.stringify({
-//         userId: userId,
-//         productId: productId,
-//         action: "view", // Lưu hành động "view"
-//       }),
-//     });
-
-//     if (response.ok) {
-//       console.log("Hành vi xem sản phẩm đã được theo dõi");
-//     } else {
-//       console.error("Không thể theo dõi hành vi", await response.json());
-//     }
-//   } catch (error) {
-//     console.error("Lỗi khi gọi API theo dõi hành vi:", error);
-//   }
-// };
-import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/prisma/client";
-
-// Enum for user actions
-enum UserAction {
-  VIEW = "view",
-  ADD_TO_CART = "add_to_cart",
-  PURCHASE = "purchase",
+interface UseProductBehaviorProps {
+  userId: number;
 }
 
-export async function POST(req: NextRequest) {
-  try {
-    const { productId, userId, action } = await req.json();
+export const useProductBehavior = ({ userId }: UseProductBehaviorProps) => {
+  const [loading, setLoading] = useState(false);
 
-    // Validate user
-    const user = await prisma.users.findUnique({
-      where: { idUsers: userId },
-    });
+  const trackBehavior = useCallback(
+    async (productId: number, action: "view" | "add_to_cart" | "purchase") => {
+      if (!userId || !productId) {
+        console.error("Missing required parameters:", { userId, productId });
+        return;
+      }
 
-    if (!user) {
-      return NextResponse.json({ message: "User not found" }, { status: 404 });
-    }
+      try {
+        setLoading(true);
+        console.log("Sending behavior tracking request:", {
+          userId,
+          productId,
+          action,
+        });
 
-    // Calculate points based on action
-    let points = 0;
-    switch (action) {
-      case UserAction.VIEW:
-        points = 1;
-        break;
-      case UserAction.ADD_TO_CART:
-        points = 2;
-        break;
-      case UserAction.PURCHASE:
-        points = 3;
-        break;
-      default:
-        points = 0;
-    }
+        const response = await fetch("/api/product-behavior", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId,
+            productId,
+            action,
+          }),
+        });
 
-    // Create user behavior record
-    await prisma.userBehavior.create({
-      data: {
-        idsanpham: productId,
-        idUsers: userId,
-        action,
-        score: points,
-      },
-    });
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(`Failed to track behavior: ${errorData.error}`);
+        }
 
-    // Update product view count (optional)
-    await prisma.sanpham.update({
-      where: { idsanpham: productId },
-      data: {
-        totalViews: {
-          increment: action === UserAction.VIEW ? 1 : 0,
-        },
-      },
-    });
+        const data = await response.json();
+        console.log("Behavior tracked successfully:", data);
+        return data;
+      } catch (error) {
+        console.error("Error tracking behavior:", error);
+        throw error;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [userId]
+  );
 
-    return NextResponse.json(
-      { message: "User behavior tracked successfully" },
-      { status: 200 }
-    );
-  } catch (error) {
-    console.error("Error tracking user behavior:", error);
-    return NextResponse.json(
-      { message: "Internal server error" },
-      { status: 500 }
-    );
-  }
-}
+  return { trackBehavior, loading };
+};

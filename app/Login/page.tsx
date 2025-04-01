@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useToast } from "@/components/ui/use-toast";
 import {
   Loader2,
-  Mail,
   Lock,
   Eye,
   EyeOff,
@@ -23,20 +22,36 @@ const LoginPage = () => {
   const router = useRouter();
   const { toast } = useToast();
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: {
+    preventDefault: () => void;
+    currentTarget: HTMLFormElement | undefined;
+  }) => {
     event.preventDefault();
     setIsLoading(true);
+    setError("");
     const formData = new FormData(event.currentTarget);
 
-    // Basic validation
-    const identifier = formData.get("identifier"); // This can be either email or username
+    // Get data from form
+    const identifier = formData.get("usernameoremail"); // This can be either email or username
     const password = formData.get("password");
 
-    if (!identifier || !password) {
-      setError("Please fill in all required fields.");
+    // Validate form fields
+    if (!identifier) {
+      setError("Please enter your email or username.");
       toast({
         title: "Validation Error!",
-        description: "Please fill in all required fields.",
+        description: "Please enter your username or email correctly",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    if (!password) {
+      setError("Please enter your password.");
+      toast({
+        title: "Login failed!",
+        description: "Please enter your password correctly.",
         variant: "destructive",
       });
       setIsLoading(false);
@@ -46,27 +61,32 @@ const LoginPage = () => {
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           identifier: identifier,
           password: password,
         }),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        throw new Error("Login failed");
+        throw new Error(data.message || "Login failed");
       }
 
       toast({
-        title: "Login Successful!",
-        description: "Welcome back!",
+        title: "Login successful!",
+        description: "Welcome to the website!",
         variant: "success",
       });
 
-      setTimeout(() => {
-        router.push("/Show");
-      }, 1000);
+      // Navigate to Show page without delay
+      router.push("/Show");
     } catch (error) {
-      setError("Invalid credentials.");
+      console.error("Login error:", error);
+      setError("Invalid credentials. Please try again.");
       toast({
         title: "Login Failed",
         description: "Please check your credentials and try again.",
@@ -81,7 +101,7 @@ const LoginPage = () => {
     <div className="min-h-screen flex bg-gray-50">
       {/* Left side with image */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 to-purple-600 p-12 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1579547945413-497e1b99dac0')] bg-cover bg-center opacity-10"></div>
+        <div className="absolute inset-0 bg-[url('/images/login-bg.jpg')] bg-cover bg-center opacity-10"></div>
         <div className="relative z-10 flex flex-col justify-center">
           <h1 className="text-5xl font-bold text-white mb-8">Welcome Back!</h1>
           <p className="text-xl text-white/90 leading-relaxed">
@@ -126,7 +146,7 @@ const LoginPage = () => {
             <div className="space-y-4">
               <div className="relative">
                 <label
-                  htmlFor="identifier"
+                  htmlFor="usernameoremail"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
                   Email or Username
@@ -135,8 +155,8 @@ const LoginPage = () => {
                   <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                   <input
                     type="text"
-                    id="identifier"
-                    name="identifier"
+                    id="usernameoremail"
+                    name="usernameoremail"
                     placeholder="Enter your email or username"
                     className="pl-10 w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
                     required

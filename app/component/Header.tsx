@@ -9,6 +9,7 @@ import MobileMenu from "../Menu/MobileMenu";
 import { Link, ShoppingCart, X, Plus, Minus, Info } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
+import TawkMessenger from "./TawkMesseger";
 
 interface Size {
   idSize: number;

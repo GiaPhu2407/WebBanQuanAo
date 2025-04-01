@@ -139,6 +139,14 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
             Dashboard
           </Link>
         )}
+        {userData.role?.Tennguoidung === "NhanVien" && (
+          <Link
+            href="/Staff/DashBoard"
+            className="block px-4 py-2 hover:bg-gray-100"
+          >
+            StaffDashboard
+          </Link>
+        )}
         <button
           onClick={handleLogout}
           className="block w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100"
@@ -156,7 +164,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
       } transition-transform duration-300 ease-in-out lg:hidden`}
     >
       <div className="h-20 shadow px-4 flex items-center justify-between">
-        <Link href="/" className="text-xl font-bold">
+        <Link href="/Show" className="text-xl font-bold">
           Logo
         </Link>
         <button onClick={() => setIsMobileMenuOpen(false)} className="p-2">

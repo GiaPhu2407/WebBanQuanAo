@@ -148,6 +148,11 @@ const TabletMenu: React.FC<TabletMenuProps> = ({
                       <Link href="/Admin">Dashboard</Link>
                     </li>
                   )}
+                  {userData.role?.Tennguoidung === "NhanVien" && (
+                    <li>
+                      <Link href="/Staff">StaffDashboard</Link>
+                    </li>
+                  )}
                   <li>
                     <button onClick={handleLogout} className="text-red-600">
                       Logout

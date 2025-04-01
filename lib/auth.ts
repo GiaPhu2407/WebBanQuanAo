@@ -141,7 +141,10 @@ export async function login(usernameOrEmail: string, password: string) {
       .sign(key);
 
     // Set cookie
-    cookies().set("session-token", token, {
+    (
+      await // Set cookie
+      cookies()
+    ).set("session-token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
@@ -163,12 +166,12 @@ export async function login(usernameOrEmail: string, password: string) {
 }
 
 export async function logout() {
-  cookies().delete("session-token");
+  (await cookies()).delete("session-token");
 }
 
 export async function getSession(request: unknown) {
   try {
-    const token = cookies().get("session-token")?.value;
+    const token = (await cookies()).get("session-token")?.value;
     if (!token) return null;
 
     const verified = await jwtVerify(token, key);

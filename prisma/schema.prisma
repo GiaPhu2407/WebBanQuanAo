@@ -130,6 +130,7 @@ model Loaisanpham {
   giamgia         Decimal?         @db.Decimal(5,2)
   gioitinh        Boolean?
   totalViews    Int      @default(0)
+  popularity   Float   @default(0)  // Thêm trường này
 
   size            String?          @db.VarChar(255)
   loaisanpham     Loaisanpham?     @relation(fields: [idloaisanpham], references: [idloaisanpham])

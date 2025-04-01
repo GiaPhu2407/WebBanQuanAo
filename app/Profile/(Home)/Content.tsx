@@ -9,6 +9,7 @@ const Content = () => {
       <Content1 />
       <Content2 />
       <ClothingViewerPage />
+      
     </div>
   );
 };
