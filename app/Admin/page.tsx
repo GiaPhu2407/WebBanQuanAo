@@ -348,12 +348,12 @@ const SalesDashboard: React.FC = () => {
               onClick={() => router.push("/Admin/DashBoard/LoaiSanPham")}
               isExpanded={sidebarExpanded}
             />
-            {/* <SidebarItem
+            <SidebarItem
               icon={<ShoppingBag size={18} />}
               label="Sản phẩm"
               onClick={() => router.push("/Admin/DashBoard/ProductManager")}
               isExpanded={sidebarExpanded}
-            /> */}
+            />
             <SidebarItem
               icon={<Truck size={18} />}
               label="Nhà cung cấp"

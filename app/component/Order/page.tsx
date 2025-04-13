@@ -354,20 +354,20 @@ const OrderPage = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen flex justify-center items-center text-red-500">
-        {error}
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-red-500">{error}</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div data-theme="light">
       <Header />
       <Toaster position="top-right" />
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Đơn hàng của bạn</h1>
+      <div className="container mx-auto px-20 py-28">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Đơn Hàng Của Bạn</h1>
           <button
             onClick={() => router.push("/")}
             className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded transition duration-200"
@@ -379,18 +379,20 @@ const OrderPage = () => {
         {orders.length === 0 ? (
           <EmptyState onShopNow={() => router.push("/")} />
         ) : (
-          <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {orders.map((order) => (
-              <OrderCard
-                key={order.iddonhang}
-                order={order}
-                onCancelOrder={handleCancelOrder}
-                onDeleteOrder={handleDeleteOrder}
-              />
+              <div key={order.iddonhang} className="w-full">
+                <OrderCard
+                  order={order}
+                  onCancelOrder={handleCancelOrder}
+                  onDeleteOrder={handleDeleteOrder}
+                />
+              </div>
             ))}
           </div>
         )}
       </div>
+
       <Footer />
     </div>
   );

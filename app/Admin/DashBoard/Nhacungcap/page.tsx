@@ -166,6 +166,9 @@ export default function NhaCungCapManagementPage() {
           variant: "success",
         });
 
+        // Cập nhật danh sách được chọn nếu nhà cung cấp đã bị xóa
+        setSelectedItems((prev) => prev.filter((id) => id !== deleteConfirmId));
+
         setReloadKey((prev) => prev + 1);
         setDeleteConfirmId(null);
       } catch (err) {
@@ -230,6 +233,27 @@ export default function NhaCungCapManagementPage() {
     }
   };
 
+  // Hàm mới cho nút chọn tất cả
+  const handleSelectAllButton = () => {
+    // Nếu đã chọn tất cả rồi thì bỏ chọn, nếu chưa thì chọn tất cả
+    if (selectedItems.length === nhacungcapList.length) {
+      setSelectedItems([]);
+      toast({
+        title: "Đã bỏ chọn tất cả",
+        description: "Đã bỏ chọn tất cả nhà cung cấp",
+        variant: "default",
+      });
+    } else {
+      const allIds = nhacungcapList.map((item) => item.idnhacungcap);
+      setSelectedItems(allIds);
+      toast({
+        title: "Đã chọn tất cả",
+        description: `Đã chọn tất cả ${allIds.length} nhà cung cấp`,
+        variant: "default",
+      });
+    }
+  };
+
   const handleSelectItem = (id: number, checked: boolean) => {
     if (checked) {
       setSelectedItems((prev) => [...prev, id]);
@@ -256,6 +280,7 @@ export default function NhaCungCapManagementPage() {
             data={nhacungcapList}
             selectedItems={selectedItems}
             onDataImported={handleDataImported}
+            onSelectAll={handleSelectAllButton}
           />
           <Button onClick={handleAddNewClick}>Thêm nhà cung cấp</Button>
         </div>

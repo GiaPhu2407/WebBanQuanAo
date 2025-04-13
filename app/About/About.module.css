@@ -1,0 +1,62 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.title {
+  font-size: 32px;
+  font-weight: bold;
+  color: #2c3e50;
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.subtitle {
+  font-size: 24px;
+  font-weight: 600;
+  color: #34495e;
+  margin-bottom: 20px;
+}
+
+.bookButton {
+  display: inline-flex;
+  align-items: center;
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 25px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-top: 20px;
+}
+
+.bookButton:hover {
+  background-color: #357abd;
+}
+
+.bookIcon {
+  margin-right: 10px;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 20px;
+  }
+
+  .title {
+    font-size: 24px;
+  }
+
+  .subtitle {
+    font-size: 20px;
+  }
+
+  .bookButton {
+    padding: 10px 20px;
+    font-size: 14px;
+  }
+}

@@ -2,11 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import {
-  Product,
-  Size,
-} from "@/app/Admin/DashBoard/ProductManager/type/product";
-
+import { Product, Size } from "@/app/Admin/type/product";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,8 +17,9 @@ import { Button } from "@/components/ui/button";
 import ProductFilters from "./ProductFilter/ProductFilters";
 import ProductTable from "./ProductTable/ProductTables";
 import { ProductDialog } from "./components/form/ProductDialog";
-import SalesDashboard from "../NvarbarAdmin";
 import ExportProductOptions from "./components/ExportProduct";
+import Menu from "@/app/Staff/DashBoard/Header";
+import SalesDashboard from "../NvarbarAdmin";
 
 export default function ProductManagementPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -42,6 +39,7 @@ export default function ProductManagementPage() {
   const [allSelectedItems, setAllSelectedItems] = useState<{
     [key: number]: Product;
   }>({});
+  const [releaseDate, setReleaseDate] = useState<Date | null>(null);
 
   const [formData, setFormData] = useState({
     tensanpham: "",
@@ -127,6 +125,7 @@ export default function ProductManagementPage() {
         body: JSON.stringify({
           ...formData,
           hinhanh: imageUrl,
+          releaseDate: releaseDate?.toISOString(),
         }),
       });
 
@@ -174,6 +173,7 @@ export default function ProductManagementPage() {
         }, {} as { [key: number]: number }) || {},
     });
     setImageUrl(product.hinhanh || "");
+    setReleaseDate(product.releaseDate ? new Date(product.releaseDate) : null);
     setIsDialogOpen(true);
   };
 
@@ -218,9 +218,9 @@ export default function ProductManagementPage() {
     });
     setImageUrl("");
     setSelectedProduct(undefined);
+    setReleaseDate(null);
   };
 
-  // Handle selection of items
   const handleSelectItem = (id: number, checked: boolean) => {
     const item = products.find((item) => item.idsanpham === id);
     if (!item) return;
@@ -242,12 +242,10 @@ export default function ProductManagementPage() {
     const newSelectedItems = { ...allSelectedItems };
 
     if (checked) {
-      // Add all items from current page
       products.forEach((item) => {
         newSelectedItems[item.idsanpham] = item;
       });
     } else {
-      // Remove all items from current page
       products.forEach((item) => {
         delete newSelectedItems[item.idsanpham];
       });
@@ -257,7 +255,6 @@ export default function ProductManagementPage() {
     setSelectedItems(checked ? products.map((item) => item.idsanpham) : []);
   };
 
-  // Update selected items when products change
   useEffect(() => {
     const currentPageSelectedIds = products
       .filter((item) => allSelectedItems[item.idsanpham])
@@ -265,7 +262,6 @@ export default function ProductManagementPage() {
     setSelectedItems(currentPageSelectedIds);
   }, [products, allSelectedItems]);
 
-  // Render selection info
   const renderSelectionInfo = () => {
     const totalSelected = Object.keys(allSelectedItems).length;
     return totalSelected > 0 ? (
@@ -276,96 +272,101 @@ export default function ProductManagementPage() {
   };
 
   return (
-    <div className="flex">
-      <SalesDashboard />
+    <div>
+      <div className="flex">
+        <SalesDashboard />
+        <div className="p-6 mt-16 w-full">
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-6">
+              <h1 className="text-2xl font-bold">Quản lý sản phẩm</h1>
+              <div className="flex space-x-2">
+                <Button
+                  onClick={() => {
+                    resetForm();
+                    setIsDialogOpen(true);
+                  }}
+                >
+                  Thêm sản phẩm
+                </Button>
+                <ExportProductOptions
+                  selectedItems={Object.keys(allSelectedItems).map(Number)}
+                  productList={Object.values(allSelectedItems)}
+                  onDataImported={fetchProducts}
+                />
+              </div>
+            </div>
 
-      <div className="p-6 mt-16 w-full">
-        <div className="mb-6">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold">Quản lý sản phẩm</h1>
-            <div className="flex space-x-2">
-              <Button
-                onClick={() => {
-                  resetForm();
-                  setIsDialogOpen(true);
-                }}
-              >
-                Thêm sản phẩm
-              </Button>
-              <ExportProductOptions
-                selectedItems={Object.keys(allSelectedItems).map(Number)}
-                productList={Object.values(allSelectedItems)}
-                onDataImported={fetchProducts}
+            <div className="flex justify-between items-center gap-4 mb-4">
+              <ProductFilters
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                categoryFilter={categoryFilter}
+                onCategoryChange={setCategoryFilter}
+                genderFilter={genderFilter}
+                onGenderChange={setGenderFilter}
+                categories={categories}
               />
+              {renderSelectionInfo()}
             </div>
           </div>
 
-          <div className="flex justify-between items-center gap-4 mb-4">
-            <ProductFilters
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-              categoryFilter={categoryFilter}
-              onCategoryChange={setCategoryFilter}
-              genderFilter={genderFilter}
-              onGenderChange={setGenderFilter}
-              categories={categories}
-            />
-            {renderSelectionInfo()}
-          </div>
+          <ProductTable
+            products={products}
+            onEdit={handleEdit}
+            onDelete={setDeleteConfirmId}
+            selectedItems={selectedItems}
+            onSelectItem={handleSelectItem}
+            onSelectAll={handleSelectAll}
+            allSelected={
+              products.length > 0 &&
+              products.every((product) =>
+                selectedItems.includes(product.idsanpham)
+              )
+            }
+          />
+
+          <ProductDialog
+            isOpen={isDialogOpen}
+            onClose={() => {
+              setIsDialogOpen(false);
+              resetForm();
+            }}
+            product={selectedProduct}
+            sizes={sizes}
+            categories={categories}
+            onSubmit={handleSubmit}
+            formData={formData}
+            setFormData={setFormData}
+            imageUrl={imageUrl}
+            setImageUrl={setImageUrl}
+            isSubmitting={isSubmitting}
+            releaseDate={releaseDate}
+            onReleaseDateChange={setReleaseDate}
+          />
+
+          <AlertDialog
+            open={!!deleteConfirmId}
+            onOpenChange={() => setDeleteConfirmId(null)}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Bạn có chắc chắn muốn xóa sản phẩm này? Hành động này không
+                  thể hoàn tác.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setDeleteConfirmId(null)}>
+                  Hủy
+                </AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete}>
+                  Xóa
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
-
-        <ProductTable
-          products={products}
-          onEdit={handleEdit}
-          onDelete={setDeleteConfirmId}
-          selectedItems={selectedItems}
-          onSelectItem={handleSelectItem}
-          onSelectAll={handleSelectAll}
-          allSelected={
-            products.length > 0 &&
-            products.every((product) =>
-              selectedItems.includes(product.idsanpham)
-            )
-          }
-        />
-
-        <ProductDialog
-          isOpen={isDialogOpen}
-          onClose={() => {
-            setIsDialogOpen(false);
-            resetForm();
-          }}
-          product={selectedProduct}
-          sizes={sizes}
-          categories={categories}
-          onSubmit={handleSubmit}
-          formData={formData}
-          setFormData={setFormData}
-          imageUrl={imageUrl}
-          setImageUrl={setImageUrl}
-          isSubmitting={isSubmitting}
-        />
-
-        <AlertDialog
-          open={!!deleteConfirmId}
-          onOpenChange={() => setDeleteConfirmId(null)}
-        >
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
-              <AlertDialogDescription>
-                Bạn có chắc chắn muốn xóa sản phẩm này? Hành động này không thể
-                hoàn tác.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setDeleteConfirmId(null)}>
-                Hủy
-              </AlertDialogCancel>
-              <AlertDialogAction onClick={handleDelete}>Xóa</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </div>
     </div>
   );

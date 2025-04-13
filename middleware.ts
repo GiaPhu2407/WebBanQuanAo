@@ -5,7 +5,16 @@ import { getSession } from "@/lib/auth";
 
 export async function middleware(request: NextRequest) {
   const session = await getSession(request);
-  const publicPaths = ["/", "/Show", "/Login", "/Register", "/ForgotPassword"];
+  const publicPaths = [
+    "/",
+    "/Show",
+    "/Admin",
+    "/component/Category",
+    "/Login",
+    "/Register",
+    "/ForgotPassword",
+    "/unauthorized",
+  ];
   const isPublicPath = publicPaths.some(
     (path) =>
       request.nextUrl.pathname === path ||
@@ -17,21 +26,19 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Protected paths: /Show or /Admin
-  if (!session) {
-    // Store original URL to redirect after login
-    const loginUrl = new URL("/Login", request.url);
-    // loginUrl.searchParams.set("redirect", request.nextUrl.pathname);
-    // return NextResponse.redirect(loginUrl);
-  }
+  // If no session exists, redirect to login
+  // if (!session) {
+  //   const loginUrl = new URL("/Login", request.url);
+  //   loginUrl.searchParams.set("redirect", request.nextUrl.pathname);
+  //   return NextResponse.redirect(loginUrl);
+  // }
 
-  // Admin-only paths
-  if (
-    request.nextUrl.pathname.startsWith("/Admin") &&
-    session.role !== "Admin"
-  ) {
-    // Redirect to unauthorized page or home
-    return NextResponse.redirect(new URL("/unauthorized", request.url));
+  // Admin-only paths - check role
+  if (request.nextUrl.pathname.startsWith("/Admin")) {
+    // Only users with role "Admin" can access admin paths
+    if (!session.role || session.role !== "Admin") {
+      return NextResponse.redirect(new URL("/unauthorized", request.url));
+    }
   }
 
   return NextResponse.next();

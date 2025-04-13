@@ -8,25 +8,30 @@ import Fileupload from "@/components/ui/Fileupload";
 import qr from "@/app/image/qr.jpg";
 import { formatCurrency } from "./utils/currency";
 
-interface Size {
+export interface Size {
+  idSize?: number;
   tenSize: string;
 }
 
-interface Sanpham {
+export interface Sanpham {
   tensanpham: string;
+  mota?: string;
   gia: number;
   hinhanh: string;
+  giamgia?: number;
+  gioitinh?: boolean;
 }
 
-interface OrderItem {
+export interface OrderItem {
   idsanpham: number;
   soluong: number;
   size: Size;
-  sanpham: Sanpham;
+  sanpham: Sanpham | null;
   idgiohang?: number;
+  isSelected?: boolean;
 }
 
-interface OrderDetails {
+export interface OrderDetails {
   items: OrderItem[];
   total: number;
   orderId: number;
@@ -47,7 +52,6 @@ export const OnlinePayment = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
-  // Detailed validation of order details
   useEffect(() => {
     if (!orderDetails || !orderDetails.orderId) {
       console.error("Invalid order details:", orderDetails);
@@ -57,7 +61,6 @@ export const OnlinePayment = ({
   }, [orderDetails, router]);
 
   const handleSubmitPayment = async () => {
-    // Comprehensive validation before submission
     if (!paymentProofImage) {
       toast.error("Vui lòng tải lên ảnh chứng minh thanh toán");
       return;
@@ -82,7 +85,6 @@ export const OnlinePayment = ({
           paymentMethod: "online",
           imageURL: paymentProofImage,
           orderId: orderDetails.orderId,
-          cartItems: orderDetails.items,
         }),
       });
 
@@ -93,23 +95,19 @@ export const OnlinePayment = ({
       }
 
       if (result.success) {
-        // Improved success handling
         toast.success("Gửi xác nhận thanh toán thành công", {
           duration: 3000,
           position: "top-center",
         });
 
-        // Trigger payment complete callback if provided
         if (onPaymentComplete) {
           onPaymentComplete();
         }
 
-        // Delayed navigation to ensure toast is visible
         setTimeout(() => {
           router.push("/component/Order");
         }, 2000);
       } else {
-        // Handle case where success is false but no error was thrown
         toast.error("Không thể xác nhận thanh toán. Vui lòng thử lại.");
       }
     } catch (error: any) {
@@ -122,7 +120,6 @@ export const OnlinePayment = ({
     }
   };
 
-  // Enhanced error state rendering
   if (!orderDetails || !orderDetails.orderId) {
     return (
       <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -164,36 +161,44 @@ export const OnlinePayment = ({
                   Chi tiết đơn hàng #{orderDetails.orderId}
                 </h3>
                 <div className="space-y-4">
-                  {orderDetails.items.map((item, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between border-b pb-4"
-                    >
-                      <div className="flex items-center space-x-4">
-                        <Image
-                          src={item.sanpham.hinhanh}
-                          alt={item.sanpham.tensanpham}
-                          width={60}
-                          height={60}
-                          className="rounded-md"
-                        />
-                        <div>
-                          <p className="font-medium">
-                            {item.sanpham.tensanpham}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            Size: {item.size?.tenSize || "Không xác định"}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            Số lượng: {item.soluong}
-                          </p>
+                  {orderDetails.items
+                    .filter((item) => item.sanpham !== null)
+                    .map((item, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between border-b pb-4"
+                      >
+                        <div className="flex items-center space-x-4">
+                          {item.sanpham && (
+                            <>
+                              <Image
+                                src={item.sanpham.hinhanh}
+                                alt={item.sanpham.tensanpham}
+                                width={60}
+                                height={60}
+                                className="rounded-md"
+                              />
+                              <div>
+                                <p className="font-medium">
+                                  {item.sanpham.tensanpham}
+                                </p>
+                                <p className="text-sm text-gray-500">
+                                  Size: {item.size?.tenSize || "Không xác định"}
+                                </p>
+                                <p className="text-sm text-gray-500">
+                                  Số lượng: {item.soluong}
+                                </p>
+                              </div>
+                            </>
+                          )}
                         </div>
+                        {item.sanpham && (
+                          <p className="font-medium">
+                            {formatCurrency(item.sanpham.gia * item.soluong)}
+                          </p>
+                        )}
                       </div>
-                      <p className="font-medium">
-                        {formatCurrency(item.sanpham.gia * item.soluong)}
-                      </p>
-                    </div>
-                  ))}
+                    ))}
                   <div className="flex justify-between pt-4">
                     <span className="font-bold">Tổng tiền:</span>
                     <span className="font-bold text-xl text-blue-600">

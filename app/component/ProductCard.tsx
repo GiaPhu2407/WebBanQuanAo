@@ -1,4 +1,12 @@
-import React, { useState, useRef, useEffect } from "react";
+"use client";
+
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  createContext,
+  useContext,
+} from "react";
 import { useDrag } from "react-dnd";
 import { GripVertical, Flame, ShoppingCart as CartIcon } from "lucide-react";
 import { useColors } from "../Admin/DashBoard/ProductManager/hooks/useColor";
@@ -6,6 +14,21 @@ import { useProductBehavior } from "@/app/api/userBehavior";
 import Image from "next/image";
 import Link from "next/link";
 import FavoriteButton from "./FavoriteButton";
+import { cn } from "@/lib/utils";
+
+// MouseEnter Context from the first code
+const MouseEnterContext = createContext<
+  [boolean, React.Dispatch<React.SetStateAction<boolean>>] | undefined
+>(undefined);
+
+// Hook to use the MouseEnter context
+const useMouseEnter = () => {
+  const context = useContext(MouseEnterContext);
+  if (context === undefined) {
+    throw new Error("useMouseEnter must be used within a MouseEnterProvider");
+  }
+  return context;
+};
 
 interface Product {
   idsanpham: number;
@@ -18,6 +41,8 @@ interface Product {
   giamgia: number;
   gioitinh: boolean;
   size: string;
+  trangthai: "ACTIVE" | "SCHEDULED";
+  releaseDate: string | null;
   popularity: number;
   totalViews: number;
   ProductColors?: {
@@ -32,6 +57,119 @@ interface ProductCardProps {
   onAddToCart: (product: Product) => void;
 }
 
+// 3D Card Container component from the first code
+const CardContainer = ({
+  children,
+  className,
+  containerClassName,
+}: {
+  children?: React.ReactNode;
+  className?: string;
+  containerClassName?: string;
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isMouseEntered, setIsMouseEntered] = useState(false);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!containerRef.current) return;
+    const { left, top, width, height } =
+      containerRef.current.getBoundingClientRect();
+    const x = (e.clientX - left - width / 2) / 25;
+    const y = (e.clientY - top - height / 2) / 25;
+    containerRef.current.style.transform = `rotateY(${x}deg) rotateX(${y}deg)`;
+  };
+
+  const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
+    setIsMouseEntered(true);
+    if (!containerRef.current) return;
+  };
+
+  const handleMouseLeave = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!containerRef.current) return;
+    setIsMouseEntered(false);
+    containerRef.current.style.transform = `rotateY(0deg) rotateX(0deg)`;
+  };
+
+  return (
+    <MouseEnterContext.Provider value={[isMouseEntered, setIsMouseEntered]}>
+      <div
+        className={cn("flex items-center justify-center", containerClassName)}
+        style={{
+          perspective: "1000px",
+        }}
+      >
+        <div
+          ref={containerRef}
+          onMouseEnter={handleMouseEnter}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+          className={cn(
+            "flex items-center justify-center relative transition-all duration-200 ease-linear w-full",
+            className
+          )}
+          style={{
+            transformStyle: "preserve-3d",
+          }}
+        >
+          {children}
+        </div>
+      </div>
+    </MouseEnterContext.Provider>
+  );
+};
+
+// CardItem component from the first code
+const CardItem = ({
+  as: Tag = "div",
+  children,
+  className,
+  translateX = 0,
+  translateY = 0,
+  translateZ = 0,
+  rotateX = 0,
+  rotateY = 0,
+  rotateZ = 0,
+  ...rest
+}: {
+  as?: React.ElementType;
+  children: React.ReactNode;
+  className?: string;
+  translateX?: number | string;
+  translateY?: number | string;
+  translateZ?: number | string;
+  rotateX?: number | string;
+  rotateY?: number | string;
+  rotateZ?: number | string;
+  [key: string]: any;
+}) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [isMouseEntered] = useMouseEnter();
+
+  useEffect(() => {
+    handleAnimations();
+  }, [isMouseEntered]);
+
+  const handleAnimations = () => {
+    if (!ref.current) return;
+    if (isMouseEntered) {
+      ref.current.style.transform = `translateX(${translateX}px) translateY(${translateY}px) translateZ(${translateZ}px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) rotateZ(${rotateZ}deg)`;
+    } else {
+      ref.current.style.transform = `translateX(0px) translateY(0px) translateZ(0px) rotateX(0deg) rotateY(0deg) rotateZ(0deg)`;
+    }
+  };
+
+  return (
+    <Tag
+      ref={ref}
+      className={cn("w-fit transition duration-200 ease-linear", className)}
+      {...rest}
+    >
+      {children}
+    </Tag>
+  );
+};
+
+// Enhanced ProductCard with 3D effects
 const ProductCard: React.FC<ProductCardProps> = ({
   product,
   userId,
@@ -92,130 +230,146 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const isPopular = product.popularity >= 50;
 
   return (
-    <div
-      ref={itemRef}
-      style={{ opacity: isDragging ? 0.5 : 1 }}
-      className="group relative bg-gray-50 rounded-lg overflow-hidden cursor-move shadow-sm hover:shadow-md transition-shadow duration-200"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      {/* Popular Product Indicator */}
-      {isPopular && (
-        <div className="absolute top-2 left-12 z-20 flex items-center gap-1 bg-red-500 text-white px-2 py-1 rounded-full animate-pulse">
-          <Flame className="w-4 h-4" />
-          <span className="text-xs font-medium">Hot</span>
-        </div>
-      )}
-
-      {/* Drag handle */}
-      <div className="absolute top-2 left-2 cursor-grab active:cursor-grabbing p-2 rounded-full bg-white/80 hover:bg-white z-10">
-        <GripVertical className="w-5 h-5 text-gray-500" />
-      </div>
-
-      {/* Favorite Button */}
-      <div className="absolute top-2 right-2 z-20">
-        <FavoriteButton productId={product.idsanpham} />
-      </div>
-
-      <Link
-        href={`/component/Category?id=${product.idsanpham}`}
-        className="block"
-        onClick={handleProductView}
+    <CardContainer containerClassName="py-4">
+      <div
+        ref={itemRef}
+        style={{ opacity: isDragging ? 0.5 : 1 }}
+        className="group relative bg-gray-50 rounded-lg overflow-hidden cursor-move shadow-sm hover:shadow-md transition-shadow duration-200 w-full h-full"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
       >
-        <div className="aspect-square overflow-hidden">
-          {product.hinhanh.startsWith("http") ? (
-            <img
-              src={product.hinhanh}
-              alt={product.tensanpham}
-              className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
-            />
-          ) : (
-            <Image
-              src={product.hinhanh}
-              alt={product.tensanpham}
-              width={300}
-              height={300}
-              className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
-            />
-          )}
-
-          {product.giamgia > 0 && (
-            <div className="absolute top-2 right-12 bg-red-500 text-white text-xs font-medium px-2 py-1 rounded">
-              -{product.giamgia}%
+        {/* Popular Product Indicator */}
+        <CardItem translateZ={20} className="absolute top-2 left-12 z-20">
+          {isPopular && (
+            <div className="flex items-center gap-1 bg-red-500 text-white px-2 py-1 rounded-full animate-pulse">
+              <Flame className="w-4 h-4" />
+              <span className="text-xs font-medium">Hot</span>
             </div>
           )}
-        </div>
+        </CardItem>
 
-        <div className="p-4">
-          <h3 className="text-sm font-medium text-gray-900 mb-2 line-clamp-2">
-            {product.tensanpham}
-          </h3>
+        {/* Drag handle */}
+        <CardItem translateZ={20} className="absolute top-2 left-2 z-10">
+          <div className="cursor-grab active:cursor-grabbing p-2 rounded-full bg-white/80 hover:bg-white">
+            <GripVertical className="w-5 h-5 text-gray-500" />
+          </div>
+        </CardItem>
 
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-sm font-semibold text-gray-900">
-              {new Intl.NumberFormat("vi-VN", {
-                style: "currency",
-                currency: "VND",
-              }).format(discountedPrice)}
-            </span>
-            {product.giamgia > 0 && (
-              <span className="text-sm text-gray-500 line-through">
+        {/* Favorite Button */}
+        <CardItem translateZ={20} className="absolute top-2 right-2 z-20">
+          <FavoriteButton productId={product.idsanpham} />
+        </CardItem>
+
+        <Link
+          href={`/component/Category?id=${product.idsanpham}`}
+          className="block"
+          onClick={handleProductView}
+        >
+          <CardItem
+            translateZ={10}
+            className="aspect-square overflow-hidden w-full"
+          >
+            {product.hinhanh.startsWith("http") ? (
+              <img
+                src={product.hinhanh}
+                alt={product.tensanpham}
+                className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+              />
+            ) : (
+              <Image
+                src={product.hinhanh}
+                alt={product.tensanpham}
+                width={300}
+                height={300}
+                className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+              />
+            )}
+
+            <CardItem translateZ={30} className="absolute top-2 right-12">
+              {product.giamgia > 0 && (
+                <div className="bg-red-500 text-white text-xs font-medium px-2 py-1 rounded">
+                  -{product.giamgia}%
+                </div>
+              )}
+            </CardItem>
+          </CardItem>
+
+          <div className="p-4">
+            <CardItem translateZ={15}>
+              <h3 className="text-sm font-medium text-gray-900 mb-2 line-clamp-2">
+                {product.tensanpham}
+              </h3>
+            </CardItem>
+
+            <CardItem translateZ={15} className="flex items-center gap-2 mb-3">
+              <span className="text-sm font-semibold text-gray-900">
                 {new Intl.NumberFormat("vi-VN", {
                   style: "currency",
                   currency: "VND",
-                }).format(product.gia)}
+                }).format(discountedPrice)}
               </span>
+              {product.giamgia > 0 && (
+                <span className="text-sm text-gray-500 line-through">
+                  {new Intl.NumberFormat("vi-VN", {
+                    style: "currency",
+                    currency: "VND",
+                  }).format(product.gia)}
+                </span>
+              )}
+            </CardItem>
+
+            {product.ProductColors && product.ProductColors.length > 0 && (
+              <CardItem translateZ={20} className="flex gap-2 mb-4">
+                {product.ProductColors.map((productColor) => {
+                  const color = colors.find(
+                    (c) => c.idmausac === productColor.idmausac
+                  );
+                  if (!color) return null;
+
+                  return (
+                    <div
+                      key={productColor.idmausac}
+                      className="group/color relative w-5 h-5 rounded-full cursor-pointer hover:scale-110 transition-transform border border-gray-200"
+                      style={{ backgroundColor: color.mamau }}
+                    >
+                      {/* Tooltip */}
+                      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-xs bg-gray-900 text-white rounded opacity-0 group-hover/color:opacity-100 transition-opacity whitespace-nowrap">
+                        {color.tenmau}
+                      </span>
+                    </div>
+                  );
+                })}
+              </CardItem>
             )}
-          </div>
 
-          {product.ProductColors && product.ProductColors.length > 0 && (
-            <div className="flex gap-2 mb-4">
-              {product.ProductColors.map((productColor) => {
-                const color = colors.find(
-                  (c) => c.idmausac === productColor.idmausac
-                );
-                if (!color) return null;
-
-                return (
-                  <div
-                    key={productColor.idmausac}
-                    className="group/color relative w-5 h-5 rounded-full cursor-pointer hover:scale-110 transition-transform border border-gray-200"
-                    style={{ backgroundColor: color.mamau }}
-                  >
-                    {/* Tooltip */}
-                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-xs bg-gray-900 text-white rounded opacity-0 group-hover/color:opacity-100 transition-opacity whitespace-nowrap">
-                      {color.tenmau}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 w-full mt-4">
-            <button
-              onClick={handleAddToCart}
-              className="flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 w-full sm:w-auto text-white text-sm px-4 py-2 rounded-md transition-colors duration-200"
+            <CardItem
+              translateZ={25}
+              className="flex flex-row gap-1 w-full mt-4"
             >
-              <CartIcon className="w-4 h-4" />
-              Thêm vào giỏ
-            </button>
-            <Link
-              href={`/component/Category?id=${product.idsanpham}`}
-              className="flex items-center justify-center border border-gray-300 hover:border-gray-400 w-full sm:w-auto text-sm px-4 py-2 rounded-md transition-colors duration-200"
-              onClick={handleProductView}
-            >
-              Xem Chi Tiết
-            </Link>
-          </div>
+              <button
+                onClick={handleAddToCart}
+                className="flex items-center justify-center gap-1 bg-blue-500 hover:bg-blue-600 flex-1 text-white text-xs px-2 py-1.5 rounded-md transition-colors duration-200"
+              >
+                <CartIcon className="w-3 h-3" />
+                Thêm
+              </button>
+              <Link
+                href={`/component/Category?id=${product.idsanpham}`}
+                className="flex items-center justify-center border border-gray-300 hover:border-gray-400 flex-1 text-xs px-2 py-1.5 rounded-md transition-colors duration-200"
+                onClick={handleProductView}
+              >
+                Chi Tiết
+              </Link>
+            </CardItem>
 
-          {/* Views counter */}
-          <div className="mt-3 text-xs text-gray-500">
-            {product.totalViews} lượt xem
+            {/* Views counter */}
+            <CardItem translateZ={15} className="mt-3 text-xs text-gray-500">
+              {product.totalViews} lượt xem
+            </CardItem>
           </div>
-        </div>
-      </Link>
-    </div>
+        </Link>
+      </div>
+    </CardContainer>
   );
 };
 
@@ -225,7 +379,7 @@ const ProductGrid: React.FC<{
   onAddToCart: (product: Product) => void;
 }> = ({ products, userId, onAddToCart }) => {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 p-4">
       {products.map((product) => (
         <ProductCard
           key={product.idsanpham}
@@ -442,7 +596,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ products, userId }) => {
       <h1 className="text-2xl font-bold mb-6">Sản phẩm</h1>
 
       <div className="flex flex-col md:flex-row gap-8">
-        <div className="md:w-3/4">
+        <div className="md:w-4/5">
           <ProductGrid
             products={products}
             userId={userId}
@@ -450,7 +604,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ products, userId }) => {
           />
         </div>
 
-        <div className="md:w-1/4 sticky top-6 self-start">
+        <div className="md:w-1/5 sticky top-6 self-start">
           <ShoppingCart
             items={cartItems}
             onRemove={handleRemoveFromCart}
@@ -463,4 +617,4 @@ const ShopPage: React.FC<ShopPageProps> = ({ products, userId }) => {
   );
 };
 
-export { ProductCard, ProductGrid, ShopPage };
+export { ProductCard, ProductGrid, ShopPage, CardContainer, CardItem };

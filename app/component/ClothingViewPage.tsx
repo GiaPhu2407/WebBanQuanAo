@@ -4,7 +4,7 @@ import ClothingViewer360 from "./ClothingView360";
 
 export default function Home() {
   // State for current clothing item and color
-  const [currentItem, setCurrentItem] = useState("Shoe");
+  const [currentItem, setCurrentItem] = useState("shoe");
   const [currentColor, setCurrentColor] = useState("blackred");
   const [isDebugMode, setIsDebugMode] = useState(false);
 

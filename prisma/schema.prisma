@@ -104,6 +104,9 @@ model Donhang {
   ngaydat        DateTime?   @db.Date
   idUsers        Int?      // Khóa ngoại tham chiếu đến bảng Users
   users          Users?    @relation(fields: [idUsers], references: [idUsers])
+  idDiscount    Int?
+  discountValue Decimal?  @db.Decimal(10,2)
+  discount      DiscountCode? @relation(fields: [idDiscount], references: [idDiscount])
   chitietdonhang ChitietDonhang[]
   thanhtoan      Thanhtoan[]
       lichgiaohang    LichGiaoHang[]   // Quan hệ 1-n với bảng Image
@@ -111,7 +114,25 @@ model Donhang {
 
 }
 
+model DiscountCode {
+  idDiscount    Int       @id @default(autoincrement())
+  code          String    @unique
+  description   String?   @db.Text
+  discountType  String    // PERCENTAGE or FIXED_AMOUNT
+  value         Decimal   @db.Decimal(10,2)
+  minOrderValue Decimal?  @db.Decimal(10,2)
+  maxDiscount   Decimal?  @db.Decimal(10,2)
+  startDate     DateTime
+  endDate       DateTime
+  usageLimit    Int?      // Maximum number of times the code can be used
+  usedCount     Int       @default(0)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
+  // Add relation to track which orders used this discount
+  orders        Donhang[]
+}
 model Loaisanpham {
   idloaisanpham Int       @id @default(autoincrement())
   tenloai       String?   @db.VarChar(255) @unique
@@ -125,13 +146,14 @@ model Loaisanpham {
   mota            String?         @db.Text
   gia             String?          @db.VarChar(255)
   hinhanh         String?          @db.VarChar(255)
-  trangthai       String?          @db.VarChar(255)
+  // trangthai       String?          @db.VarChar(255)
   idloaisanpham   Int?            
   giamgia         Decimal?         @db.Decimal(5,2)
   gioitinh        Boolean?
   totalViews    Int      @default(0)
   popularity   Float   @default(0)  // Thêm trường này
-
+  releaseDate DateTime?
+  trangthai   String?   @default("ACTIVE") // Can be "ACTIVE", "SCHEDULED", "DRAFT"
   size            String?          @db.VarChar(255)
   loaisanpham     Loaisanpham?     @relation(fields: [idloaisanpham], references: [idloaisanpham])
   chitietnhap     Chitietnhap[]

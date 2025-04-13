@@ -1,12 +1,13 @@
-import React from 'react';
+import React from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Product, Size } from '@/app/Admin/type/product';
-import { ProductForm } from './ProductBasic';
+import { Product, Size } from "@/app/Admin/type/product";
+import { ProductForm } from "./ProductBasic";
+
 
 interface ProductDialogProps {
   isOpen: boolean;
@@ -20,6 +21,8 @@ interface ProductDialogProps {
   imageUrl: string;
   setImageUrl: (url: string) => void;
   isSubmitting?: boolean;
+  releaseDate: Date | null;
+  onReleaseDateChange: (date: Date | null) => void;
 }
 
 export function ProductDialog({
@@ -34,16 +37,18 @@ export function ProductDialog({
   imageUrl,
   setImageUrl,
   isSubmitting = false,
+  releaseDate,
+  onReleaseDateChange,
 }: ProductDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle>
-            {product ? 'Cập nhật sản phẩm' : 'Thêm sản phẩm mới'}
+            {product ? "Cập nhật sản phẩm" : "Thêm sản phẩm mới"}
           </DialogTitle>
         </DialogHeader>
-        
+
         <ProductForm
           product={product}
           sizes={sizes}
@@ -55,6 +60,8 @@ export function ProductDialog({
           imageUrl={imageUrl}
           setImageUrl={setImageUrl}
           isSubmitting={isSubmitting}
+          releaseDate={releaseDate}
+          onReleaseDateChange={onReleaseDateChange}
         />
       </DialogContent>
     </Dialog>

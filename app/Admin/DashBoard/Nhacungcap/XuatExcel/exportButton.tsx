@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import * as XLSX from "xlsx";
@@ -26,68 +26,99 @@ interface NhaCungCap {
 
 interface ExportButtonsProps {
   data: NhaCungCap[];
-  selectedItems?: number[];
-  onDataImported?: () => void;
+  selectedItems: number[];
+  onDataImported: () => void;
+  onSelectAll: () => void;
 }
 
 const ExportButtons: React.FC<ExportButtonsProps> = ({
   data,
-  selectedItems = [],
-  onDataImported = () => {},
+  selectedItems,
+  onDataImported,
+  onSelectAll,
 }) => {
-  const exportToExcel = () => {
-    const dataToExport =
-      selectedItems.length > 0
-        ? data.filter((item) => selectedItems.includes(item.idnhacungcap))
-        : data;
-
-    if (dataToExport.length === 0) {
+  const requireSelection = () => {
+    if (selectedItems.length === 0) {
       toast({
-        title: "Thông báo",
-        description:
-          selectedItems.length > 0
-            ? "Vui lòng chọn ít nhất một nhà cung cấp để xuất"
-            : "Không có dữ liệu để xuất",
-        variant: "default",
+        title: "Cần chọn dữ liệu",
+        description: "Vui lòng chọn ít nhất một nhà cung cấp để xuất",
+        variant: "destructive",
       });
-      return;
+      return false;
     }
+    return true;
+  };
 
-    const workbook = XLSX.utils.book_new();
-    const worksheet = XLSX.utils.json_to_sheet(
-      dataToExport.map((item) => ({
-        "Mã nhà cung cấp": item.idnhacungcap,
-        "Tên nhà cung cấp": item.tennhacungcap,
-        "Số điện thoại": item.sodienthoai,
-        "Địa chỉ": item.diachi,
-        Email: item.email,
-        "Trạng thái": item.trangthai ? "Đang cung cấp" : "Ngừng cung cấp",
-      }))
+  const exportToExcel = () => {
+    if (!requireSelection()) return;
+
+    const dataToExport = data.filter((item) =>
+      selectedItems.includes(item.idnhacungcap)
     );
+
+    // Create a workbook and worksheet
+    const workbook = XLSX.utils.book_new();
+
+    // Prepare data with transformed headers
+    const wsData = dataToExport.map((item) => ({
+      "Mã nhà cung cấp": item.idnhacungcap,
+      "Tên nhà cung cấp": item.tennhacungcap,
+      "Số điện thoại": item.sodienthoai,
+      "Địa chỉ": item.diachi,
+      Email: item.email,
+      "Trạng thái": item.trangthai ? "Đang cung cấp" : "Ngừng cung cấp",
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(wsData);
+
+    // Set column widths to add more spacing
+    const colWidths = [
+      { wch: 20 }, // Mã nhà cung cấp
+      { wch: 30 }, // Tên nhà cung cấp
+      { wch: 20 }, // Số điện thoại
+      { wch: 35 }, // Địa chỉ
+      { wch: 25 }, // Email
+      { wch: 18 }, // Trạng thái
+    ];
+
+    worksheet["!cols"] = colWidths;
+
+    // Make ALL headers bold
+    const range = XLSX.utils.decode_range(worksheet["!ref"] || "A1:F1");
+
+    // Apply bold formatting to all headers
+    for (let C = range.s.c; C <= range.e.c; C++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: 0, c: C });
+      const cell = worksheet[cellAddress];
+
+      if (!cell) continue;
+
+      // Apply bold formatting to all headers
+      if (!cell.s) cell.s = {};
+      cell.s.font = { bold: true, sz: 14 };
+      cell.s.fill = { fgColor: { rgb: "E6F0FF" } }; // Light blue background for all headers
+      cell.s.alignment = { horizontal: "center" };
+    }
 
     XLSX.utils.book_append_sheet(workbook, worksheet, "Nhà cung cấp");
     XLSX.writeFile(workbook, "danh-sach-nha-cung-cap.xlsx");
+
+    toast({
+      title: "Thành công",
+      description: `Đã xuất ${dataToExport.length} nhà cung cấp sang Excel`,
+      variant: "success",
+    });
   };
 
   const exportToPdf = async () => {
-    const dataToExport =
-      selectedItems.length > 0
-        ? data.filter((item) => selectedItems.includes(item.idnhacungcap))
-        : data;
+    if (!requireSelection()) return;
 
-    if (dataToExport.length === 0) {
-      toast({
-        title: "Thông báo",
-        description:
-          selectedItems.length > 0
-            ? "Vui lòng chọn ít nhất một nhà cung cấp để xuất"
-            : "Không có dữ liệu để xuất",
-        variant: "default",
-      });
-      return;
-    }
+    const dataToExport = data.filter((item) =>
+      selectedItems.includes(item.idnhacungcap)
+    );
 
     try {
+      // Chỉnh API để xử lý các tiêu đề in đậm
       const response = await fetch("/api/exportpdfncc", {
         method: "POST",
         headers: {
@@ -96,6 +127,7 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
         body: JSON.stringify({
           data: dataToExport,
           title: "Danh sách nhà cung cấp",
+          boldHeaders: true, // Thêm tùy chọn in đậm tiêu đề
         }),
       });
 
@@ -115,7 +147,7 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
 
       toast({
         title: "Thành công",
-        description: "Đã xuất file PDF thành công",
+        description: `Đã xuất ${dataToExport.length} nhà cung cấp sang PDF`,
         variant: "success",
       });
     } catch (error) {
@@ -129,22 +161,11 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
   };
 
   const exportToWord = async () => {
-    const dataToExport =
-      selectedItems.length > 0
-        ? data.filter((item) => selectedItems.includes(item.idnhacungcap))
-        : data;
+    if (!requireSelection()) return;
 
-    if (dataToExport.length === 0) {
-      toast({
-        title: "Thông báo",
-        description:
-          selectedItems.length > 0
-            ? "Vui lòng chọn ít nhất một nhà cung cấp để xuất"
-            : "Không có dữ liệu để xuất",
-        variant: "default",
-      });
-      return;
-    }
+    const dataToExport = data.filter((item) =>
+      selectedItems.includes(item.idnhacungcap)
+    );
 
     const currentDate = new Date();
     const day = currentDate.getDate();
@@ -208,32 +229,161 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
       new Paragraph({ text: "" }),
     ];
 
-    // Table rows
+    // Table rows với tất cả các tiêu đề in đậm
     const tableRows = [
       new TableRow({
         children: [
-          "STT",
-          "Mã NCC",
-          "Tên nhà cung cấp",
-          "Số điện thoại",
-          "Địa chỉ",
-          "Email",
-          "Trạng thái",
-        ].map(
-          (text) =>
-            new TableCell({
-              children: [
-                new Paragraph({
-                  text,
-                  alignment: AlignmentType.CENTER,
-                }),
-              ],
-              shading: {
-                fill: "f5f5f5",
-              },
-            })
-        ),
+          // Header cells with adjusted widths and ALL BOLD
+          new TableCell({
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                  new TextRun({
+                    text: "STT",
+                    bold: true,
+                    size: 24,
+                  }),
+                ],
+              }),
+            ],
+            shading: {
+              fill: "f5f5f5",
+            },
+            width: {
+              size: 800,
+              type: WidthType.DXA,
+            },
+          }),
+          new TableCell({
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                  new TextRun({
+                    text: "Mã nhà cung cấp",
+                    bold: true,
+                    size: 24,
+                  }),
+                ],
+              }),
+            ],
+            shading: {
+              fill: "f5f5f5",
+            },
+            width: {
+              size: 1800,
+              type: WidthType.DXA,
+            },
+          }),
+          new TableCell({
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                  new TextRun({
+                    text: "Tên nhà cung cấp",
+                    bold: true,
+                    size: 24,
+                  }),
+                ],
+              }),
+            ],
+            shading: {
+              fill: "f5f5f5",
+            },
+            width: {
+              size: 3000,
+              type: WidthType.DXA,
+            },
+          }),
+          new TableCell({
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                  new TextRun({
+                    text: "Số điện thoại",
+                    bold: true,
+                    size: 24,
+                  }),
+                ],
+              }),
+            ],
+            shading: {
+              fill: "f5f5f5",
+            },
+            width: {
+              size: 2000,
+              type: WidthType.DXA,
+            },
+          }),
+          new TableCell({
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                  new TextRun({
+                    text: "Địa chỉ",
+                    bold: true,
+                    size: 24,
+                  }),
+                ],
+              }),
+            ],
+            shading: {
+              fill: "f5f5f5",
+            },
+            width: {
+              size: 3000,
+              type: WidthType.DXA,
+            },
+          }),
+          new TableCell({
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                  new TextRun({
+                    text: "Email",
+                    bold: true,
+                    size: 24,
+                  }),
+                ],
+              }),
+            ],
+            shading: {
+              fill: "f5f5f5",
+            },
+            width: {
+              size: 2500,
+              type: WidthType.DXA,
+            },
+          }),
+          new TableCell({
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                  new TextRun({
+                    text: "Trạng thái",
+                    bold: true,
+                    size: 24,
+                  }),
+                ],
+              }),
+            ],
+            shading: {
+              fill: "f5f5f5",
+            },
+            width: {
+              size: 2000,
+              type: WidthType.DXA,
+            },
+          }),
+        ],
       }),
+      // Data rows
       ...dataToExport.map(
         (item, index) =>
           new TableRow({
@@ -386,15 +536,28 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
     link.download = `danh-sach-nha-cung-cap-${day}${month}${year}.docx`;
     link.click();
     window.URL.revokeObjectURL(url);
+
+    toast({
+      title: "Thành công",
+      description: `Đã xuất ${dataToExport.length} nhà cung cấp sang Word`,
+      variant: "success",
+    });
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     try {
-      const file = e.target.files?.[0];
+      const file = event.target.files?.[0];
       if (!file) {
         console.log("Không có file được chọn");
         return;
       }
+
+      // Hiển thị thông báo đang xử lý
+      toast({
+        title: "Đang xử lý",
+        description: "Đang đọc dữ liệu từ file Excel...",
+        variant: "default",
+      });
 
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data);
@@ -460,6 +623,7 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
         };
       });
 
+      // Kiểm tra dữ liệu hợp lệ cơ bản
       const validData = formattedData.filter(
         (item) =>
           item.tennhacungcap !== "" &&
@@ -484,16 +648,7 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
       const validatedData = validData.filter((item) => {
         const isEmailValid = emailRegex.test(item.email);
         const isPhoneValid = phoneRegex.test(item.sodienthoai);
-
-        if (!isEmailValid || !isPhoneValid) {
-          console.log(
-            `Bỏ qua dữ liệu không hợp lệ: ${item.tennhacungcap} - Email: ${
-              isEmailValid ? "Hợp lệ" : "Không hợp lệ"
-            }, SĐT: ${isPhoneValid ? "Hợp lệ" : "Không hợp lệ"}`
-          );
-          return false;
-        }
-        return true;
+        return isEmailValid && isPhoneValid;
       });
 
       if (validatedData.length === 0) {
@@ -506,77 +661,113 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
         return;
       }
 
-      let successCount = 0;
-      let errorCount = 0;
+      // Thực hiện bulk insert thay vì từng bản ghi một
+      try {
+        const response = await fetch("/api/nhacungcap/bulk", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            items: validatedData,
+          }),
+        });
 
-      for (const item of validatedData) {
-        try {
-          const response = await fetch("/api/nhacungcap", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(item),
-          });
-
-          if (!response.ok) {
-            errorCount++;
-            console.error(
-              `Lỗi khi thêm "${item.tennhacungcap}": ${response.statusText}`
-            );
-          } else {
-            successCount++;
-          }
-        } catch (error) {
-          errorCount++;
-          console.error(`Lỗi khi thêm "${item.tennhacungcap}":`, error);
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Lỗi khi nhập dữ liệu");
         }
+
+        // Lấy kết quả trả về
+        const result = await response.json();
+
+        // Reset input file
+        event.target.value = "";
+
+        // Cập nhật giao diện
+        onDataImported();
+
+        // Thông báo chi tiết
+        toast({
+          title: "Nhập dữ liệu thành công",
+          description: `Đã nhập ${result.insertedCount} nhà cung cấp từ ${
+            validatedData.length
+          } bản ghi${
+            result.failedCount > 0
+              ? `. ${result.failedCount} bản ghi bị bỏ qua do trùng lặp hoặc không hợp lệ.`
+              : ""
+          }`,
+          variant: "success",
+        });
+
+        // Nếu có lỗi, hiển thị thêm thông tin chi tiết trong console
+        if (result.failedCount > 0) {
+          console.info("Các bản ghi không thể nhập:", result.failedItems);
+        }
+      } catch (error: any) {
+        console.error("Lỗi khi bulk insert:", error);
+        toast({
+          title: "Lỗi",
+          description: error.message || "Có lỗi xảy ra khi nhập dữ liệu",
+          variant: "destructive",
+        });
       }
-
-      e.target.value = "";
-
-      toast({
-        title: "Thành công",
-        description: `Đã nhập ${successCount} nhà cung cấp từ file Excel${
-          errorCount > 0 ? `, ${errorCount} lỗi` : ""
-        }`,
-        variant: "success",
-      });
-
-      // Call the callback to refresh data
-      onDataImported();
     } catch (error) {
       console.error("Lỗi khi xử lý file:", error);
       toast({
         title: "Lỗi",
-        description: "Có lỗi xảy ra khi nhập dữ liệu. Vui lòng kiểm tra lại.",
+        description:
+          "Có lỗi xảy ra khi đọc file Excel. Vui lòng kiểm tra định dạng file và thử lại",
         variant: "destructive",
       });
     }
   };
 
   return (
-    <div className="flex space-x-2">
-      <Button onClick={exportToWord} variant="outline">
-        Xuất Word
+    <div className="flex flex-wrap gap-2 my-2">
+      <Button
+        variant="secondary"
+        onClick={onSelectAll}
+        className="bg-blue-100 hover:bg-blue-200"
+      >
+        Chọn tất cả
       </Button>
-      <Button onClick={exportToExcel} variant="outline">
-        Xuất Excel
+      <Button
+        variant="outline"
+        onClick={exportToExcel}
+        disabled={selectedItems.length === 0}
+      >
+        Xuất Excel ({selectedItems.length})
       </Button>
-      <Button onClick={exportToPdf} variant="outline">
-        Xuất PDF
+      <Button
+        variant="outline"
+        onClick={exportToPdf}
+        disabled={selectedItems.length === 0}
+      >
+        Xuất PDF ({selectedItems.length})
       </Button>
-      <label className="cursor-pointer">
-        <Button variant="secondary" asChild>
-          <span>Nhập Excel</span>
-        </Button>
+      <Button
+        variant="outline"
+        onClick={exportToWord}
+        disabled={selectedItems.length === 0}
+      >
+        Xuất Word ({selectedItems.length})
+      </Button>
+      <div className="relative">
         <input
           type="file"
-          accept=".xlsx, .xls"
+          id="fileUpload"
           className="hidden"
+          accept=".xlsx, .xls"
           onChange={handleFileUpload}
         />
-      </label>
+        <Button
+          variant="outline"
+          onClick={() => document.getElementById("fileUpload")?.click()}
+        >
+          Nhập Excel
+        </Button>
+      </div>
     </div>
   );
 };

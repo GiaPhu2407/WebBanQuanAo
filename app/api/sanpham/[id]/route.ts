@@ -11,14 +11,12 @@ async function checkProductExists(id: number) {
   return product !== null;
 }
 
-// Helper function để cập nhật lại các ID
 async function reorderProductIds() {
   try {
     const products = await prisma.sanpham.findMany({
       orderBy: { idsanpham: "asc" },
     });
 
-    // Re-assign IDs sequentially
     for (let i = 0; i < products.length; i++) {
       await prisma.sanpham.update({
         where: { idsanpham: products[i].idsanpham },
@@ -67,10 +65,6 @@ export async function GET(
   }
 }
 
-
-// In your helper file (server-side logic for database)
-
-// In your DELETE handler, call reorderProductIds after deleting a productexport async function DELETE(
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -114,10 +108,10 @@ export async function PUT(
       gioitinh,
       trangthai,
       productSizes,
-      hinhanh
+      hinhanh,
+      releaseDate,
     } = await request.json();
 
-    // Validate required fields
     if (!tensanpham || !gia || !idloaisanpham || !productSizes) {
       return NextResponse.json(
         { message: "Vui lòng nhập đầy đủ thông tin" },
@@ -125,13 +119,21 @@ export async function PUT(
       );
     }
 
-    // Convert productSizes object to array format for Prisma
-    const formattedSizes = Object.entries(productSizes).map(([idSize, soluong]) => ({
-      idSize: Number(idSize),
-      soluong: Number(soluong)
-    }));
+    const formattedSizes = Object.entries(productSizes).map(
+      ([idSize, soluong]) => ({
+        idSize: Number(idSize),
+        soluong: Number(soluong),
+      })
+    );
 
-    // Update product
+    // Convert releaseDate to UTC
+    const utcReleaseDate = releaseDate ? new Date(releaseDate) : null;
+    if (utcReleaseDate) {
+      utcReleaseDate.setMinutes(
+        utcReleaseDate.getMinutes() - utcReleaseDate.getTimezoneOffset()
+      );
+    }
+
     const updatedProduct = await prisma.sanpham.update({
       where: { idsanpham: productId },
       data: {
@@ -141,7 +143,8 @@ export async function PUT(
         idloaisanpham: Number(idloaisanpham),
         giamgia: giamgia ? Number(giamgia) : null,
         gioitinh,
-        trangthai,
+        trangthai: releaseDate ? "SCHEDULED" : "ACTIVE",
+        releaseDate: utcReleaseDate,
         hinhanh,
         ProductSizes: {
           deleteMany: {},
@@ -150,20 +153,19 @@ export async function PUT(
       },
       include: {
         ProductSizes: true,
-        loaisanpham: true
-      }
+        loaisanpham: true,
+      },
     });
 
-    return NextResponse.json({
-      data: updatedProduct,
-      message: "Cập nhật sản phẩm thành công",
-    }, { status: 200 });
-
+    return NextResponse.json(
+      {
+        data: updatedProduct,
+        message: "Cập nhật sản phẩm thành công",
+      },
+      { status: 200 }
+    );
   } catch (error: any) {
     console.error("Lỗi khi cập nhật sản phẩm:", error.message);
-    return NextResponse.json(
-      { error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

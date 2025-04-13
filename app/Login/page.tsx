@@ -82,8 +82,12 @@ const LoginPage = () => {
         variant: "success",
       });
 
-      // Navigate to Show page without delay
-      router.push("/Show");
+      // Check user role and redirect accordingly
+      if (data.role === "Admin") {
+        router.push("/Admin"); // Redirect admins to admin page
+      } else {
+        router.push("/Show"); // Redirect regular users to show page
+      }
     } catch (error) {
       console.error("Login error:", error);
       setError("Invalid credentials. Please try again.");

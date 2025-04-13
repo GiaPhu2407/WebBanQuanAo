@@ -2,11 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import {
-  Product,
-  Size,
-} from "@/app/Admin/DashBoard/ProductManager/type/product";
-
+import { Product, Size } from "@/app/Admin/type/product";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,7 +17,6 @@ import { Button } from "@/components/ui/button";
 import ProductFilters from "./ProductFilter/ProductFilters";
 import ProductTable from "./ProductTable/ProductTables";
 import { ProductDialog } from "./components/form/ProductDialog";
-// import SalesDashboard from "../NvarbarAdmin";
 import ExportProductOptions from "./components/ExportProduct";
 import Menu from "@/app/Staff/DashBoard/Header";
 
@@ -43,6 +38,7 @@ export default function ProductManagementPage() {
   const [allSelectedItems, setAllSelectedItems] = useState<{
     [key: number]: Product;
   }>({});
+  const [releaseDate, setReleaseDate] = useState<Date | null>(null);
 
   const [formData, setFormData] = useState({
     tensanpham: "",
@@ -128,6 +124,7 @@ export default function ProductManagementPage() {
         body: JSON.stringify({
           ...formData,
           hinhanh: imageUrl,
+          releaseDate: releaseDate?.toISOString(),
         }),
       });
 
@@ -175,6 +172,7 @@ export default function ProductManagementPage() {
         }, {} as { [key: number]: number }) || {},
     });
     setImageUrl(product.hinhanh || "");
+    setReleaseDate(product.releaseDate ? new Date(product.releaseDate) : null);
     setIsDialogOpen(true);
   };
 
@@ -219,9 +217,9 @@ export default function ProductManagementPage() {
     });
     setImageUrl("");
     setSelectedProduct(undefined);
+    setReleaseDate(null);
   };
 
-  // Handle selection of items
   const handleSelectItem = (id: number, checked: boolean) => {
     const item = products.find((item) => item.idsanpham === id);
     if (!item) return;
@@ -243,12 +241,10 @@ export default function ProductManagementPage() {
     const newSelectedItems = { ...allSelectedItems };
 
     if (checked) {
-      // Add all items from current page
       products.forEach((item) => {
         newSelectedItems[item.idsanpham] = item;
       });
     } else {
-      // Remove all items from current page
       products.forEach((item) => {
         delete newSelectedItems[item.idsanpham];
       });
@@ -258,7 +254,6 @@ export default function ProductManagementPage() {
     setSelectedItems(checked ? products.map((item) => item.idsanpham) : []);
   };
 
-  // Update selected items when products change
   useEffect(() => {
     const currentPageSelectedIds = products
       .filter((item) => allSelectedItems[item.idsanpham])
@@ -266,7 +261,6 @@ export default function ProductManagementPage() {
     setSelectedItems(currentPageSelectedIds);
   }, [products, allSelectedItems]);
 
-  // Render selection info
   const renderSelectionInfo = () => {
     const totalSelected = Object.keys(allSelectedItems).length;
     return totalSelected > 0 ? (
@@ -278,10 +272,7 @@ export default function ProductManagementPage() {
 
   return (
     <div>
-      {/* <Menu /> */}
-
       <div className="flex">
-        {/* <SalesDashboard /> */}
         <div className="p-6 mt-16 w-full">
           <div className="mb-6">
             <div className="flex justify-between items-center mb-6">
@@ -347,6 +338,8 @@ export default function ProductManagementPage() {
             imageUrl={imageUrl}
             setImageUrl={setImageUrl}
             isSubmitting={isSubmitting}
+            releaseDate={releaseDate}
+            onReleaseDateChange={setReleaseDate}
           />
 
           <AlertDialog
