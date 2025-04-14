@@ -2,17 +2,19 @@ import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 
+interface LoaiSanPham {
+  idloaisanpham: number;
+  tenloai: string;
+  mota: string;
+}
+
 interface LoaiSanPhamTableProps {
-  categories: Array<{
-    idloaisanpham: number;
-    tenloai: string;
-    mota: string;
-  }>;
+  categories: LoaiSanPham[];
   loading: boolean;
   selectedItems: number[];
   onSelectAll: (checked: boolean) => void;
   onSelectItem: (id: number, checked: boolean) => void;
-  onEdit: (category: any) => void;
+  onEdit: (category: LoaiSanPham) => void;
   onDelete: (id: number) => void;
   searchText: string;
 }

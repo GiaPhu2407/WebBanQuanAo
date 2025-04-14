@@ -66,7 +66,7 @@ const KhoManagementPage = () => {
       }
       const data = await response.json();
       setProducts(data);
-    } catch (error) {
+    } catch (error:any) {
       toast({
         title: "Lỗi",
         description: "Không thể tải danh sách sản phẩm",
@@ -146,7 +146,7 @@ const KhoManagementPage = () => {
 
       handleCloseModal();
       setReloadKey((prev) => prev + 1);
-    } catch (error) {
+    } catch (error:any) {
       toast({
         title: "Lỗi",
         description:
@@ -189,7 +189,7 @@ const KhoManagementPage = () => {
       });
 
       setReloadKey((prev) => prev + 1);
-    } catch (error) {
+    } catch (error:any) {
       toast({
         title: "Lỗi",
         description: error instanceof Error ? error.message : "Lỗi khi xóa kho",

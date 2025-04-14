@@ -30,16 +30,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import LoaiSanPhamTable from "./component/LoaiSanPhamTable";
 // Import icons
-import {
-  Pencil,
-  Trash2,
-  Plus,
-  Search,
-  Filter,
-  MoreHorizontal,
-} from "lucide-react";
+import { Pencil, Trash2, Plus, Search, MoreHorizontal } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -131,7 +123,7 @@ export default function LoaiSanPhamManagementPage() {
 
   useEffect(() => {
     fetchLoaiSanPham();
-  }, [meta.page, meta.limit_size, searchText, reloadKey]);
+  }, [meta.page, meta.limit_size, searchText, reloadKey, fetchLoaiSanPham]);
 
   // Thêm useEffect cho searchText
   useEffect(() => {
@@ -150,7 +142,7 @@ export default function LoaiSanPhamManagementPage() {
   const renderPagination = () => {
     const pages = [];
     let startPage = Math.max(1, meta.page - 1);
-    let endPage = Math.min(meta.totalPages, startPage + 2);
+    const endPage = Math.min(meta.totalPages, startPage + 2);
 
     if (endPage - startPage < 2) {
       startPage = Math.max(1, endPage - 2);
@@ -366,10 +358,6 @@ export default function LoaiSanPhamManagementPage() {
     setIsEditing(false);
     resetForm();
     setIsModalOpen(true);
-  };
-
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchText(e.target.value);
   };
 
   // Custom LoaiSanPhamTable component with icon buttons

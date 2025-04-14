@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from "react";
 import SalesDashboard from "../NvarbarAdmin";
 import ImageTable from "../../TableImage";
- 
+import Image from "next/image";
+
 import {
   Dialog,
   DialogContent,
@@ -21,7 +22,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import Fileupload from "@/components/ui/Fileupload";
@@ -75,7 +75,7 @@ const ImageManagementPage = () => {
       }
       const data = await response.json();
       setProducts(data);
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Lỗi",
         description: "Không thể tải danh sách sản phẩm",
@@ -155,7 +155,7 @@ const ImageManagementPage = () => {
 
       handleCloseModal();
       setReloadKey((prev) => prev + 1);
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Lỗi",
         description:
@@ -200,7 +200,7 @@ const ImageManagementPage = () => {
       });
 
       setReloadKey((prev) => prev + 1);
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Lỗi",
         description:
@@ -254,10 +254,12 @@ const ImageManagementPage = () => {
                   />
                   {imageUrl && (
                     <div className="mt-2 flex flex-col items-center">
-                      <img
+                      <Image
                         src={imageUrl}
                         alt="Uploaded"
-                        className="max-w-xs max-h-48"
+                        width={320}
+                        height={240}
+                        className="max-w-xs max-h-48 object-contain"
                       />
                       <Button
                         type="button"

@@ -335,20 +335,7 @@ interface User {
   };
 }
 
-interface CartItem {
-  idgiohang: number;
-  idsanpham: number;
-  soluong: number;
-  sanpham: {
-    tensanpham: string;
-    mota: string;
-    gia: number;
-    hinhanh: string | string[];
-    giamgia: number;
-    gioitinh: boolean;
-    size: string;
-  };
-}
+
 
 const Menu: React.FC = () => {
   // State management
