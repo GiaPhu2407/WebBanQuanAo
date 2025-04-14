@@ -9,9 +9,29 @@ import { Camera, Upload, AlertTriangle } from "lucide-react";
 import { Html5Qrcode } from "html5-qrcode";
 import QRInfoModal from "./QRCoreModal";
 
+// Define interface for QR data structure
+interface QRDataItem {
+  id: string;
+  ten: string;
+  moTa: string;
+}
+
+interface QRDataThongTinThem {
+  thoiGianTao: string;
+  nguoiTao: string;
+}
+
+interface QRData {
+  tieuDe: string;
+  ngayXuat: string;
+  tongSoMuc: number;
+  danhSach: QRDataItem[];
+  thongTinThem: QRDataThongTinThem;
+}
+
 const QRScanner: React.FC = () => {
   const [scanning, setScanning] = useState(false);
-  const [qrData, setQrData] = useState<any>(null);
+  const [qrData, setQrData] = useState<QRData | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [activeTab, setActiveTab] = useState("camera");
   const scannerRef = useRef<Html5Qrcode | null>(null);
@@ -75,7 +95,7 @@ const QRScanner: React.FC = () => {
       stopScanner();
 
       // Parse the decoded QR data
-      const parsedData = JSON.parse(decodedText);
+      const parsedData = JSON.parse(decodedText) as QRData;
       setQrData(parsedData);
       setShowModal(true);
 
@@ -106,7 +126,7 @@ const QRScanner: React.FC = () => {
       const result = await scannerRef.current.scanFile(file, true);
 
       try {
-        const parsedData = JSON.parse(result);
+        const parsedData = JSON.parse(result) as QRData;
         setQrData(parsedData);
         setShowModal(true);
 
@@ -122,7 +142,8 @@ const QRScanner: React.FC = () => {
           variant: "destructive",
         });
       }
-    } catch (error) {
+    } catch {
+      // Removed unused error variable
       toast({
         title: "Không tìm thấy mã QR",
         description: "Không thể tìm thấy mã QR trong hình ảnh này.",

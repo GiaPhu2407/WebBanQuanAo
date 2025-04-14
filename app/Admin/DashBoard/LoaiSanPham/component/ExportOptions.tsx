@@ -548,6 +548,51 @@ interface LoaiSanPham {
   mota: string;
 }
 
+interface ExcelRowData {
+  [key: string]: string | number | undefined;
+  "Tên loại"?: string;
+  "TÊN LOẠI"?: string;
+  "TEN LOAI"?: string;
+  tenloai?: string;
+  TENLOAI?: string;
+  "Tên Loại"?: string;
+  "3"?: string;
+  "Mô tả"?: string;
+  "MÔ TẢ"?: string;
+  "MO TA"?: string;
+  mota?: string;
+  MOTA?: string;
+  "4"?: string;
+}
+
+interface QRData {
+  tieuDe: string;
+  ngayXuat: string;
+  tongSoMuc: number;
+  danhSach: {
+    id: number;
+    ten: string;
+    moTa: string;
+  }[];
+  thongTinThem: {
+    thoiGianTao: string;
+    soTrang: string;
+    nguoiTao: string;
+    maBaoCao: string;
+  };
+}
+
+interface QRCodeResult {
+  qrCodeDataUrl: string | null;
+  qrData: QRData | null;
+}
+
+interface BulkInsertResponse {
+  insertedCount: number;
+  failedCount: number;
+  failedItems?: { tenloai: string; mota: string; reason: string }[];
+}
+
 interface ExportOptionsProps {
   selectedItems: number[];
   loaisanphamList: LoaiSanPham[];
@@ -559,10 +604,12 @@ export const ExportOptions: React.FC<ExportOptionsProps> = ({
   loaisanphamList,
   onDataImported,
 }) => {
-  const generateQRCodeData = async (data: LoaiSanPham[]) => {
+  const generateQRCodeData = async (
+    data: LoaiSanPham[]
+  ): Promise<QRCodeResult> => {
     const currentDate = new Date();
     // Cấu trúc dữ liệu QR phù hợp với QR Scanner
-    const qrData = {
+    const qrData: QRData = {
       tieuDe: "Danh sách loại sản phẩm",
       ngayXuat: currentDate.toLocaleString("vi-VN"),
       tongSoMuc: data.length,
@@ -947,13 +994,13 @@ export const ExportOptions: React.FC<ExportOptionsProps> = ({
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data);
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+      const jsonData = XLSX.utils.sheet_to_json<ExcelRowData>(worksheet, {
         raw: false,
         defval: "",
       });
 
       // Chuyển đổi dữ liệu thành định dạng phù hợp
-      const formattedData = jsonData.map((item: any) => {
+      const formattedData = jsonData.map((item: ExcelRowData) => {
         const tenloai = (
           item["Tên loại"] ||
           item["TÊN LOẠI"] ||
@@ -963,7 +1010,9 @@ export const ExportOptions: React.FC<ExportOptionsProps> = ({
           item["Tên Loại"] ||
           item["3"] ||
           ""
-        ).trim();
+        )
+          .toString()
+          .trim();
 
         const mota = (
           item["Mô tả"] ||
@@ -973,7 +1022,9 @@ export const ExportOptions: React.FC<ExportOptionsProps> = ({
           item["MOTA"] ||
           item["4"] ||
           ""
-        ).trim();
+        )
+          .toString()
+          .trim();
 
         return { tenloai, mota };
       });
@@ -1010,7 +1061,7 @@ export const ExportOptions: React.FC<ExportOptionsProps> = ({
         }
 
         // Lấy kết quả trả về
-        const result = await response.json();
+        const result = (await response.json()) as BulkInsertResponse;
 
         // Reset input file
         event.target.value = "";
@@ -1032,14 +1083,18 @@ export const ExportOptions: React.FC<ExportOptionsProps> = ({
         });
 
         // Nếu có lỗi, hiển thị thêm thông tin chi tiết trong console
-        if (result.failedCount > 0) {
+        if (result.failedCount > 0 && result.failedItems) {
           console.info("Các bản ghi không thể nhập:", result.failedItems);
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Lỗi khi bulk insert:", error);
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "Có lỗi xảy ra khi nhập dữ liệu";
         toast({
           title: "Lỗi",
-          description: error.message || "Có lỗi xảy ra khi nhập dữ liệu",
+          description: errorMessage,
           variant: "destructive",
         });
       }

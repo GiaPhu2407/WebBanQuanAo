@@ -8,17 +8,44 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, FileText, Calendar, Users } from "lucide-react";
 
-interface QRScannerModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  qrData?: any;
+// Define interfaces for QR data structure
+interface QRDataItem {
+  id: string;
+  ten: string;
+  moTa: string;
 }
 
-const QRInfoModal: React.FC<QRScannerModalProps> = ({
+interface QRDataThongTinThem {
+  thoiGianTao: string;
+  nguoiTao: string;
+}
+
+interface QRData {
+  tieuDe: string;
+  ngayXuat: string;
+  tongSoMuc: number;
+  danhSach: QRDataItem[];
+  thongTinThem: QRDataThongTinThem;
+}
+
+interface QRInfoModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  qrData: QRData | null;
+}
+
+const QRInfoModal: React.FC<QRInfoModalProps> = ({
   open,
   onOpenChange,
   qrData,
@@ -46,7 +73,8 @@ const QRInfoModal: React.FC<QRScannerModalProps> = ({
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Lỗi đọc dữ liệu</AlertTitle>
             <AlertDescription>
-              Mã QR không chứa thông tin hợp lệ hoặc định dạng không đúng. Vui lòng kiểm tra lại mã QR.
+              Mã QR không chứa thông tin hợp lệ hoặc định dạng không đúng. Vui
+              lòng kiểm tra lại mã QR.
             </AlertDescription>
           </Alert>
         ) : (
@@ -54,9 +82,14 @@ const QRInfoModal: React.FC<QRScannerModalProps> = ({
             <div className="py-2">
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
                 <Calendar className="h-4 w-4" />
-                <span>Thời gian tạo: {new Date(qrData.thongTinThem.thoiGianTao).toLocaleString('vi-VN')}</span>
+                <span>
+                  Thời gian tạo:{" "}
+                  {new Date(qrData.thongTinThem.thoiGianTao).toLocaleString(
+                    "vi-VN"
+                  )}
+                </span>
               </div>
-              
+
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
                 <Users className="h-4 w-4" />
                 <span>Người tạo: {qrData.thongTinThem.nguoiTao}</span>
@@ -72,7 +105,7 @@ const QRInfoModal: React.FC<QRScannerModalProps> = ({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {qrData.danhSach.map((item: any, index: number) => (
+                  {qrData.danhSach.map((item: QRDataItem, index: number) => (
                     <TableRow key={index}>
                       <TableCell className="text-center">{index + 1}</TableCell>
                       <TableCell className="text-center">{item.id}</TableCell>
