@@ -55,6 +55,18 @@ interface CaLamViec {
   users: User;
 }
 
+interface FormDataType {
+  idUsers: string;
+  ngaylam: string;
+  giobatdau: string;
+  gioketthuc: string;
+  DiaDiem: string;
+}
+
+interface ErrorResponse {
+  message: string;
+}
+
 export default function CaLamViecPage() {
   const [caLamViecList, setCaLamViecList] = useState<CaLamViec[]>([]);
   const [filteredList, setFilteredList] = useState<CaLamViec[]>([]);
@@ -73,31 +85,35 @@ export default function CaLamViecPage() {
   const [filterYear, setFilterYear] = useState("");
   const [filterWeek, setFilterWeek] = useState("");
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormDataType>({
     idUsers: "",
     ngaylam: "",
     giobatdau: "",
     gioketthuc: "",
-    DiaDiem: "", // Added for LichLamViec integration
+    DiaDiem: "",
   });
 
+  // Function to get week number from date
+  const getWeekNumber = (date: Date) => {
+    const d = new Date(
+      Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
+    );
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  };
+
+  // Fetch data when component mounts
   useEffect(() => {
     fetchCaLamViec();
     fetchUsers();
   }, []);
 
+  // Apply filters when filter criteria or data changes
   useEffect(() => {
-    applyFilters();
-  }, [
-    caLamViecList,
-    filterType,
-    filterDate,
-    filterMonth,
-    filterYear,
-    filterWeek,
-  ]);
+    if (caLamViecList.length === 0) return;
 
-  const applyFilters = () => {
     let filtered = [...caLamViecList];
 
     switch (filterType) {
@@ -144,17 +160,14 @@ export default function CaLamViecPage() {
     }
 
     setFilteredList(filtered);
-  };
-
-  const getWeekNumber = (date: Date) => {
-    const d = new Date(
-      Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
-    );
-    const dayNum = d.getUTCDay() || 7;
-    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
-  };
+  }, [
+    caLamViecList,
+    filterType,
+    filterDate,
+    filterMonth,
+    filterYear,
+    filterWeek,
+  ]);
 
   const fetchCaLamViec = async () => {
     setLoading(true);
@@ -189,7 +202,7 @@ export default function CaLamViecPage() {
     }
   };
 
-  const createLichLamViec = async (caLamViecData: any) => {
+  const createLichLamViec = async (caLamViecData: FormDataType) => {
     try {
       const lichLamViecData = {
         idUsers: caLamViecData.idUsers,
@@ -206,20 +219,26 @@ export default function CaLamViecPage() {
       });
 
       if (!response.ok) {
-        const error = await response.json();
+        const error = (await response.json()) as ErrorResponse;
         throw new Error(error.message || "Không thể tạo lịch làm việc");
       }
 
       return await response.json();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Lỗi khi tạo lịch làm việc:", error);
-      throw error;
+      throw error instanceof Error
+        ? error
+        : new Error("Unknown error occurred");
     }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSelectChange = (fieldName: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [fieldName]: value }));
   };
 
   const handleAddCaLamViec = async (e: React.FormEvent) => {
@@ -233,7 +252,7 @@ export default function CaLamViecPage() {
       });
 
       if (!caLamViecResponse.ok) {
-        const errorData = await caLamViecResponse.json();
+        const errorData = (await caLamViecResponse.json()) as ErrorResponse;
         throw new Error(errorData.message || "Không thể thêm ca làm việc");
       }
 
@@ -250,9 +269,11 @@ export default function CaLamViecPage() {
         gioketthuc: "",
         DiaDiem: "",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Lỗi:", error);
-      toast.error(error.message || "Không thể thêm ca làm việc");
+      toast.error(
+        error instanceof Error ? error.message : "Không thể thêm ca làm việc"
+      );
     }
   };
 
@@ -272,7 +293,7 @@ export default function CaLamViecPage() {
       );
 
       if (!caLamViecResponse.ok) {
-        const errorData = await caLamViecResponse.json();
+        const errorData = (await caLamViecResponse.json()) as ErrorResponse;
         throw new Error(errorData.message || "Không thể cập nhật ca làm việc");
       }
 
@@ -308,9 +329,13 @@ export default function CaLamViecPage() {
         gioketthuc: "",
         DiaDiem: "",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Lỗi:", error);
-      toast.error(error.message || "Không thể cập nhật ca làm việc");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Không thể cập nhật ca làm việc"
+      );
     }
   };
 
@@ -323,7 +348,7 @@ export default function CaLamViecPage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = (await response.json()) as ErrorResponse;
         throw new Error(errorData.message || "Không thể xóa ca làm việc");
       }
 
@@ -338,9 +363,11 @@ export default function CaLamViecPage() {
 
       await fetchCaLamViec();
       toast.success("Xóa ca làm việc thành công");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Lỗi:", error);
-      toast.error(error.message || "Không thể xóa ca làm việc");
+      toast.error(
+        error instanceof Error ? error.message : "Không thể xóa ca làm việc"
+      );
     }
   };
 
@@ -384,27 +411,28 @@ export default function CaLamViecPage() {
                     <Label htmlFor="add-idUsers" className="text-right">
                       Nhân viên
                     </Label>
-                    <Select
-                      name="idUsers"
-                      value={formData.idUsers}
-                      onValueChange={(value) =>
-                        setFormData({ ...formData, idUsers: value })
-                      }
-                    >
-                      <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder="Chọn nhân viên" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {users.map((user) => (
-                          <SelectItem
-                            key={user.idUsers}
-                            value={user.idUsers.toString()}
-                          >
-                            {user.Hoten || user.Tentaikhoan}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="col-span-3">
+                      <Select
+                        value={formData.idUsers}
+                        onValueChange={(value) =>
+                          handleSelectChange("idUsers", value)
+                        }
+                      >
+                        <SelectTrigger id="add-idUsers">
+                          <SelectValue placeholder="Chọn nhân viên" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {users.map((user) => (
+                            <SelectItem
+                              key={user.idUsers}
+                              value={user.idUsers.toString()}
+                            >
+                              {user.Hoten || user.Tentaikhoan}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="add-ngaylam" className="text-right">
@@ -472,18 +500,23 @@ export default function CaLamViecPage() {
         <CardContent>
           {/* Filter Controls */}
           <div className="mb-6 grid grid-cols-2 md:grid-cols-5 gap-4">
-            <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger>
-                <SelectValue placeholder="Chọn kiểu lọc" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tất cả</SelectItem>
-                <SelectItem value="day">Theo ngày</SelectItem>
-                <SelectItem value="week">Theo tuần</SelectItem>
-                <SelectItem value="month">Theo tháng</SelectItem>
-                <SelectItem value="year">Theo năm</SelectItem>
-              </SelectContent>
-            </Select>
+            <div>
+              <Select
+                value={filterType}
+                onValueChange={(value) => setFilterType(value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn kiểu lọc" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả</SelectItem>
+                  <SelectItem value="day">Theo ngày</SelectItem>
+                  <SelectItem value="week">Theo tuần</SelectItem>
+                  <SelectItem value="month">Theo tháng</SelectItem>
+                  <SelectItem value="year">Theo năm</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
             {filterType === "day" && (
               <Input
@@ -600,27 +633,28 @@ export default function CaLamViecPage() {
                 <Label htmlFor="edit-idUsers" className="text-right">
                   Nhân viên
                 </Label>
-                <Select
-                  name="idUsers"
-                  value={formData.idUsers}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, idUsers: value })
-                  }
-                >
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Chọn nhân viên" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {users.map((user) => (
-                      <SelectItem
-                        key={user.idUsers}
-                        value={user.idUsers.toString()}
-                      >
-                        {user.Hoten || user.Tentaikhoan}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="col-span-3">
+                  <Select
+                    value={formData.idUsers}
+                    onValueChange={(value) =>
+                      handleSelectChange("idUsers", value)
+                    }
+                  >
+                    <SelectTrigger id="edit-idUsers">
+                      <SelectValue placeholder="Chọn nhân viên" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {users.map((user) => (
+                        <SelectItem
+                          key={user.idUsers}
+                          value={user.idUsers.toString()}
+                        >
+                          {user.Hoten || user.Tentaikhoan}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="edit-ngaylam" className="text-right">

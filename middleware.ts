@@ -27,11 +27,11 @@ export async function middleware(request: NextRequest) {
   }
 
   // If no session exists, redirect to login
-  // if (!session) {
-  //   const loginUrl = new URL("/Login", request.url);
-  //   loginUrl.searchParams.set("redirect", request.nextUrl.pathname);
-  //   return NextResponse.redirect(loginUrl);
-  // }
+  if (!session) {
+    const loginUrl = new URL("/Login", request.url);
+    loginUrl.searchParams.set("redirect", request.nextUrl.pathname);
+    return NextResponse.redirect(loginUrl);
+  }
 
   // Admin-only paths - check role
   if (request.nextUrl.pathname.startsWith("/Admin")) {
