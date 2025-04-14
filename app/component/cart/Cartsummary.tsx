@@ -7,7 +7,7 @@ interface CartSummaryProps {
   total: number;
   paymentMethod: string;
   onPaymentMethodChange: (method: string) => void;
-  onCheckout: () => void;
+  onCheckout: (discountInfo?: any) => void;
   processing: boolean;
 }
 
@@ -66,6 +66,10 @@ export const CartSummary = ({
   const finalTotal = appliedDiscount
     ? total - appliedDiscount.calculatedDiscount
     : total;
+
+  const handleCheckout = () => {
+    onCheckout(appliedDiscount);
+  };
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm">
@@ -216,8 +220,8 @@ export const CartSummary = ({
               <input
                 type="radio"
                 name="paymentMethod"
-                value="STRIPE"
-                checked={paymentMethod === "STRIPE"}
+                value="stripe"
+                checked={paymentMethod === "stripe"}
                 onChange={(e) => onPaymentMethodChange(e.target.value)}
                 className="mr-3 h-4 w-4 text-blue-600"
               />
@@ -232,7 +236,7 @@ export const CartSummary = ({
         </div>
 
         <button
-          onClick={onCheckout}
+          onClick={handleCheckout}
           className={`w-full py-3 px-4 rounded-lg font-medium text-white transition duration-200 ${
             processing || selectedItemsCount === 0 || !paymentMethod
               ? "bg-gray-400 cursor-not-allowed"

@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
 
     // Tính tổng số lượng và tổng số tiền từ danh sách chi tiết đơn hàng
     let tongsoluong = 0;
-    let tongsotien = 0;
+    let originalTotal = 0; // Đổi tên biến từ tongsotien để rõ nghĩa hơn
 
     for (const item of chitietDonhang) {
       const { idsanpham, soluong } = item;
@@ -43,13 +43,13 @@ export async function POST(request: NextRequest) {
 
       // Tính tổng số lượng và tổng số tiền
       tongsoluong += soluong;
-      tongsotien += soluong * Number(sanpham.gia);
+      originalTotal += soluong * Number(sanpham.gia);
     }
 
     // Xử lý mã giảm giá nếu có
     let idDiscount = null;
-    let discountValue = null;
-    let finalTotalAmount = tongsotien;
+    let discountValue = 0; // Giá trị giảm giá (số tiền được giảm)
+    let finalTotalAmount = originalTotal; // Khởi tạo với giá ban đầu
 
     if (discountCode) {
       // Tìm mã giảm giá hợp lệ
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       // Kiểm tra giá trị đơn hàng tối thiểu
       if (
         discount.minOrderValue &&
-        tongsotien < Number(discount.minOrderValue)
+        originalTotal < Number(discount.minOrderValue)
       ) {
         return NextResponse.json(
           {
@@ -94,20 +94,19 @@ export async function POST(request: NextRequest) {
       }
 
       // Tính giá trị giảm
-      let calculatedDiscount = 0;
       if (discount.discountType === "PERCENTAGE") {
-        calculatedDiscount = (tongsotien * Number(discount.value)) / 100;
+        discountValue = (originalTotal * Number(discount.value)) / 100;
 
         // Áp dụng giới hạn giảm giá tối đa nếu có
         if (
           discount.maxDiscount &&
-          calculatedDiscount > Number(discount.maxDiscount)
+          discountValue > Number(discount.maxDiscount)
         ) {
-          calculatedDiscount = Number(discount.maxDiscount);
+          discountValue = Number(discount.maxDiscount);
         }
       } else {
         // FIXED_AMOUNT
-        calculatedDiscount = Number(discount.value);
+        discountValue = Number(discount.value);
       }
 
       // Cập nhật số lần sử dụng của mã giảm giá
@@ -117,29 +116,35 @@ export async function POST(request: NextRequest) {
       });
 
       idDiscount = discount.idDiscount;
-      discountValue = calculatedDiscount;
-      finalTotalAmount = tongsotien - calculatedDiscount;
+      finalTotalAmount = originalTotal - discountValue; // Tính tổng tiền sau khi giảm giá
     }
 
-    // Tạo mới đơn hàng
+    // Đảm bảo finalTotalAmount không âm
+    finalTotalAmount = Math.max(0, finalTotalAmount);
+
+    // Tạo mới đơn hàng với giá trị đã giảm
     const newDonhang = await prisma.donhang.create({
       data: {
         idUsers,
         tongsoluong,
-        tongsotien: finalTotalAmount,
+        tongsotien: finalTotalAmount, // Lưu số tiền sau khi đã giảm giá
         trangthai,
         ngaydat: new Date().toISOString(),
         idDiscount,
-        discountValue,
+        discountValue, // Lưu giá trị giảm giá (số tiền được giảm)
       },
     });
 
-    // Tạo thông báo
+    // Tạo thông báo với thông tin giảm giá
     await prisma.notification.create({
       data: {
         idUsers,
         title: "Đơn hàng mới",
-        message: `Đơn hàng #${newDonhang.iddonhang} đã được tạo thành công`,
+        message: `Đơn hàng #${newDonhang.iddonhang} đã được tạo thành công${
+          discountValue > 0
+            ? ` với giảm giá ${formatCurrency(discountValue)}`
+            : ""
+        }`,
         type: "order",
         idDonhang: newDonhang.iddonhang,
       },
@@ -148,12 +153,18 @@ export async function POST(request: NextRequest) {
     // Thêm chi tiết đơn hàng
     const createdChitietDonhang = await Promise.all(
       chitietDonhang.map(async (item: any) => {
+        // Get product price from database to ensure accuracy
+        const sanpham = await prisma.sanpham.findUnique({
+          where: { idsanpham: item.idsanpham },
+          select: { gia: true },
+        });
+
         return await prisma.chitietDonhang.create({
           data: {
             iddonhang: newDonhang.iddonhang,
             idsanpham: item.idsanpham,
             soluong: item.soluong,
-            dongia: item.dongia, // Giá có thể lấy từ body hoặc sản phẩm
+            dongia: sanpham ? Number(sanpham.gia) : item.dongia, // Use accurate price from DB or fallback to provided price
           },
         });
       })
@@ -164,14 +175,15 @@ export async function POST(request: NextRequest) {
       {
         donhang: newDonhang,
         chitietDonhang: createdChitietDonhang,
-        discountApplied: discountValue
-          ? {
-              code: discountCode,
-              value: discountValue,
-              originalTotal: tongsotien,
-              finalTotal: finalTotalAmount,
-            }
-          : null,
+        discountApplied:
+          discountValue > 0
+            ? {
+                code: discountCode,
+                value: discountValue,
+                originalTotal: originalTotal,
+                finalTotal: finalTotalAmount,
+              }
+            : null,
       },
       { status: 201 }
     );
@@ -184,6 +196,15 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// Helper function to format currency
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }).format(amount);
+}
+
+// GET and DELETE methods remain unchanged
 export async function GET(request: NextRequest) {
   try {
     const session = await getSession(request);
@@ -218,17 +239,35 @@ export async function GET(request: NextRequest) {
           },
         },
       },
+      orderBy: {
+        ngaydat: "desc",
+      },
     });
-    return NextResponse.json(donhang);
+
+    if (!donhang.length) {
+      return NextResponse.json(
+        { message: "Không có đơn hàng nào." },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      donhang,
+      message: "Lấy danh sách đơn hàng thành công.",
+    });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message });
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-export async function DELETE(request: NextRequest, response: NextResponse) {
-  const iddonhang = await prisma.donhang.deleteMany();
-  return NextResponse.json(
-    { iddonhang, message: "Xoá tất cả các id" },
-    { status: 200 }
-  );
+export async function DELETE(request: NextRequest) {
+  try {
+    const iddonhang = await prisma.donhang.deleteMany();
+    return NextResponse.json(
+      { iddonhang, message: "Xoá tất cả các đơn hàng" },
+      { status: 200 }
+    );
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 }

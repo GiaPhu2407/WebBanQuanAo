@@ -1,3 +1,4 @@
+"use client";
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +8,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Camera, Upload, AlertTriangle } from "lucide-react";
 import { Html5Qrcode } from "html5-qrcode";
 import QRInfoModal from "./QRCoreModal";
-
 
 const QRScanner: React.FC = () => {
   const [scanning, setScanning] = useState(false);
@@ -50,7 +50,8 @@ const QRScanner: React.FC = () => {
       console.error("Lỗi khi bắt đầu quét:", error);
       toast({
         title: "Lỗi camera",
-        description: "Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập hoặc thử tải lên hình ảnh.",
+        description:
+          "Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập hoặc thử tải lên hình ảnh.",
         variant: "destructive",
       });
       setScanning(false);
@@ -72,12 +73,12 @@ const QRScanner: React.FC = () => {
     try {
       // Stop scanner after successful scan
       stopScanner();
-      
+
       // Parse the decoded QR data
       const parsedData = JSON.parse(decodedText);
       setQrData(parsedData);
       setShowModal(true);
-      
+
       toast({
         title: "Thành công",
         description: "Đã quét thành công mã QR",
@@ -103,12 +104,12 @@ const QRScanner: React.FC = () => {
       }
 
       const result = await scannerRef.current.scanFile(file, true);
-      
+
       try {
         const parsedData = JSON.parse(result);
         setQrData(parsedData);
         setShowModal(true);
-        
+
         toast({
           title: "Thành công",
           description: "Đã quét thành công mã QR từ hình ảnh",
@@ -152,15 +153,17 @@ const QRScanner: React.FC = () => {
 
           <TabsContent value="camera">
             <div className="flex flex-col items-center gap-4">
-              <div 
-                id="camera-reader" 
+              <div
+                id="camera-reader"
                 ref={cameraContainerRef}
                 className="w-full aspect-square bg-muted rounded-md overflow-hidden flex items-center justify-center"
               >
                 {!scanning && (
                   <div className="text-center p-4">
                     <Camera className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
-                    <p className="text-muted-foreground">Nhấn nút bắt đầu để quét mã QR</p>
+                    <p className="text-muted-foreground">
+                      Nhấn nút bắt đầu để quét mã QR
+                    </p>
                   </div>
                 )}
               </div>
@@ -169,7 +172,9 @@ const QRScanner: React.FC = () => {
                 {!scanning ? (
                   <Button onClick={startScanner}>Bắt đầu quét</Button>
                 ) : (
-                  <Button variant="destructive" onClick={stopScanner}>Dừng quét</Button>
+                  <Button variant="destructive" onClick={stopScanner}>
+                    Dừng quét
+                  </Button>
                 )}
               </div>
             </div>
@@ -184,29 +189,32 @@ const QRScanner: React.FC = () => {
                     Tải lên hình ảnh chứa mã QR để xem thông tin.
                   </AlertDescription>
                 </Alert>
-                
+
                 <div className="flex items-center justify-center w-full">
-                  <label 
-                    htmlFor="qr-file-upload" 
+                  <label
+                    htmlFor="qr-file-upload"
                     className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer bg-muted/50 hover:bg-muted"
                   >
                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
                       <Upload className="w-8 h-8 mb-2 text-muted-foreground" />
                       <p className="mb-2 text-sm text-muted-foreground">
-                        <span className="font-semibold">Nhấp để tải lên</span> hoặc kéo thả
+                        <span className="font-semibold">Nhấp để tải lên</span>{" "}
+                        hoặc kéo thả
                       </p>
-                      <p className="text-xs text-muted-foreground">PNG, JPG hoặc GIF</p>
+                      <p className="text-xs text-muted-foreground">
+                        PNG, JPG hoặc GIF
+                      </p>
                     </div>
-                    <input 
-                      id="qr-file-upload" 
-                      type="file" 
-                      className="hidden" 
+                    <input
+                      id="qr-file-upload"
+                      type="file"
+                      className="hidden"
                       accept="image/*"
                       onChange={handleFileUpload}
                     />
                   </label>
                 </div>
-                
+
                 <div id="file-reader" className="hidden"></div>
               </div>
             </div>
@@ -214,9 +222,9 @@ const QRScanner: React.FC = () => {
         </Tabs>
       </CardContent>
 
-      <QRInfoModal 
-        open={showModal} 
-        onOpenChange={setShowModal} 
+      <QRInfoModal
+        open={showModal}
+        onOpenChange={setShowModal}
         qrData={qrData}
       />
     </Card>

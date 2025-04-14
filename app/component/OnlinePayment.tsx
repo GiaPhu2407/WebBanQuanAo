@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -8,6 +6,15 @@ import Fileupload from "@/components/ui/Fileupload";
 import qr from "@/app/image/qr.jpg";
 import { formatCurrency } from "./utils/currency";
 
+export interface OrderDetails {
+  items: OrderItem[];
+  total: number;
+  orderId: number;
+  discountInfo?: {
+    code: string;
+    calculatedDiscount: number;
+  };
+}
 export interface Size {
   idSize?: number;
   tenSize: string;
@@ -35,6 +42,8 @@ export interface OrderDetails {
   items: OrderItem[];
   total: number;
   orderId: number;
+  discountAmount?: number;
+  originalTotal?: number;
 }
 
 interface OnlinePaymentProps {
@@ -51,6 +60,10 @@ export const OnlinePayment = ({
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
+
+  const finalTotal = orderDetails.discountInfo
+    ? orderDetails.total - orderDetails.discountInfo.calculatedDiscount
+    : orderDetails.total;
 
   useEffect(() => {
     if (!orderDetails || !orderDetails.orderId) {
@@ -85,6 +98,7 @@ export const OnlinePayment = ({
           paymentMethod: "online",
           imageURL: paymentProofImage,
           orderId: orderDetails.orderId,
+          amount: orderDetails.total, // Use the final discounted amount
         }),
       });
 
@@ -199,7 +213,39 @@ export const OnlinePayment = ({
                         )}
                       </div>
                     ))}
-                  <div className="flex justify-between pt-4">
+
+                  {/* Display original total, discount, and final total */}
+                  {orderDetails.originalTotal &&
+                    orderDetails.discountAmount && (
+                      <>
+                        <div className="flex justify-between pt-4">
+                          <span className="text-gray-600">Tạm tính:</span>
+                          <span className="text-gray-600">
+                            {formatCurrency(orderDetails.originalTotal)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between pt-4">
+                          {orderDetails.discountInfo && (
+                            <div className="flex flex-col">
+                              <span className="text-gray-500 line-through">
+                                {formatCurrency(orderDetails.total)}
+                              </span>
+                              <span className="text-green-600">
+                                Giảm giá:{" "}
+                                {formatCurrency(
+                                  orderDetails.discountInfo.calculatedDiscount
+                                )}
+                              </span>
+                            </div>
+                          )}
+                          <span className="font-bold text-xl text-blue-600">
+                            {formatCurrency(finalTotal)}
+                          </span>
+                        </div>
+                      </>
+                    )}
+
+                  <div className="flex justify-between pt-4 border-t">
                     <span className="font-bold">Tổng tiền:</span>
                     <span className="font-bold text-xl text-blue-600">
                       {formatCurrency(orderDetails.total)}
@@ -233,6 +279,12 @@ export const OnlinePayment = ({
                   Thông tin chuyển khoản
                 </h3>
                 <div className="grid grid-cols-1 gap-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Số tiền cần chuyển:</span>
+                    <span className="font-medium text-blue-600">
+                      {formatCurrency(orderDetails.total)}
+                    </span>
+                  </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Ngân hàng:</span>
                     <span className="font-medium">Techcombank</span>
@@ -288,7 +340,6 @@ export const OnlinePayment = ({
                         onChange={(url) => {
                           if (url) {
                             setPaymentProofImage(url);
-                            console.log("Đã tải lên ảnh:", url);
                           }
                         }}
                         showmodal={!paymentProofImage}
