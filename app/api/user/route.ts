@@ -4,9 +4,6 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET() {
   try {
     const users = await prisma.users.findMany({
-      where: {
-        idRole: 3, // Chỉ lấy người dùng có idRole = 3 (nhân viên)
-      },
       select: {
         idUsers: true,
         Tentaikhoan: true,
@@ -21,12 +18,12 @@ export async function GET() {
 
     return NextResponse.json({
       data: users,
-      message: "Lấy danh sách nhân viên thành công",
+      message: "Lấy danh sách người dùng thành công",
     });
   } catch (error) {
     console.error("Error fetching users:", error);
     return NextResponse.json(
-      { error: "Không thể lấy danh sách nhân viên" },
+      { error: "Không thể lấy danh sách người dùng" },
       { status: 500 }
     );
   }

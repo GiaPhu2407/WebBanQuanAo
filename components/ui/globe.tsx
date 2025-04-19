@@ -17,7 +17,7 @@ extend({ ThreeGlobe });
 
 // Các thông số mặc định cho hiệu ứng vòng
 const RING_PROPAGATION_SPEED = 3;
-const aspect = 1.2;  // Tỷ lệ khung hình
+const aspect = 1.2; // Tỷ lệ khung hình
 const cameraZ = 300; // Khoảng cách camera
 
 // Định nghĩa kiểu dữ liệu của vị trí
@@ -63,7 +63,7 @@ interface WorldProps {
   data: Position[];
 }
 
-let numbersOfRings = [0];  // Mảng để theo dõi số lượng vòng
+let numbersOfRings = [0]; // Mảng để theo dõi số lượng vòng
 
 // Component hiển thị Globe (Bản đồ toàn cầu)
 export function Globe({ globeConfig, data }: WorldProps) {

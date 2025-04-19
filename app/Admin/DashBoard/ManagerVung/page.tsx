@@ -66,7 +66,7 @@ const VungManagementPage = () => {
       }
       const data = await response.json();
       setKhos(data);
-    } catch (error) {
+    } catch (error:any) {
       toast({
         title: "Lỗi",
         description: "Không thể tải danh sách kho",
@@ -141,7 +141,7 @@ const VungManagementPage = () => {
 
       handleCloseModal();
       setReloadKey((prev) => prev + 1);
-    } catch (error) {
+    } catch (error:any) {
       toast({
         title: "Lỗi",
         description:
@@ -184,7 +184,7 @@ const VungManagementPage = () => {
       });
 
       setReloadKey((prev) => prev + 1);
-    } catch (error) {
+    } catch (error:any) {
       toast({
         title: "Lỗi",
         description:

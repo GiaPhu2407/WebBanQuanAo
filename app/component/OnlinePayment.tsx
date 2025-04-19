@@ -14,7 +14,9 @@ export interface OrderDetails {
     code: string;
     calculatedDiscount: number;
   };
+  originalTotal?: number;
 }
+
 export interface Size {
   idSize?: number;
   tenSize: string;
@@ -38,14 +40,6 @@ export interface OrderItem {
   isSelected?: boolean;
 }
 
-export interface OrderDetails {
-  items: OrderItem[];
-  total: number;
-  orderId: number;
-  discountAmount?: number;
-  originalTotal?: number;
-}
-
 interface OnlinePaymentProps {
   orderDetails: OrderDetails;
   onPaymentComplete?: () => void;
@@ -61,6 +55,7 @@ export const OnlinePayment = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
+  // Calculate final total after discount (if any)
   const finalTotal = orderDetails.discountInfo
     ? orderDetails.total - orderDetails.discountInfo.calculatedDiscount
     : orderDetails.total;
@@ -98,7 +93,7 @@ export const OnlinePayment = ({
           paymentMethod: "online",
           imageURL: paymentProofImage,
           orderId: orderDetails.orderId,
-          amount: orderDetails.total, // Use the final discounted amount
+          amount: finalTotal, // Use the final discounted amount
         }),
       });
 
@@ -214,42 +209,52 @@ export const OnlinePayment = ({
                       </div>
                     ))}
 
-                  {/* Display original total, discount, and final total */}
-                  {orderDetails.originalTotal &&
-                    orderDetails.discountAmount && (
-                      <>
-                        <div className="flex justify-between pt-4">
-                          <span className="text-gray-600">Tạm tính:</span>
-                          <span className="text-gray-600">
-                            {formatCurrency(orderDetails.originalTotal)}
+                  {/* Payment Summary Section - Shows original total, discount and final total */}
+                  <div className="mt-6 space-y-3 pt-4 border-t">
+                    {/* Original Total */}
+                    <div className="flex justify-between">
+                      <span className="font-medium">Tổng tiền gốc:</span>
+                      <span className="font-medium">
+                        {formatCurrency(orderDetails.total)}
+                      </span>
+                    </div>
+
+                    {/* Discount Information */}
+                    {orderDetails.discountInfo ? (
+                      <div className="bg-green-50 p-3 rounded-md">
+                        <div className="flex justify-between text-green-700">
+                          <span className="font-medium">
+                            Mã giảm giá đã áp dụng:
+                          </span>
+                          <span className="font-bold">
+                            {orderDetails.discountInfo.code}
                           </span>
                         </div>
-                        <div className="flex justify-between pt-4">
-                          {orderDetails.discountInfo && (
-                            <div className="flex flex-col">
-                              <span className="text-gray-500 line-through">
-                                {formatCurrency(orderDetails.total)}
-                              </span>
-                              <span className="text-green-600">
-                                Giảm giá:{" "}
-                                {formatCurrency(
-                                  orderDetails.discountInfo.calculatedDiscount
-                                )}
-                              </span>
-                            </div>
-                          )}
-                          <span className="font-bold text-xl text-blue-600">
-                            {formatCurrency(finalTotal)}
+                        <div className="flex justify-between text-green-700 mt-1">
+                          <span className="font-medium">Số tiền giảm:</span>
+                          <span className="font-medium">
+                            -
+                            {formatCurrency(
+                              orderDetails.discountInfo.calculatedDiscount
+                            )}
                           </span>
                         </div>
-                      </>
+                      </div>
+                    ) : (
+                      <div className="py-2 text-gray-500 italic text-center text-sm">
+                        Không có mã giảm giá áp dụng
+                      </div>
                     )}
 
-                  <div className="flex justify-between pt-4 border-t">
-                    <span className="font-bold">Tổng tiền:</span>
-                    <span className="font-bold text-xl text-blue-600">
-                      {formatCurrency(orderDetails.total)}
-                    </span>
+                    {/* Final Total */}
+                    <div className="flex justify-between pt-4 border-t border-dashed">
+                      <span className="font-bold text-lg">
+                        Tổng thanh toán:
+                      </span>
+                      <span className="font-bold text-xl text-blue-600">
+                        {formatCurrency(finalTotal)}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -282,7 +287,7 @@ export const OnlinePayment = ({
                   <div className="flex justify-between">
                     <span className="text-gray-600">Số tiền cần chuyển:</span>
                     <span className="font-medium text-blue-600">
-                      {formatCurrency(orderDetails.total)}
+                      {formatCurrency(finalTotal)}
                     </span>
                   </div>
                   <div className="flex justify-between">

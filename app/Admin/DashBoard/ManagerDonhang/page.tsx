@@ -259,7 +259,7 @@ export default function OrderManagementPage() {
   return (
     <div className="flex">
       <SalesDashboard />
-      <div className="p-6 flex-1">
+      <div className="p-6 flex-1 ">
         <Toaster />
 
         {showToast && (
@@ -361,7 +361,7 @@ export default function OrderManagementPage() {
           </div>
         </dialog>
 
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mt-10">
           <h1 className="text-2xl font-bold">Quản lý đơn hàng</h1>
         </div>
 

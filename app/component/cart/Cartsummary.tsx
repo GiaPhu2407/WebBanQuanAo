@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { formatCurrency } from "../utils/currency";
 
 interface CartSummaryProps {
@@ -7,8 +7,18 @@ interface CartSummaryProps {
   total: number;
   paymentMethod: string;
   onPaymentMethodChange: (method: string) => void;
-  onCheckout: (discountInfo?: any) => void;
+  onCheckout: () => void;
   processing: boolean;
+  onApplyDiscount: (discountInfo: DiscountInfo | null) => void;
+}
+
+interface DiscountInfo {
+  idDiscount: number;
+  code: string;
+  discountType: string;
+  value: number;
+  calculatedDiscount: number;
+  maxDiscount?: number | null;
 }
 
 export const CartSummary = ({
@@ -19,12 +29,20 @@ export const CartSummary = ({
   onPaymentMethodChange,
   onCheckout,
   processing,
+  onApplyDiscount,
 }: CartSummaryProps) => {
   const [discountCode, setDiscountCode] = useState("");
-  const [appliedDiscount, setAppliedDiscount] = useState<any>(null);
+  const [appliedDiscount, setAppliedDiscount] = useState<DiscountInfo | null>(
+    null
+  );
   const [discountError, setDiscountError] = useState("");
   const [availableDiscounts, setAvailableDiscounts] = useState<any[]>([]);
   const [isLoadingDiscounts, setIsLoadingDiscounts] = useState(false);
+
+  // Update parent component whenever appliedDiscount changes
+  useEffect(() => {
+    onApplyDiscount(appliedDiscount);
+  }, [appliedDiscount, onApplyDiscount]);
 
   const fetchAvailableDiscounts = async () => {
     try {
@@ -56,7 +74,18 @@ export const CartSummary = ({
         return;
       }
 
-      setAppliedDiscount(data.discount);
+      // Ensure we store the complete discount information
+      const discountInfo: DiscountInfo = {
+        idDiscount: data.discount.idDiscount,
+        code: data.discount.code,
+        discountType: data.discount.discountType,
+        value: data.discount.value,
+        calculatedDiscount: data.discount.calculatedDiscount,
+        maxDiscount: data.discount.maxDiscount,
+      };
+
+      console.log("Applied discount info:", discountInfo);
+      setAppliedDiscount(discountInfo);
     } catch (error) {
       console.error("Error applying discount:", error);
       setDiscountError("Error applying discount code");
@@ -66,10 +95,6 @@ export const CartSummary = ({
   const finalTotal = appliedDiscount
     ? total - appliedDiscount.calculatedDiscount
     : total;
-
-  const handleCheckout = () => {
-    onCheckout(appliedDiscount);
-  };
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm">
@@ -121,6 +146,12 @@ export const CartSummary = ({
               <p className="text-sm text-green-600">
                 Tiết kiệm: {formatCurrency(appliedDiscount.calculatedDiscount)}
               </p>
+              <button
+                onClick={() => setAppliedDiscount(null)}
+                className="text-red-500 text-sm mt-1 hover:underline"
+              >
+                Xóa mã
+              </button>
             </div>
           )}
 
@@ -175,6 +206,11 @@ export const CartSummary = ({
               {formatCurrency(finalTotal)}
             </span>
           </div>
+          {appliedDiscount && (
+            <div className="text-sm text-gray-500 text-right">
+              Đã giảm: {formatCurrency(appliedDiscount.calculatedDiscount)}
+            </div>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -236,7 +272,7 @@ export const CartSummary = ({
         </div>
 
         <button
-          onClick={handleCheckout}
+          onClick={onCheckout}
           className={`w-full py-3 px-4 rounded-lg font-medium text-white transition duration-200 ${
             processing || selectedItemsCount === 0 || !paymentMethod
               ? "bg-gray-400 cursor-not-allowed"

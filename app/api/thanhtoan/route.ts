@@ -29,6 +29,7 @@ interface OrderData {
   notification?: any;
 }
 
+// Discount information interface
 interface DiscountInfo {
   idDiscount: number;
   code: string;
@@ -52,15 +53,18 @@ export async function POST(req: Request) {
       paymentMethod,
       imageURL,
       orderId,
-      discountInfo,
+      DiscountInfo,
     } = body;
+
+    // Debug discount information
+    console.log("API endpoint received discountInfo:", DiscountInfo);
 
     const userId =
       typeof session.idUsers === "string"
         ? parseInt(session.idUsers, 10)
         : session.idUsers;
 
-    // Handle Stripe payment initiation
+    // Handling Stripe payment initialization
     if (paymentMethod === "stripe" && !stripeSessionId && cartItems) {
       try {
         // Calculate original total before discount
@@ -71,40 +75,56 @@ export async function POST(req: Request) {
         );
 
         // Apply discount if available
-        const discountAmount = discountInfo?.calculatedDiscount || 0;
-
-        // Calculate final total after discount
+        const discountAmount = DiscountInfo?.calculatedDiscount || 0;
         const finalTotal = Math.max(0, originalTotal - discountAmount);
 
-        // Prepare line items for Stripe with individual products
-        const lineItems = cartItems.map((item: CartItem) => ({
-          price_data: {
-            currency: "vnd",
-            product_data: {
-              name: item.sanpham.Tensanpham,
-              images: [item.sanpham.hinhanh],
-            },
-            unit_amount: item.sanpham.gia,
-          },
-          quantity: item.soluong,
-        }));
+        // Get the discount ID correctly - ensure it's a number
+        const discountId = DiscountInfo?.idDiscount
+          ? Number(DiscountInfo.idDiscount)
+          : null;
 
-        // Add discount as a separate line item if applicable
-        if (discountInfo && discountAmount > 0) {
+        console.log(
+          `Original Total: ${originalTotal}, Discount: ${discountAmount}, Final Amount: ${finalTotal}, Discount ID: ${discountId}`
+        );
+
+        // Prepare items for Stripe
+        const lineItems = cartItems.map((item: CartItem) => {
+          return {
+            price_data: {
+              currency: "vnd",
+              product_data: {
+                name: item.sanpham.Tensanpham,
+                images: [item.sanpham.hinhanh],
+                description:
+                  discountAmount > 0
+                    ? `Original price: ${formatCurrency(
+                        Number(item.sanpham.gia)
+                      )}${discountAmount > 0 ? " (Discount applied)" : ""}`
+                    : undefined,
+              },
+              unit_amount: Number(item.sanpham.gia),
+            },
+            quantity: item.soluong,
+          };
+        });
+
+        // Add discount line item if applicable
+        if (discountAmount > 0) {
           lineItems.push({
             price_data: {
               currency: "vnd",
               product_data: {
-                name: `Giảm giá (${discountInfo.code})`,
+                name: `Discount (${DiscountInfo.code})`,
                 images: [],
+                description: `Applied discount code: ${DiscountInfo.code}`,
               },
-              unit_amount: -discountAmount, // Negative amount to represent discount
+              unit_amount: -discountAmount,
             },
             quantity: 1,
           });
         }
 
-        // Create Stripe checkout session with all necessary metadata
+        // Create Stripe session with the discounted total
         const stripeSession = await stripe.checkout.sessions.create({
           payment_method_types: ["card"],
           line_items: lineItems,
@@ -114,9 +134,11 @@ export async function POST(req: Request) {
           metadata: {
             userId: userId.toString(),
             cartItems: JSON.stringify(cartItems),
-            discountCode: discountInfo?.code || "",
-            discountId: discountInfo?.idDiscount?.toString() || "",
-            discountAmount: discountInfo?.calculatedDiscount?.toString() || "0",
+            discountCode: DiscountInfo?.code || "",
+            discountId: discountId !== null ? discountId.toString() : "",
+            discountAmount: discountAmount.toString(),
+            originalTotal: originalTotal.toString(),
+            finalTotal: finalTotal.toString(),
           },
         });
 
@@ -129,9 +151,9 @@ export async function POST(req: Request) {
           finalTotal,
         });
       } catch (error) {
-        console.error("Stripe session creation error:", error);
+        console.error("Error creating Stripe session:", error);
         return NextResponse.json(
-          { error: "Không thể tạo phiên thanh toán Stripe" },
+          { error: "Could not create Stripe payment session" },
           { status: 500 }
         );
       }
@@ -145,18 +167,32 @@ export async function POST(req: Request) {
         );
 
         if (!session.metadata?.cartItems) {
-          throw new Error("Không tìm thấy thông tin giỏ hàng trong metadata");
+          throw new Error("Cart items not found in metadata");
         }
 
         const cartItems = JSON.parse(session.metadata.cartItems);
-        const discountCode = session.metadata.discountCode || null;
-        const discountId = session.metadata.discountId
-          ? parseInt(session.metadata.discountId)
-          : null;
+
+        // Ensure proper conversion of discountId to number
+        const discountId =
+          session.metadata.discountId && session.metadata.discountId !== ""
+            ? parseInt(session.metadata.discountId, 10)
+            : null;
+
         const discountAmount = session.metadata.discountAmount
           ? parseFloat(session.metadata.discountAmount)
           : 0;
 
+        const finalTotal = session.metadata.finalTotal
+          ? parseFloat(session.metadata.finalTotal)
+          : null;
+
+        console.log("Stripe session metadata:", {
+          discountId,
+          discountAmount,
+          finalTotal,
+        });
+
+        // Pass the final total from Stripe session to processOrder
         return await processOrder(
           cartItems,
           "stripe",
@@ -164,21 +200,24 @@ export async function POST(req: Request) {
           session.customer_details?.name || "",
           stripeSessionId,
           discountId,
-          discountAmount
+          discountAmount,
+          finalTotal
         );
       } catch (error) {
-        console.error("Stripe payment completion error:", error);
+        console.error("Error completing Stripe payment:", error);
         return NextResponse.json(
-          { error: "Không thể hoàn tất thanh toán Stripe" },
+          { error: "Could not complete Stripe payment" },
           { status: 500 }
         );
       }
     }
 
-    // Handle online transfer payment with proof
+    // Handle bank transfer payment with receipt
     if (paymentMethod === "online" && imageURL && orderId) {
       try {
         const orderIdNumber = parseInt(orderId);
+
+        // Get order information including discount info
         const order = await prisma.donhang.findUnique({
           where: { iddonhang: orderIdNumber },
           include: {
@@ -188,20 +227,36 @@ export async function POST(req: Request) {
               },
             },
             thanhtoan: true,
+            discount: true, // Add this to get discount information
           },
         });
 
         if (!order) {
           return NextResponse.json(
-            { error: "Đơn hàng không tồn tại" },
+            { error: "Order not found" },
             { status: 404 }
           );
         }
 
-        // Calculate final amount considering discount
-        const totalAmount = order.discountValue
-          ? Number(order.tongsotien) // tongsotien already has discount applied
-          : order.tongsotien;
+        // Determine original total and discount values
+        let originalTotal = Number(order.tongsotien);
+        let discountAmount = Number(order.discountValue || 0);
+        let finalAmount = originalTotal;
+
+        // If discount information exists, display it correctly
+        if (order.discount) {
+          console.log(
+            `Found discount code: ${order.discount.code}, ID: ${order.discount.idDiscount}`
+          );
+        }
+
+        console.log(
+          `Order ${orderIdNumber}: Original total: ${
+            originalTotal + discountAmount
+          }, Discount: ${discountAmount}, Final amount: ${finalAmount}, Discount ID: ${
+            order.idDiscount
+          }`
+        );
 
         let payment;
         if (order.thanhtoan && order.thanhtoan.length > 0) {
@@ -209,8 +264,8 @@ export async function POST(req: Request) {
             where: { idthanhtoan: order.thanhtoan[0].idthanhtoan },
             data: {
               phuongthucthanhtoan: "online",
-              sotien: totalAmount, // Use the discounted amount
-              trangthai: "Chờ xác nhận",
+              sotien: finalAmount,
+              trangthai: "Pending confirmation",
               ngaythanhtoan: new Date(),
               hinhanhthanhtoan: imageURL,
             },
@@ -220,8 +275,8 @@ export async function POST(req: Request) {
             data: {
               iddonhang: orderIdNumber,
               phuongthucthanhtoan: "online",
-              sotien: totalAmount, // Use the discounted amount
-              trangthai: "Chờ xác nhận",
+              sotien: finalAmount,
+              trangthai: "Pending confirmation",
               ngaythanhtoan: new Date(),
               hinhanhthanhtoan: imageURL,
             },
@@ -230,14 +285,20 @@ export async function POST(req: Request) {
 
         await prisma.donhang.update({
           where: { iddonhang: orderIdNumber },
-          data: { trangthai: "Chờ xác nhận thanh toán" },
+          data: { trangthai: "Waiting for payment confirmation" },
         });
+
+        // Create notification with discount information if applicable
+        const discountMessage =
+          discountAmount > 0
+            ? ` (discounted ${formatCurrency(discountAmount)})`
+            : "";
 
         const notification = await prisma.notification.create({
           data: {
             idUsers: userId,
-            title: "Thanh toán chuyển khoản",
-            message: `Thanh toán cho đơn hàng #${orderIdNumber} đã được gửi và đang chờ xác nhận`,
+            title: "Bank Transfer Payment",
+            message: `Payment for order #${orderIdNumber}${discountMessage} has been submitted and is awaiting confirmation`,
             type: "payment",
             idDonhang: orderIdNumber,
             idThanhtoan: payment.idthanhtoan,
@@ -254,13 +315,16 @@ export async function POST(req: Request) {
 
         return NextResponse.json({
           success: true,
-          message: "Đã cập nhật chứng từ thanh toán",
+          message: "Payment receipt updated",
           payment,
+          originalTotal: originalTotal + discountAmount,
+          discountAmount: discountAmount,
+          finalTotal: finalAmount,
         });
       } catch (error) {
-        console.error("Error processing payment proof:", error);
+        console.error("Error processing payment receipt:", error);
         return NextResponse.json(
-          { error: "Không thể xử lý minh chứng thanh toán" },
+          { error: "Could not process payment evidence" },
           { status: 500 }
         );
       }
@@ -270,6 +334,8 @@ export async function POST(req: Request) {
     if (paymentMethod === "cash" && orderId) {
       try {
         const orderIdNumber = parseInt(orderId);
+
+        // Get order information including discount info
         const order = await prisma.donhang.findUnique({
           where: { iddonhang: orderIdNumber },
           include: {
@@ -279,18 +345,29 @@ export async function POST(req: Request) {
               },
             },
             thanhtoan: true,
+            discount: true,
           },
         });
 
         if (!order) {
           return NextResponse.json(
-            { error: "Đơn hàng không tồn tại" },
+            { error: "Order not found" },
             { status: 404 }
           );
         }
 
-        // Calculate final amount considering discount
-        const totalAmount = order.tongsotien; // tongsotien already has discount applied
+        // Determine original total and discount values
+        let originalTotal = Number(order.tongsotien);
+        let discountAmount = Number(order.discountValue || 0);
+        let finalAmount = originalTotal;
+
+        console.log(
+          `Order ${orderIdNumber}: Original total: ${
+            originalTotal + discountAmount
+          }, Discount: ${discountAmount}, Final amount: ${finalAmount}, Discount ID: ${
+            order.idDiscount
+          }`
+        );
 
         let payment;
         if (order.thanhtoan && order.thanhtoan.length > 0) {
@@ -298,8 +375,8 @@ export async function POST(req: Request) {
             where: { idthanhtoan: order.thanhtoan[0].idthanhtoan },
             data: {
               phuongthucthanhtoan: "cash",
-              sotien: totalAmount, // Use the already discounted amount
-              trangthai: "Chờ xác nhận",
+              sotien: finalAmount,
+              trangthai: "Pending confirmation",
               ngaythanhtoan: new Date(),
             },
           });
@@ -308,8 +385,8 @@ export async function POST(req: Request) {
             data: {
               iddonhang: orderIdNumber,
               phuongthucthanhtoan: "cash",
-              sotien: totalAmount, // Use the already discounted amount
-              trangthai: "Chờ xác nhận",
+              sotien: finalAmount,
+              trangthai: "Pending confirmation",
               ngaythanhtoan: new Date(),
             },
           });
@@ -317,14 +394,20 @@ export async function POST(req: Request) {
 
         await prisma.donhang.update({
           where: { iddonhang: orderIdNumber },
-          data: { trangthai: "Chờ xác nhận thanh toán" },
+          data: { trangthai: "Waiting for payment confirmation" },
         });
+
+        // Create notification with discount information if applicable
+        const discountMessage =
+          discountAmount > 0
+            ? ` (discounted ${formatCurrency(discountAmount)})`
+            : "";
 
         const notification = await prisma.notification.create({
           data: {
             idUsers: userId,
-            title: "Thanh toán tiền mặt",
-            message: `Thanh toán tiền mặt cho đơn hàng #${orderIdNumber} đã được ghi nhận và đang chờ xác nhận`,
+            title: "Cash Payment",
+            message: `Cash payment for order #${orderIdNumber}${discountMessage} has been recorded and is awaiting confirmation`,
             type: "payment",
             idDonhang: orderIdNumber,
             idThanhtoan: payment.idthanhtoan,
@@ -341,28 +424,47 @@ export async function POST(req: Request) {
 
         return NextResponse.json({
           success: true,
-          message: "Thanh toán tiền mặt đã được ghi nhận",
+          message: "Cash payment recorded",
           payment,
+          originalTotal: originalTotal + discountAmount,
+          discountAmount: discountAmount,
+          finalTotal: finalAmount,
         });
       } catch (error) {
         console.error("Error processing cash payment:", error);
         return NextResponse.json(
-          { error: "Lỗi khi xử lý thanh toán tiền mặt" },
+          { error: "Error when processing cash payment" },
           { status: 500 }
         );
       }
     }
 
-    // Handle new order creation with initial payment method
+    // Handle new order creation
     if (cartItems && Array.isArray(cartItems)) {
-      const discountId = discountInfo?.idDiscount || null;
-      const discountAmount = discountInfo?.calculatedDiscount || 0;
+      // Check and process discount information
+      let discountId = null;
+      let discountAmount = 0;
+
+      if (DiscountInfo) {
+        // Ensure discountId is a number
+        discountId = DiscountInfo.idDiscount
+          ? parseInt(String(DiscountInfo.idDiscount), 10)
+          : null;
+        discountAmount = DiscountInfo.calculatedDiscount || 0;
+
+        console.log(
+          "Creating new order with discount ID:",
+          discountId,
+          "type:",
+          typeof discountId
+        );
+      }
 
       return await processOrder(
         cartItems,
         paymentMethod,
         userId,
-        session.name,
+        session.name || "",
         undefined,
         discountId,
         discountAmount
@@ -370,13 +472,13 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json(
-      { error: "Thông số yêu cầu không hợp lệ" },
+      { error: "Invalid request parameters" },
       { status: 400 }
     );
   } catch (error) {
     console.error("Payment error:", error);
     return NextResponse.json(
-      { error: "Lỗi nội bộ trong quá trình xử lý thanh toán" },
+      { error: "Internal error during payment processing" },
       { status: 500 }
     );
   }
@@ -389,38 +491,61 @@ async function processOrder(
   customerName: string,
   stripeSessionId?: string,
   discountId?: number | null,
-  discountAmount: number = 0
-): Promise<NextResponse> {
+  discountAmount: number = 0,
+  finalTotal?: number | null
+) {
   if (!Array.isArray(cartItems)) {
-    return NextResponse.json(
-      { error: "Dữ liệu giỏ hàng không hợp lệ" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Invalid cart data" }, { status: 400 });
   }
 
   try {
+    // Debug logging
+    console.log(
+      "processOrder - discountId:",
+      discountId,
+      "type:",
+      typeof discountId
+    );
+    console.log("processOrder - discountAmount:", discountAmount);
+
     const result = await prisma.$transaction<OrderData>(async (prisma) => {
       const cartItemsWithDetails = await getCartItemsWithDetails(
         prisma,
         cartItems
       );
 
-      // Calculate original total without discount
+      // Calculate totals
       const { totalAmount: originalTotal, totalQuantity } =
         calculateOrderTotals(cartItemsWithDetails);
 
-      // Calculate final total after applying discount
-      const finalTotal = Math.max(0, originalTotal - discountAmount);
+      console.log(
+        `Original total: ${originalTotal}, Discount: ${discountAmount}, Discount ID: ${discountId}`
+      );
 
-      // Create order with discount info and the final total (after discount)
+      // Use provided finalTotal if available, otherwise calculate it
+      const actualFinalTotal =
+        finalTotal !== null && finalTotal !== undefined
+          ? finalTotal
+          : Math.max(0, originalTotal - discountAmount);
+
+      console.log(`Final amount: ${actualFinalTotal}`);
+
+      // Create order with discounted total and save discount information
       const order = await createOrder(
         prisma,
         userId,
-        finalTotal, // Save the final total after discount
+        actualFinalTotal,
         totalQuantity,
         discountId,
-        discountAmount // Save the discount amount
+        discountAmount
       );
+
+      console.log("Order created:", {
+        iddonhang: order.iddonhang,
+        tongsotien: order.tongsotien,
+        idDiscount: order.idDiscount,
+        discountValue: order.discountValue,
+      });
 
       const orderDetails = await createOrderDetails(
         prisma,
@@ -435,41 +560,49 @@ async function processOrder(
         userId
       );
 
-      // Create payment record with the final total (after discount)
+      // Create payment record with discounted total
+      const paymentStatus =
+        paymentMethod === "stripe" && stripeSessionId
+          ? `STRIPE:${stripeSessionId}`
+          : "Awaiting payment";
+
       const payment = await prisma.thanhtoan.create({
         data: {
           iddonhang: order.iddonhang,
           phuongthucthanhtoan: paymentMethod,
-          sotien: finalTotal, // Use the discounted amount
-          trangthai: stripeSessionId
-            ? `STRIPE:${stripeSessionId}`
-            : "Chờ thanh toán",
+          sotien: actualFinalTotal, // Use discounted amount
+          trangthai: paymentStatus,
           ngaythanhtoan: new Date(),
         },
       });
 
-      // Increment the used count of the discount code if applicable
-      if (discountId) {
-        await prisma.discountCode.update({
-          where: { idDiscount: discountId },
-          data: { usedCount: { increment: 1 } },
-        });
+      // Update discount usage count if applicable
+      if (discountId !== null && discountId !== undefined && discountId > 0) {
+        try {
+          await prisma.discountCode.update({
+            where: { idDiscount: discountId },
+            data: { usedCount: { increment: 1 } },
+          });
+          console.log(`Updated usage count for discount ID: ${discountId}`);
+        } catch (error) {
+          console.error(`Error updating discount usage count:`, error);
+        }
       }
 
       await clearCart(prisma, cartItems);
 
-      // Create notification with discount info
-      let notificationMessage = `Đơn hàng #${order.iddonhang} đã được tạo thành công`;
-      if (discountId && discountAmount > 0) {
-        notificationMessage += ` với giảm giá ${formatCurrency(
-          discountAmount
-        )}`;
-      }
+      // Create notification with discount information
+      const discountText =
+        discountAmount > 0
+          ? ` with discount ${formatCurrency(discountAmount)}`
+          : "";
+
+      const notificationMessage = `Order #${order.iddonhang} has been created successfully${discountText}`;
 
       const notification = await prisma.notification.create({
         data: {
           idUsers: userId,
-          title: "Đơn hàng mới",
+          title: "New Order",
           message: notificationMessage,
           type: "order",
           idDonhang: order.iddonhang,
@@ -497,33 +630,15 @@ async function processOrder(
       );
     }
 
-    // Get order and discount details for response
-    const order = result.orders[0];
-    const discountValue = order.discountValue || 0;
-
-    // Calculate total before discount (needed for display)
-    const originalTotal = Number(order.tongsotien) + Number(discountValue);
-
-    const successMessage =
-      discountValue > 0
-        ? `Đơn hàng đã được tạo với giảm giá ${formatCurrency(
-            Number(discountValue)
-          )}. ${
-            paymentMethod === "online"
-              ? "Vui lòng tiếp tục để tải lên chứng từ thanh toán."
-              : ""
-          }`
-        : paymentMethod === "online"
-        ? "Đơn hàng đã được tạo. Vui lòng tiếp tục để tải lên chứng từ thanh toán."
-        : "Đơn hàng đã được tạo thành công.";
-
     return NextResponse.json({
       success: true,
       data: result,
-      message: successMessage,
-      originalTotal: originalTotal, // Original total before discount
-      discountAmount: Number(order.discountValue || 0), // Discount amount
-      finalTotal: order.tongsotien, // Final amount after discount
+      message: "Order created successfully",
+      originalTotal:
+        Number(result.orders[0].tongsotien) +
+        Number(result.orders[0].discountValue || 0),
+      discountAmount: Number(result.orders[0].discountValue || 0),
+      finalTotal: Number(result.orders[0].tongsotien),
     });
   } catch (error) {
     return handleProcessOrderError(error);
@@ -538,7 +653,7 @@ async function getCartItemsWithDetails(prisma: any, cartItems: CartItem[]) {
       });
 
       if (!product) {
-        throw new Error(`Không tìm thấy sản phẩm có ID ${item.idsanpham}`);
+        throw new Error(`Product with ID ${item.idsanpham} not found`);
       }
 
       return { ...item, sanpham: product };
@@ -563,17 +678,56 @@ async function createOrder(
   discountId: number | null = null,
   discountValue: number = 0
 ) {
-  return await prisma.donhang.create({
-    data: {
+  // Ensure proper handling of discountId format
+  let finalDiscountId: number | null = null;
+
+  // Process discountId
+  if (discountId !== null && discountId !== undefined) {
+    // Convert to number if needed
+    const parsedId =
+      typeof discountId === "string" ? parseInt(discountId, 10) : discountId;
+    // Only use if it's a valid number greater than 0
+    finalDiscountId = !isNaN(parsedId) && parsedId > 0 ? parsedId : null;
+  }
+
+  console.log("createOrder - Prepared params:", {
+    userId: userId,
+    finalAmount: finalAmount,
+    totalQuantity: totalQuantity,
+    originalDiscountId: discountId,
+    finalDiscountId: finalDiscountId,
+    discountValue: discountValue,
+  });
+
+  try {
+    // Create order with properly processed fields
+    const orderData = {
       idUsers: userId,
       ngaydat: new Date(),
-      trangthai: "Chờ thanh toán",
-      tongsotien: finalAmount, // This is the final amount after discount
+      trangthai: "Awaiting payment",
+      tongsotien: finalAmount,
       tongsoluong: totalQuantity,
-      idDiscount: discountId || null,
-      discountValue: discountValue ? new Prisma.Decimal(discountValue) : null,
-    },
-  });
+      idDiscount: finalDiscountId,
+      discountValue: discountValue,
+    };
+
+    console.log("createOrder - Order data prepared:", orderData);
+
+    const order = await prisma.donhang.create({
+      data: orderData,
+    });
+
+    console.log("createOrder - Order created successfully:", {
+      iddonhang: order.iddonhang,
+      idDiscount: order.idDiscount,
+      discountValue: order.discountValue,
+    });
+
+    return order;
+  } catch (error) {
+    console.error("createOrder - Error creating order:", error);
+    throw error;
+  }
 }
 
 async function createOrderDetails(
@@ -611,7 +765,7 @@ async function createDeliverySchedules(
         idsanpham: item.idsanpham,
         idKhachHang: userId,
         NgayGiao: calculateDeliveryDate(),
-        TrangThai: "Chờ giao",
+        TrangThai: "Awaiting delivery",
       },
     });
     deliverySchedules.push(deliverySchedule);
@@ -628,7 +782,7 @@ async function clearCart(prisma: any, cartItems: CartItem[]) {
         });
       } catch (err) {
         console.warn(
-          `Mặt hàng có idgiohang ${item.idgiohang} có thể đã bị xóa rồi`
+          `Item with idgiohang ${item.idgiohang} may have already been deleted`
         );
       }
     }
@@ -661,11 +815,11 @@ function calculateDeliveryDate(): Date {
 function handleProcessOrderError(error: any) {
   console.error("Transaction error:", error);
 
-  let errorMessage = "Lỗi xử lý đơn hàng";
+  let errorMessage = "Error processing order";
   let errorDetails = "";
 
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
-    errorMessage = `Lỗi cơ sở dữ liệu: ${error.message}`;
+    errorMessage = `Database error: ${error.message}`;
     errorDetails = JSON.stringify({
       code: error.code,
       meta: error.meta,
@@ -709,14 +863,14 @@ export async function GET(req: Request) {
         },
         thanhtoan: true,
         lichgiaohang: true,
-        discount: true,
+        discount: true, // Ensure discount information is retrieved
       },
       orderBy: { ngaydat: "desc" },
     });
 
     return NextResponse.json({ success: true, data: orders });
   } catch (error) {
-    console.error("Error fetching orders:", error);
+    console.error("Error retrieving orders:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }

@@ -24,6 +24,21 @@ interface NhaCungCap {
   trangthai: boolean;
 }
 
+// Thêm interface để định nghĩa kiểu cho dữ liệu nhập từ Excel
+interface ExcelImportItem {
+  [key: string]: string | boolean;
+  tennhacungcap: string;
+  sodienthoai: string;
+  diachi: string;
+  email: string;
+  trangthai: boolean;
+}
+
+// Định nghĩa kiểu cho lỗi
+interface ApiError extends Error {
+  message: string;
+}
+
 interface ExportButtonsProps {
   data: NhaCungCap[];
   selectedItems: number[];
@@ -567,59 +582,72 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
         defval: "",
       });
 
-      const formattedData = jsonData.map((item: any) => {
-        const tennhacungcap = (
-          item["Tên nhà cung cấp"] ||
-          item["TÊN NHÀ CUNG CẤP"] ||
-          item["tennhacungcap"] ||
-          item["TENNHACUNGCAP"] ||
-          item["Tên Nhà Cung Cấp"] ||
-          ""
-        ).trim();
+      // Định nghĩa kiểu dữ liệu cho dữ liệu trong Excel
+      // Định nghĩa kiểu dữ liệu cho dữ liệu trong Excel
+      const formattedData = (jsonData as ExcelImportItem[]).map((item) => {
+        const tennhacungcap =
+          (typeof item["Tên nhà cung cấp"] === "string"
+            ? item["Tên nhà cung cấp"]
+            : ""
+          ).trim() ||
+          (typeof item["TÊN NHÀ CUNG CẤP"] === "string"
+            ? item["TÊN NHÀ CUNG CẤP"]
+            : "") ||
+          (typeof item["tennhacungcap"] === "string"
+            ? item["tennhacungcap"]
+            : "") ||
+          (typeof item["TENNHACUNGCAP"] === "string"
+            ? item["TENNHACUNGCAP"]
+            : "") ||
+          (typeof item["Tên Nhà Cung Cấp"] === "string"
+            ? item["Tên Nhà Cung Cấp"]
+            : "");
 
-        const sodienthoai = (
-          item["Số điện thoại"] ||
-          item["SỐ ĐIỆN THOẠI"] ||
-          item["sodienthoai"] ||
-          item["SODIENTHOAI"] ||
-          item["Số Điện Thoại"] ||
-          ""
-        ).trim();
+        const sodienthoai =
+          (typeof item["Số điện thoại"] === "string"
+            ? item["Số điện thoại"]
+            : ""
+          ).trim() ||
+          (typeof item["SỐ ĐIỆN THOẠI"] === "string"
+            ? item["SỐ ĐIỆN THOẠI"]
+            : "") ||
+          (typeof item["sodienthoai"] === "string"
+            ? item["sodienthoai"]
+            : "") ||
+          (typeof item["SODIENTHOAI"] === "string"
+            ? item["SODIENTHOAI"]
+            : "") ||
+          (typeof item["Số Điện Thoại"] === "string"
+            ? item["Số Điện Thoại"]
+            : "");
 
-        const diachi = (
-          item["Địa chỉ"] ||
-          item["ĐỊA CHỈ"] ||
-          item["diachi"] ||
-          item["DIACHI"] ||
-          item["Địa Chỉ"] ||
-          ""
-        ).trim();
+        const diachi =
+          (typeof item["Địa chỉ"] === "string" ? item["Địa chỉ"] : "").trim() ||
+          (typeof item["ĐỊA CHỈ"] === "string" ? item["ĐỊA CHỈ"] : "") ||
+          (typeof item["diachi"] === "string" ? item["diachi"] : "") ||
+          (typeof item["DIACHI"] === "string" ? item["DIACHI"] : "") ||
+          (typeof item["Địa Chỉ"] === "string" ? item["Địa Chỉ"] : "");
 
-        const email = (
-          item["Email"] ||
-          item["EMAIL"] ||
-          item["email"] ||
-          ""
-        ).trim();
+        const email =
+          (typeof item["Email"] === "string" ? item["Email"] : "").trim() ||
+          (typeof item["EMAIL"] === "string" ? item["EMAIL"] : "") ||
+          (typeof item["email"] === "string" ? item["email"] : "");
 
-        const trangthai = (
-          item["Trạng thái"] ||
-          item["TRẠNG THÁI"] ||
-          item["trangthai"] ||
-          item["TRANGTHAI"] ||
-          item["Trạng Thái"] ||
-          "Đang cung cấp"
-        ).trim();
+        const trangthai =
+          typeof item["Trạng thái"] === "string" ||
+          typeof item["Trạng thái"] === "boolean"
+            ? item["Trạng thái"] === "Đang cung cấp" ||
+              item["Trạng thái"] === "true" ||
+              item["Trạng thái"] === "True" ||
+              item["Trạng thái"] === true
+            : false;
 
         return {
           tennhacungcap,
           sodienthoai,
           diachi,
           email,
-          trangthai:
-            trangthai === "Đang cung cấp" ||
-            trangthai === "true" ||
-            trangthai === "True",
+          trangthai,
         };
       });
 
@@ -704,15 +732,22 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
         if (result.failedCount > 0) {
           console.info("Các bản ghi không thể nhập:", result.failedItems);
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Lỗi khi bulk insert:", error);
+
+        // Sử dụng type assertion một cách an toàn
+        let errorMessage = "Có lỗi xảy ra khi nhập dữ liệu";
+        if (error instanceof Error) {
+          errorMessage = error.message;
+        }
+
         toast({
           title: "Lỗi",
-          description: error.message || "Có lỗi xảy ra khi nhập dữ liệu",
+          description: errorMessage,
           variant: "destructive",
         });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Lỗi khi xử lý file:", error);
       toast({
         title: "Lỗi",

@@ -25,10 +25,8 @@ export const formatDate = (date: string | null | Date) => {
       month: "2-digit",
       year: "numeric",
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Invalid date:", date);
     return "Không xác định";
   }
 };
-
-

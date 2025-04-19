@@ -1,6 +1,8 @@
 import { getSession } from "@/lib/auth";
 import prisma from "@/prisma/client";
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
+import { pusherServer } from "@/lib/pusher";
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,7 +25,7 @@ export async function POST(request: NextRequest) {
 
     // Tính tổng số lượng và tổng số tiền từ danh sách chi tiết đơn hàng
     let tongsoluong = 0;
-    let originalTotal = 0; // Đổi tên biến từ tongsotien để rõ nghĩa hơn
+    let originalTotal = 0; // Tổng tiền gốc trước khi áp dụng giảm giá
 
     for (const item of chitietDonhang) {
       const { idsanpham, soluong } = item;
@@ -87,7 +89,9 @@ export async function POST(request: NextRequest) {
       ) {
         return NextResponse.json(
           {
-            error: `Giá trị đơn hàng phải tối thiểu ${discount.minOrderValue} để sử dụng mã giảm giá này.`,
+            error: `Giá trị đơn hàng phải tối thiểu ${formatCurrency(
+              Number(discount.minOrderValue)
+            )} để sử dụng mã giảm giá này.`,
           },
           { status: 400 }
         );
@@ -131,12 +135,12 @@ export async function POST(request: NextRequest) {
         trangthai,
         ngaydat: new Date().toISOString(),
         idDiscount,
-        discountValue, // Lưu giá trị giảm giá (số tiền được giảm)
+        discountValue: discountValue ? new Prisma.Decimal(discountValue) : null, // Lưu giá trị giảm giá (số tiền được giảm)
       },
     });
 
     // Tạo thông báo với thông tin giảm giá
-    await prisma.notification.create({
+    const notification = await prisma.notification.create({
       data: {
         idUsers,
         title: "Đơn hàng mới",
@@ -147,8 +151,19 @@ export async function POST(request: NextRequest) {
         }`,
         type: "order",
         idDonhang: newDonhang.iddonhang,
+        isRead: false,
+        createdAt: new Date(),
       },
     });
+
+    // Gửi thông báo realtime nếu có pusherServer
+    if (pusherServer) {
+      await pusherServer.trigger(
+        "notifications",
+        "new-notification",
+        notification
+      );
+    }
 
     // Thêm chi tiết đơn hàng
     const createdChitietDonhang = await Promise.all(
@@ -165,6 +180,22 @@ export async function POST(request: NextRequest) {
             idsanpham: item.idsanpham,
             soluong: item.soluong,
             dongia: sanpham ? Number(sanpham.gia) : item.dongia, // Use accurate price from DB or fallback to provided price
+            idSize: item.idSize || null, // Thêm size nếu có
+          },
+        });
+      })
+    );
+
+    // Tạo lịch giao hàng (nếu cần)
+    const deliverySchedules = await Promise.all(
+      chitietDonhang.map(async (item: any) => {
+        return await prisma.lichGiaoHang.create({
+          data: {
+            iddonhang: newDonhang.iddonhang,
+            idsanpham: item.idsanpham,
+            idKhachHang: idUsers,
+            NgayGiao: calculateDeliveryDate(),
+            TrangThai: "Chờ giao",
           },
         });
       })
@@ -173,8 +204,10 @@ export async function POST(request: NextRequest) {
     // Trả về thông tin đơn hàng và các chi tiết đã thêm
     return NextResponse.json(
       {
+        success: true,
         donhang: newDonhang,
         chitietDonhang: createdChitietDonhang,
+        lichGiaoHang: deliverySchedules,
         discountApplied:
           discountValue > 0
             ? {
@@ -188,7 +221,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Error creating Donhang:", error);
+    console.error("Error creating order:", error);
     return NextResponse.json(
       { error: "Lỗi khi tạo đơn hàng." },
       { status: 500 }
@@ -204,13 +237,37 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
+// Hàm tính ngày giao hàng dự kiến
+function calculateDeliveryDate(): Date {
+  const orderDate = new Date();
+  const earliestDeliveryDate = new Date(orderDate);
+  earliestDeliveryDate.setDate(orderDate.getDate() + 3);
+
+  const maxDeliveryDate = new Date(orderDate);
+  maxDeliveryDate.setDate(orderDate.getDate() + 6);
+
+  const deliveryDate = new Date(
+    earliestDeliveryDate.getTime() +
+      Math.random() *
+        (maxDeliveryDate.getTime() - earliestDeliveryDate.getTime())
+  );
+
+  deliveryDate.setHours(
+    8 + Math.floor(Math.random() * 10),
+    Math.floor(Math.random() * 60),
+    0,
+    0
+  );
+  return deliveryDate;
+}
+
 // GET and DELETE methods remain unchanged
 export async function GET(request: NextRequest) {
   try {
     const session = await getSession(request);
     const donhang = await prisma.donhang.findMany({
       where: {
-        idUsers: session.idUsers,
+        idUsers: session?.idUsers,
       },
       include: {
         chitietdonhang: {
@@ -238,6 +295,7 @@ export async function GET(request: NextRequest) {
             TrangThai: true,
           },
         },
+        thanhtoan: true, // Thêm thông tin thanh toán
       },
       orderBy: {
         ngaydat: "desc",

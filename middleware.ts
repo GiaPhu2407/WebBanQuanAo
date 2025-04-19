@@ -10,9 +10,12 @@ export async function middleware(request: NextRequest) {
     "/Show",
     "/Admin",
     "/component/Category",
+    "/component/shopping",
+    "/component/Order",
     "/Login",
     "/Register",
     "/ForgotPassword",
+    "/Staff",
     "/unauthorized",
   ];
   const isPublicPath = publicPaths.some(

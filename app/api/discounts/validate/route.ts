@@ -6,15 +6,7 @@ export async function POST(request: NextRequest) {
     const { code, orderTotal } = await request.json();
     const currentDate = new Date();
 
-    if (!code) {
-      return NextResponse.json(
-        { error: "Vui lòng cung cấp mã giảm giá" },
-        { status: 400 }
-      );
-    }
-
-    // Tìm mã giảm giá
-    const discount = await prisma.discountCode.findUnique({
+    const discount = await prisma.discountCode.findFirst({
       where: {
         code,
         isActive: true,
@@ -23,7 +15,6 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Nếu không tìm thấy mã giảm giá hoặc không còn hoạt động
     if (!discount) {
       return NextResponse.json(
         { error: "Mã giảm giá không hợp lệ hoặc đã hết hạn" },
@@ -31,56 +22,53 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Kiểm tra giới hạn sử dụng
-    if (
-      discount.usageLimit !== null &&
-      discount.usedCount >= discount.usageLimit
-    ) {
+    if (discount.usageLimit && discount.usedCount >= discount.usageLimit) {
       return NextResponse.json(
-        { error: "Mã giảm giá đã đạt giới hạn sử dụng" },
+        { error: "Mã giảm giá đã hết lượt sử dụng" },
         { status: 400 }
       );
     }
 
-    // Kiểm tra giá trị đơn hàng tối thiểu
     if (discount.minOrderValue && orderTotal < Number(discount.minOrderValue)) {
       return NextResponse.json(
-        {
-          error: `Giá trị đơn hàng phải tối thiểu ${discount.minOrderValue} để sử dụng mã giảm giá này`,
-          minOrderValue: discount.minOrderValue,
-        },
+        { error: `Giá trị đơn hàng tối thiểu ${discount.minOrderValue}đ` },
         { status: 400 }
       );
     }
 
-    // Tính giá trị giảm giá
-    let discountAmount = 0;
+    let calculatedDiscount = 0;
     if (discount.discountType === "PERCENTAGE") {
-      discountAmount = (orderTotal * Number(discount.value)) / 100;
+      calculatedDiscount = (orderTotal * Number(discount.value)) / 100;
       if (discount.maxDiscount) {
-        discountAmount = Math.min(discountAmount, Number(discount.maxDiscount));
+        calculatedDiscount = Math.min(
+          calculatedDiscount,
+          Number(discount.maxDiscount)
+        );
       }
     } else {
-      discountAmount = Number(discount.value);
+      calculatedDiscount = Number(discount.value);
     }
 
-    // Trả về thông tin mã giảm giá và giá trị đã tính
+    // Format the response to match the expected structure
+    const formattedDiscount = {
+      idDiscount: discount.idDiscount,
+      code: discount.code,
+      discountType: discount.discountType,
+      value: Number(discount.value),
+      calculatedDiscount: calculatedDiscount,
+      maxDiscount: discount.maxDiscount ? Number(discount.maxDiscount) : null,
+    };
+
+    console.log("Sending discount response:", formattedDiscount);
+
     return NextResponse.json({
       success: true,
-      discount: {
-        idDiscount: discount.idDiscount,
-        code: discount.code,
-        description: discount.description,
-        discountType: discount.discountType,
-        value: discount.value,
-        calculatedDiscount: discountAmount,
-        finalPrice: orderTotal - discountAmount,
-      },
+      discount: formattedDiscount,
     });
   } catch (error) {
     console.error("Error validating discount:", error);
     return NextResponse.json(
-      { error: "Lỗi khi xác thực mã giảm giá" },
+      { error: "Error validating discount" },
       { status: 500 }
     );
   }

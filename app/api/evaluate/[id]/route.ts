@@ -1,7 +1,6 @@
-// app/api/evaluate/[id]/route.ts
-import prisma from "@/prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import prisma from "@/prisma/client";
 
 // PUT handler for updating reviews
 export async function PUT(
@@ -33,7 +32,7 @@ export async function PUT(
       noidung: z
         .string()
         .min(1, { message: "Nội dung đánh giá không được để trống" })
-        .max(45, { message: "Nội dung đánh giá tối đa 45 ký tự" }),
+        .max(256, { message: "Nội dung đánh giá tối đa 256 ký tự" }),
     });
 
     const validationResult = UpdateSchema.safeParse({
@@ -55,6 +54,21 @@ export async function PUT(
         sao: body.sao,
         noidung: body.noidung,
         ngaydanhgia: new Date(),
+      },
+      include: {
+        users: {
+          select: {
+            Tentaikhoan: true,
+            Hoten: true,
+            // Avatar: true,
+          },
+        },
+        sanpham: {
+          select: {
+            tensanpham: true,
+            hinhanh: true,
+          },
+        },
       },
     });
 

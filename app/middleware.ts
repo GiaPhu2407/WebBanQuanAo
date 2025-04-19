@@ -79,44 +79,44 @@
 //   matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 // };
 
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { getSession } from "@/lib/auth";
+// import { NextResponse } from "next/server";
+// import type { NextRequest } from "next/server";
+// import { getSession } from "@/lib/auth";
 
-export async function middleware(request: NextRequest) {
-  const session = await getSession(request);
-  const publicPaths = ["/"];
-  const isPublicPath = publicPaths.includes(request.nextUrl.pathname);
+// export async function middleware(request: NextRequest) {
+//   const session = await getSession(request);
+//   const publicPaths = ["/"];
+//   const isPublicPath = publicPaths.includes(request.nextUrl.pathname);
 
-  // Cho phép truy cập trang chủ mà không cần xác thực
-  if (isPublicPath) {
-    return NextResponse.next();
-  }
+//   // Cho phép truy cập trang chủ mà không cần xác thực
+//   if (isPublicPath) {
+//     return NextResponse.next();
+//   }
 
-  // Đường dẫn bảo vệ: /Show hoặc /Admin
-  if (
-    !session &&
-    (request.nextUrl.pathname.startsWith("/Show") ||
-      request.nextUrl.pathname.startsWith("/Admin"))
-  ) {
-    // Lưu trữ URL ban đầu để chuyển hướng sau khi đăng nhập
-    const url = request.nextUrl.clone();
-    url.pathname = "/Login";
-    url.searchParams.set("redirect", request.nextUrl.pathname);
-    return NextResponse.rewrite(url);
-  }
+//   // Đường dẫn bảo vệ: /Show hoặc /Admin
+//   if (
+//     !session &&
+//     (request.nextUrl.pathname.startsWith("/Show") ||
+//       request.nextUrl.pathname.startsWith("/Admin"))
+//   ) {
+//     // Lưu trữ URL ban đầu để chuyển hướng sau khi đăng nhập
+//     const url = request.nextUrl.clone();
+//     url.pathname = "/Login";
+//     url.searchParams.set("redirect", request.nextUrl.pathname);
+//     return NextResponse.rewrite(url);
+//   }
 
-  // Đường dẫn chỉ dành cho quản trị viên
-  if (
-    request.nextUrl.pathname.startsWith("/Admin") &&
-    session?.role !== "Admin"
-  ) {
-    return NextResponse.redirect(new URL("/Login", request.url));
-  }
+//   // Đường dẫn chỉ dành cho quản trị viên
+//   if (
+//     request.nextUrl.pathname.startsWith("/Admin") &&
+//     session?.role !== "Admin"
+//   ) {
+//     return NextResponse.redirect(new URL("/Login", request.url));
+//   }
 
-  return NextResponse.next();
-}
+//   return NextResponse.next();
+// }
 
-export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
-};
+// export const config = {
+//   matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+// };

@@ -296,13 +296,13 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
           <div className="p-4">
             <CardItem translateZ={15}>
-              <h3 className="text-sm font-medium text-gray-900 mb-2 line-clamp-2">
+              <h3 className="text-2xl font-medium text-gray-900 mb-2 line-clamp-2">
                 {product.tensanpham}
               </h3>
             </CardItem>
 
             <CardItem translateZ={15} className="flex items-center gap-2 mb-3">
-              <span className="text-sm font-semibold text-gray-900">
+              <span className="text-xl font-semibold text-red-600">
                 {new Intl.NumberFormat("vi-VN", {
                   style: "currency",
                   currency: "VND",
@@ -316,6 +316,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
                   }).format(product.gia)}
                 </span>
               )}
+            </CardItem>
+            <CardItem translateZ={15}>
+              <h3 className="text-sm  mb-2 line-clamp-2">
+                {product.mota}
+              </h3>
             </CardItem>
 
             {product.ProductColors && product.ProductColors.length > 0 && (
@@ -342,7 +347,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
               </CardItem>
             )}
 
-            <CardItem
+            {/* <CardItem
               translateZ={25}
               className="flex flex-row gap-1 w-full mt-4"
             >
@@ -360,7 +365,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
               >
                 Chi Tiết
               </Link>
-            </CardItem>
+            </CardItem> */}
 
             {/* Views counter */}
             <CardItem translateZ={15} className="mt-3 text-xs text-gray-500">

@@ -20,6 +20,7 @@ import {
   X,
   ChevronRight,
   ChevronLeft,
+  Star,
 } from "lucide-react";
 import Menu from "./HeaderDashboard";
 
@@ -45,6 +46,10 @@ interface OpenSections {
   customers: boolean;
   orders: boolean;
   staff: boolean;
+}
+
+interface SalesDashboardProps {
+  onSidebarToggle?: (expanded: boolean) => void;
 }
 
 // Sidebar Section Component
@@ -103,7 +108,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
   );
 };
 
-const SalesDashboard: React.FC = () => {
+const SalesDashboard: React.FC<SalesDashboardProps> = ({ onSidebarToggle }) => {
   const router = useRouter();
   const [openSections, setOpenSections] = useState<OpenSections>({
     products: false,
@@ -119,7 +124,19 @@ const SalesDashboard: React.FC = () => {
   };
 
   const toggleSidebarExpansion = () => {
-    setSidebarExpanded(!sidebarExpanded);
+    const newExpandedState = !sidebarExpanded;
+    setSidebarExpanded(newExpandedState);
+
+    // Notify parent component about sidebar state changes
+    if (onSidebarToggle) {
+      onSidebarToggle(newExpandedState);
+    }
+
+    // Dispatch a custom event for components that aren't directly connected
+    const event = new CustomEvent("sidebarToggle", {
+      detail: { expanded: newExpandedState },
+    });
+    window.dispatchEvent(event);
   };
 
   const toggleSection = (section: keyof OpenSections) => {
@@ -140,8 +157,15 @@ const SalesDashboard: React.FC = () => {
     };
   }, []);
 
+  // Notify parent about initial state when component mounts
+  useEffect(() => {
+    if (onSidebarToggle) {
+      onSidebarToggle(sidebarExpanded);
+    }
+  }, []);
+
   return (
-    <div className="flex  bg-gray-100">
+    <div className="flex bg-gray-100">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50">
         <Menu />
@@ -207,6 +231,12 @@ const SalesDashboard: React.FC = () => {
               onClick={() => router.push("/Admin/DashBoard/ManagerImage")}
               isExpanded={sidebarExpanded}
             />
+            <SidebarItem
+              icon={<Award size={18} />}
+              label="Đánh giá"
+              onClick={() => router.push("/Admin/DashBoard/ReviewManagement")}
+              isExpanded={sidebarExpanded}
+            />
           </SidebarSection>
 
           {/* Customer Management Section */}
@@ -230,10 +260,10 @@ const SalesDashboard: React.FC = () => {
               isExpanded={sidebarExpanded}
             />
             <SidebarItem
-              icon={<Heart size={18} />}
-              label="Yêu thích"
-              onClick={() => router.push("/wishlist")}
-              isExpanded={sidebarExpanded}
+              icon={<Star size={18} />}
+              label="Đánh giá"
+              onClick={() => router.push("/Admin/ManagerEvaluate")}
+              isExpanded={true}
             />
           </SidebarSection>
 
@@ -343,6 +373,14 @@ const SalesDashboard: React.FC = () => {
                   onClick={() => router.push("/Admin/DashBoard/ManagerUser")}
                   isExpanded={true}
                 />
+                <SidebarItem
+                  icon={<Award size={18} />}
+                  label="Đánh giá"
+                  onClick={() =>
+                    router.push("/Admin/DashBoard/ReviewManagement")
+                  }
+                  isExpanded={true}
+                />
               </SidebarSection>
 
               {/* Mobile Customer Management Section */}
@@ -367,8 +405,8 @@ const SalesDashboard: React.FC = () => {
                 />
                 <SidebarItem
                   icon={<Heart size={18} />}
-                  label="Yêu thích"
-                  onClick={() => router.push("/wishlist")}
+                  label="Đánh giá"
+                  onClick={() => router.push("/Admin/ManagerEvaluate")}
                   isExpanded={true}
                 />
               </SidebarSection>
@@ -405,14 +443,7 @@ const SalesDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Main Content */}
-      <main
-        className={`flex-1 pt-14 transition-all duration-300 ease-in-out ${
-          sidebarExpanded ? "md:ml-64" : "md:ml-16"
-        }`}
-      >
-        {/* Content will be rendered here */}
-      </main>
+      {/* Main Content - We don't need this in the component version as it will be provided by the parent */}
     </div>
   );
 };

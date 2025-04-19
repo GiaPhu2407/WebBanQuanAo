@@ -5,7 +5,7 @@ export async function GET() {
   try {
     const donhang = await prisma.donhang.count({
       where: {
-        trangthai: "Chờ xác nhận",
+        trangthai: "Chờ thanh toán",
       },
     });
     return NextResponse.json(donhang);

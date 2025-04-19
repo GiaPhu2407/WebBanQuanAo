@@ -16,6 +16,16 @@ import CartSummary from "./cart/Cartsummary";
 // Import the OrderDetails type from OnlinePayment
 import { OrderDetails as OnlinePaymentOrderDetails } from "@/app/component/OnlinePayment";
 
+// Discount info interface
+interface DiscountInfo {
+  idDiscount: number;
+  code: string;
+  discountType: string;
+  value: number;
+  calculatedDiscount: number;
+  maxDiscount?: number | null;
+}
+
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 );
@@ -32,6 +42,9 @@ export const ShoppingCart = () => {
   const [showOnlinePayment, setShowOnlinePayment] = useState(false);
   const [orderDetails, setOrderDetails] =
     useState<OnlinePaymentOrderDetails | null>(null);
+  const [appliedDiscount, setAppliedDiscount] = useState<DiscountInfo | null>(
+    null
+  );
   const router = useRouter();
 
   useEffect(() => {
@@ -175,6 +188,12 @@ export const ShoppingCart = () => {
       }, 0);
   };
 
+  const calculateFinalTotal = () => {
+    const subtotal = calculateTotal();
+    const discountAmount = appliedDiscount?.calculatedDiscount || 0;
+    return subtotal - discountAmount;
+  };
+
   const validateAmount = (total: number) => {
     return total <= 200000000;
   };
@@ -187,8 +206,12 @@ export const ShoppingCart = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           cartItems: selectedItems,
+          DiscountInfo: appliedDiscount,
           metadata: {
             cartItems: JSON.stringify(selectedItems),
+            discountInfo: appliedDiscount
+              ? JSON.stringify(appliedDiscount)
+              : null,
           },
         }),
       });
@@ -207,6 +230,11 @@ export const ShoppingCart = () => {
     }
   };
 
+  const handleAppliedDiscount = (discountInfo: DiscountInfo | null) => {
+    console.log("Discount applied:", discountInfo);
+    setAppliedDiscount(discountInfo);
+  };
+
   const handleCheckout = async () => {
     if (!paymentMethod) {
       toast.error("Vui lòng chọn phương thức thanh toán");
@@ -219,8 +247,8 @@ export const ShoppingCart = () => {
       return;
     }
 
-    const total = calculateTotal();
-    if (paymentMethod === "STRIPE" && !validateAmount(total)) {
+    const total = calculateFinalTotal();
+    if (paymentMethod === "stripe" && !validateAmount(total)) {
       toast.error("Giá trị đơn hàng vượt quá 200 triệu VND");
       return;
     }
@@ -228,19 +256,28 @@ export const ShoppingCart = () => {
     setProcessing(true);
 
     try {
-      if (paymentMethod === "STRIPE") {
+      if (paymentMethod === "stripe") {
         await handleStripePayment();
         return;
       }
 
       // Tạo đơn hàng
+      const requestBody = {
+        cartItems: selectedItems,
+        paymentMethod: paymentMethod,
+      };
+
+      // Add discount information if available
+      if (appliedDiscount) {
+        Object.assign(requestBody, { DiscountInfo: appliedDiscount });
+      }
+
+      console.log("Sending request with data:", requestBody);
+
       const response = await fetch("/api/thanhtoan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          cartItems: selectedItems,
-          paymentMethod: paymentMethod,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -256,24 +293,33 @@ export const ShoppingCart = () => {
       const orderData = result.data;
       const orderId = orderData.orders[0].iddonhang;
 
+      // Trong phương thức handleCheckout của ShoppingCart
       if (paymentMethod === "online") {
         // Convert CartItems to OrderItems expected by OnlinePayment
-        // Making sure all required fields are properly set and not null
-        // In ShoppingCart.tsx, in the handleCheckout function
         const convertedItems = selectedItems
-          .filter((item) => item.sanpham !== null) // Filter out items with null sanpham
+          .filter((item) => item.sanpham !== null)
           .map((item) => {
             return {
               ...item,
               size: item.size || { idSize: 0, tenSize: "" },
             };
           });
-        // Create orderDetails with the correctly formatted items
+
+        // Create orderDetails with discount information
+        const orderTotal = calculateTotal(); // Tổng tiền gốc
+
         setOrderDetails({
           items: convertedItems,
-          total: total,
+          total: orderTotal, // Tổng tiền gốc trước khi giảm giá
           orderId: orderId,
+          discountInfo: appliedDiscount
+            ? {
+                code: appliedDiscount.code,
+                calculatedDiscount: appliedDiscount.calculatedDiscount,
+              }
+            : undefined,
         });
+
         setShowOnlinePayment(true);
       } else {
         // Thanh toán tiền mặt
@@ -311,7 +357,6 @@ export const ShoppingCart = () => {
           setShowOnlinePayment(false);
           router.push("/component/Order");
         }}
-        // Remove the onCancel prop as it doesn't exist in the OnlinePayment component
       />
     );
   }
@@ -387,6 +432,7 @@ export const ShoppingCart = () => {
                 onPaymentMethodChange={setPaymentMethod}
                 onCheckout={handleCheckout}
                 processing={processing}
+                onApplyDiscount={handleAppliedDiscount}
               />
             </div>
 
@@ -404,7 +450,7 @@ export const ShoppingCart = () => {
                 }}
               >
                 <CheckoutForm
-                  amount={calculateTotal()}
+                  amount={calculateFinalTotal()}
                   onSuccess={() => {
                     setShowStripeForm(false);
                     router.push("/success");
