@@ -1,13 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Product, Size } from "@/app/Admin/type/product";
 import { FileUpload } from "@/components/ui/file-upload";
 import { ProductColorSelector } from "./ProductColor";
-  
-import ReactQuill from "react-quill";
-import "react-quill/dist/quill.snow.css";
 import { ProductSchedule } from "./ProductSchedule";
+import { Textarea } from "@/components/ui/textarea";
 
 interface ProductFormProps {
   product?: Product;
@@ -38,6 +36,39 @@ export function ProductForm({
   releaseDate,
   onReleaseDateChange,
 }: ProductFormProps) {
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Initialize form data with product data when editing
+  useEffect(() => {
+    if (product) {
+      setFormData({
+        ...formData,
+        tensanpham: product.tensanpham,
+        gia: product.gia,
+        mota: product.mota,
+        idloaisanpham: product.idloaisanpham,
+        giamgia: product.giamgia,
+        gioitinh: product.gioitinh,
+        hinhanh: product.hinhanh,
+        productSizes: product.ProductSizes?.reduce((acc: any, size: any) => {
+          acc[size.idSize] = size.soluong;
+          return acc;
+        }, {}),
+      });
+
+      // Convert UTC date to local date for editing
+      if (product.releaseDate) {
+        const date = new Date(product.releaseDate);
+        date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
+        onReleaseDateChange(date);
+      }
+    }
+  }, [product]);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -69,38 +100,6 @@ export function ProductForm({
     }));
   };
 
-  const handleColorAdd = (color: { idmausac: number; hinhanh: string }) => {
-    setFormData((prev: any) => ({
-      ...prev,
-      productColors: [...(prev.productColors || []), color],
-    }));
-  };
-
-  const handleColorRemove = (colorId: number) => {
-    setFormData((prev: any) => ({
-      ...prev,
-      productColors: prev.productColors.filter(
-        (c: any) => c.idmausac !== colorId
-      ),
-    }));
-  };
-
-  const handleColorImageChange = (colorId: number, imageUrl: string) => {
-    setFormData((prev: any) => ({
-      ...prev,
-      productColors: prev.productColors.map((c: any) =>
-        c.idmausac === colorId ? { ...c, hinhanh: imageUrl } : c
-      ),
-    }));
-  };
-
-  const handleDescriptionChange = (value: string) => {
-    setFormData((prev: any) => ({
-      ...prev,
-      mota: value,
-    }));
-  };
-
   return (
     <form
       onSubmit={(e) => {
@@ -115,11 +114,16 @@ export function ProductForm({
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Hình ảnh chính
             </label>
-            <FileUpload
-              value={imageUrl}
-              onChange={(url) => setImageUrl(url || "")}
-              onRemove={() => setImageUrl("")}
-            />
+            {isMounted && (
+              <FileUpload
+                value={imageUrl}
+                onChange={(url) => setImageUrl(url || "")}
+                onRemove={() => setImageUrl("")}
+              />
+            )}
+            {!isMounted && (
+              <div className="h-20 bg-gray-50 rounded-md border" />
+            )}
           </div>
 
           <div>
@@ -202,11 +206,14 @@ export function ProductForm({
             </select>
           </div>
 
-          <ProductSchedule
-            releaseDate={releaseDate}
-            onDateChange={onReleaseDateChange}
-            isEditing={!!product}
-          />
+          {isMounted && (
+            <ProductSchedule
+              releaseDate={releaseDate}
+              onDateChange={onReleaseDateChange}
+              isEditing={!!product}
+            />
+          )}
+          {!isMounted && <div className="h-10 bg-gray-50 rounded-md border" />}
         </div>
 
         <div className="space-y-4">
@@ -214,15 +221,17 @@ export function ProductForm({
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Mô tả
             </label>
-            <ReactQuill
+            <Textarea
+              name="mota"
               value={formData.mota || ""}
-              onChange={handleDescriptionChange}
-              theme="snow"
-              className="h-40"
+              onChange={handleChange}
+              rows={10}
+              className="w-full h-64 resize-none"
+              placeholder="Nhập mô tả sản phẩm"
             />
           </div>
 
-          <div className="mt-10">
+          <div className="mt-8">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Sizes và số lượng
             </label>

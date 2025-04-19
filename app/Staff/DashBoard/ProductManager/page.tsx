@@ -18,7 +18,8 @@ import ProductFilters from "./ProductFilter/ProductFilters";
 import ProductTable from "./ProductTable/ProductTables";
 import { ProductDialog } from "./components/form/ProductDialog";
 import ExportProductOptions from "./components/ExportProduct";
-import Menu from "@/app/Staff/DashBoard/Header";
+
+import StaffSidebar from "../component/StaffSidebar";
 
 export default function ProductManagementPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -273,6 +274,7 @@ export default function ProductManagementPage() {
   return (
     <div>
       <div className="flex">
+        {/* <StaffSidebar /> */}
         <div className="p-6 mt-16 w-full">
           <div className="mb-6">
             <div className="flex justify-between items-center mb-6">

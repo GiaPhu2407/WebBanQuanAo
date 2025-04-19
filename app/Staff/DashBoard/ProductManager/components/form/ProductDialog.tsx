@@ -8,7 +8,6 @@ import {
 import { Product, Size } from "@/app/Admin/type/product";
 import { ProductForm } from "./ProductBasic";
 
-
 interface ProductDialogProps {
   isOpen: boolean;
   onClose: () => void;

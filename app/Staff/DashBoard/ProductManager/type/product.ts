@@ -9,7 +9,6 @@ export interface Product {
   giamgia: number;
   gioitinh: boolean;
   trangthai?: boolean;
-  releaseDate: Date;
   loaisanpham?: {
     idloaisanpham: number;
     tenloai: string;
