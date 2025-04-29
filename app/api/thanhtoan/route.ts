@@ -1,9 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import prisma from "@/prisma/client";
 import Stripe from "stripe";
 import { Prisma } from "@prisma/client";
 import { pusherServer } from "@/lib/pusher";
+import {
+  sendOrderConfirmationEmail,
+  sendPaymentConfirmationEmail,
+} from "@/lib/emailOrder";
+import { request } from "http";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-01-27.acacia",
@@ -27,6 +32,7 @@ interface OrderData {
   payments: any[];
   deliverySchedules: any[];
   notification?: any;
+  adminNotification?: any;
 }
 
 // Discount information interface
@@ -39,7 +45,7 @@ interface DiscountInfo {
   maxDiscount?: number | null;
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const session = await getSession(req);
     if (!session) {
@@ -54,15 +60,52 @@ export async function POST(req: Request) {
       imageURL,
       orderId,
       DiscountInfo,
+      idDiaChi, // Added shipping address ID
     } = body;
 
     // Debug discount information
     console.log("API endpoint received discountInfo:", DiscountInfo);
+    console.log("API endpoint received shipping address ID:", idDiaChi);
 
     const userId =
       typeof session.idUsers === "string"
-        ? parseInt(session.idUsers, 10)
+        ? Number.parseInt(session.idUsers, 10)
         : session.idUsers;
+
+    // Verify address belongs to user before proceeding
+    if (idDiaChi) {
+      try {
+        const address = await prisma.diaChi.findUnique({
+          where: { idDiaChi: Number(idDiaChi) },
+        });
+
+        if (!address) {
+          return NextResponse.json(
+            { error: "Địa chỉ không tồn tại" },
+            { status: 404 }
+          );
+        }
+
+        if (address.idUsers !== userId) {
+          return NextResponse.json(
+            { error: "Bạn không có quyền sử dụng địa chỉ này" },
+            { status: 403 }
+          );
+        }
+      } catch (error) {
+        console.error("Error verifying address:", error);
+        return NextResponse.json(
+          { error: "Không thể xác minh địa chỉ giao hàng" },
+          { status: 500 }
+        );
+      }
+    } else if (!orderId) {
+      // Only require address for new orders, not for updating existing ones
+      return NextResponse.json(
+        { error: "Vui lòng chọn địa chỉ giao hàng" },
+        { status: 400 }
+      );
+    }
 
     // Handling Stripe payment initialization
     if (paymentMethod === "stripe" && !stripeSessionId && cartItems) {
@@ -139,6 +182,7 @@ export async function POST(req: Request) {
             discountAmount: discountAmount.toString(),
             originalTotal: originalTotal.toString(),
             finalTotal: finalTotal.toString(),
+            addressId: idDiaChi ? idDiaChi.toString() : "", // Include address ID in metadata
           },
         });
 
@@ -175,22 +219,51 @@ export async function POST(req: Request) {
         // Ensure proper conversion of discountId to number
         const discountId =
           session.metadata.discountId && session.metadata.discountId !== ""
-            ? parseInt(session.metadata.discountId, 10)
+            ? Number.parseInt(session.metadata.discountId, 10)
             : null;
 
         const discountAmount = session.metadata.discountAmount
-          ? parseFloat(session.metadata.discountAmount)
+          ? Number.parseFloat(session.metadata.discountAmount)
           : 0;
 
         const finalTotal = session.metadata.finalTotal
-          ? parseFloat(session.metadata.finalTotal)
+          ? Number.parseFloat(session.metadata.finalTotal)
+          : null;
+
+        // Get address ID from metadata
+        const addressId = session.metadata.addressId
+          ? Number.parseInt(session.metadata.addressId, 10)
           : null;
 
         console.log("Stripe session metadata:", {
           discountId,
           discountAmount,
           finalTotal,
+          addressId,
         });
+
+        // Create admin notification for Stripe payment
+        const adminNotification = await prisma.notification.create({
+          data: {
+            idUsers: 1, // Assuming admin ID is 1, adjust as needed
+            title: "Thanh toán Stripe mới",
+            message: `Khách hàng ${
+              session.customer_details?.name || userId
+            } đã hoàn tất thanh toán đơn hàng qua Stripe. Số tiền: ${formatCurrency(
+              Number.parseFloat(session.metadata.finalTotal || "0")
+            )}`,
+            type: "admin_payment",
+            isRead: false,
+            createdAt: new Date(),
+          },
+        });
+
+        // Send real-time notification to admin
+        await pusherServer.trigger(
+          "admin-notifications",
+          "new-notification",
+          adminNotification
+        );
 
         // Pass the final total from Stripe session to processOrder
         return await processOrder(
@@ -201,7 +274,8 @@ export async function POST(req: Request) {
           stripeSessionId,
           discountId,
           discountAmount,
-          finalTotal
+          finalTotal,
+          addressId // Pass address ID to processOrder
         );
       } catch (error) {
         console.error("Error completing Stripe payment:", error);
@@ -215,7 +289,7 @@ export async function POST(req: Request) {
     // Handle bank transfer payment with receipt
     if (paymentMethod === "online" && imageURL && orderId) {
       try {
-        const orderIdNumber = parseInt(orderId);
+        const orderIdNumber = Number.parseInt(orderId);
 
         // Get order information including discount info
         const order = await prisma.donhang.findUnique({
@@ -224,10 +298,12 @@ export async function POST(req: Request) {
             chitietdonhang: {
               include: {
                 sanpham: true,
+                size: true,
               },
             },
             thanhtoan: true,
             discount: true, // Add this to get discount information
+            diaChiGiaoHang: true,
           },
         });
 
@@ -239,9 +315,9 @@ export async function POST(req: Request) {
         }
 
         // Determine original total and discount values
-        let originalTotal = Number(order.tongsotien);
-        let discountAmount = Number(order.discountValue || 0);
-        let finalAmount = originalTotal;
+        const originalTotal = Number(order.tongsotien);
+        const discountAmount = Number(order.discountValue || 0);
+        const finalAmount = originalTotal;
 
         // If discount information exists, display it correctly
         if (order.discount) {
@@ -291,14 +367,14 @@ export async function POST(req: Request) {
         // Create notification with discount information if applicable
         const discountMessage =
           discountAmount > 0
-            ? ` (discounted ${formatCurrency(discountAmount)})`
+            ? ` (giảm giá ${formatCurrency(discountAmount)})`
             : "";
 
         const notification = await prisma.notification.create({
           data: {
             idUsers: userId,
-            title: "Bank Transfer Payment",
-            message: `Payment for order #${orderIdNumber}${discountMessage} has been submitted and is awaiting confirmation`,
+            title: "Thanh toán chuyển khoản",
+            message: `Thanh toán cho đơn hàng #${orderIdNumber}${discountMessage} đã được gửi và đang chờ xác nhận`,
             type: "payment",
             idDonhang: orderIdNumber,
             idThanhtoan: payment.idthanhtoan,
@@ -312,6 +388,127 @@ export async function POST(req: Request) {
           "new-notification",
           notification
         );
+
+        // Create admin notification for bank transfer payment
+        const adminNotification = await prisma.notification.create({
+          data: {
+            idUsers: 1, // Assuming admin ID is 1, adjust as needed
+            title: "Thanh toán chuyển khoản mới",
+            message: `Khách hàng ID: ${userId} đã gửi biên lai thanh toán cho đơn hàng #${orderIdNumber}${discountMessage}. Cần xác minh.`,
+            type: "admin_payment",
+            idDonhang: orderIdNumber,
+            idThanhtoan: payment.idthanhtoan,
+            isRead: false,
+            createdAt: new Date(),
+          },
+        });
+
+        await pusherServer.trigger(
+          "admin-notifications",
+          "new-notification",
+          adminNotification
+        );
+
+        // Get user email to send confirmation
+        const user = await prisma.users.findUnique({
+          where: { idUsers: userId },
+          select: { Email: true },
+        });
+
+        if (user?.Email) {
+          // Get order details for email
+          const orderWithDetails = await prisma.donhang.findUnique({
+            where: { iddonhang: orderIdNumber },
+            include: {
+              chitietdonhang: {
+                include: {
+                  sanpham: true,
+                  size: true,
+                },
+              },
+              discount: true,
+              diaChiGiaoHang: true,
+              thanhtoan: true,
+            },
+          });
+
+          if (orderWithDetails && orderWithDetails.diaChiGiaoHang) {
+            // Create a properly formatted shipping address
+            const shippingAddress = {
+              idDiaChi: orderWithDetails.diaChiGiaoHang.idDiaChi || 0,
+              tenNguoiNhan: orderWithDetails.diaChiGiaoHang.tenNguoiNhan || "",
+              soDienThoai: orderWithDetails.diaChiGiaoHang.soDienThoai || "",
+              diaChiChiTiet:
+                orderWithDetails.diaChiGiaoHang.diaChiChiTiet || "",
+              phuongXa: orderWithDetails.diaChiGiaoHang.phuongXa || "",
+              quanHuyen: orderWithDetails.diaChiGiaoHang.quanHuyen || "",
+              thanhPho: orderWithDetails.diaChiGiaoHang.thanhPho || "",
+            };
+
+            // Format the items with proper type conversion
+            const formattedItems = orderWithDetails.chitietdonhang.map(
+              (item) => ({
+                idsanpham: Number(item.idsanpham),
+                soluong: Number(item.soluong || 0),
+                dongia: Number(item.dongia),
+                sanpham: {
+                  Tensanpham:
+                    item.sanpham?.tensanpham || "Sản phẩm không xác định",
+                  hinhanh: item.sanpham?.hinhanh || "",
+                  gia: Number(item.sanpham?.gia || 0),
+                  giamgia: item.sanpham?.giamgia
+                    ? Number(item.sanpham.giamgia)
+                    : null,
+                },
+                size: item.size
+                  ? {
+                      idSize: item.size.idSize,
+                      tenSize: item.size.tenSize,
+                    }
+                  : null,
+              })
+            );
+
+            // Create the complete order details object with proper types
+            const orderDetails = {
+              iddonhang: orderWithDetails.iddonhang,
+              ngaydat: orderWithDetails.ngaydat,
+              tongsotien: Number(orderWithDetails.tongsotien),
+              tongsoluong: orderWithDetails.tongsoluong,
+              trangthai: orderWithDetails.trangthai,
+              discountValue: Number(orderWithDetails.discountValue || 0),
+              items: formattedItems,
+              paymentMethod: "online",
+              shippingAddress: shippingAddress,
+              discount: orderWithDetails.discount
+                ? {
+                    code: orderWithDetails.discount.code || "",
+                    discountType: orderWithDetails.discount.discountType || "",
+                    value: Number(orderWithDetails.discount.value || 0),
+                  }
+                : null,
+              payment: {
+                idthanhtoan: payment.idthanhtoan,
+                phuongthucthanhtoan: payment.phuongthucthanhtoan,
+                sotien: Number(payment.sotien),
+                trangthai: payment.trangthai,
+                ngaythanhtoan: payment.ngaythanhtoan,
+                hinhanhthanhtoan: payment.hinhanhthanhtoan,
+              },
+            };
+
+            // Send confirmation email
+            try {
+              await sendOrderConfirmationEmail(user.Email, orderDetails);
+              console.log(`Order confirmation email sent to ${user.Email}`);
+            } catch (emailError) {
+              console.error(
+                "Error sending order confirmation email:",
+                emailError
+              );
+            }
+          }
+        }
 
         return NextResponse.json({
           success: true,
@@ -333,7 +530,7 @@ export async function POST(req: Request) {
     // Handle cash payment
     if (paymentMethod === "cash" && orderId) {
       try {
-        const orderIdNumber = parseInt(orderId);
+        const orderIdNumber = Number.parseInt(orderId);
 
         // Get order information including discount info
         const order = await prisma.donhang.findUnique({
@@ -342,10 +539,12 @@ export async function POST(req: Request) {
             chitietdonhang: {
               include: {
                 sanpham: true,
+                size: true,
               },
             },
             thanhtoan: true,
             discount: true,
+            diaChiGiaoHang: true,
           },
         });
 
@@ -357,9 +556,9 @@ export async function POST(req: Request) {
         }
 
         // Determine original total and discount values
-        let originalTotal = Number(order.tongsotien);
-        let discountAmount = Number(order.discountValue || 0);
-        let finalAmount = originalTotal;
+        const originalTotal = Number(order.tongsotien);
+        const discountAmount = Number(order.discountValue || 0);
+        const finalAmount = originalTotal;
 
         console.log(
           `Order ${orderIdNumber}: Original total: ${
@@ -400,14 +599,14 @@ export async function POST(req: Request) {
         // Create notification with discount information if applicable
         const discountMessage =
           discountAmount > 0
-            ? ` (discounted ${formatCurrency(discountAmount)})`
+            ? ` (giảm giá ${formatCurrency(discountAmount)})`
             : "";
 
         const notification = await prisma.notification.create({
           data: {
             idUsers: userId,
-            title: "Cash Payment",
-            message: `Cash payment for order #${orderIdNumber}${discountMessage} has been recorded and is awaiting confirmation`,
+            title: "Thanh toán tiền mặt",
+            message: `Thanh toán tiền mặt cho đơn hàng #${orderIdNumber}${discountMessage} đã được ghi nhận và đang chờ xác nhận`,
             type: "payment",
             idDonhang: orderIdNumber,
             idThanhtoan: payment.idthanhtoan,
@@ -421,6 +620,104 @@ export async function POST(req: Request) {
           "new-notification",
           notification
         );
+
+        // Create admin notification for cash payment
+        const adminNotification = await prisma.notification.create({
+          data: {
+            idUsers: 1, // Assuming admin ID is 1, adjust as needed
+            title: "Thanh toán tiền mặt mới",
+            message: `Khách hàng ID: ${userId} đã chọn thanh toán tiền mặt cho đơn hàng #${orderIdNumber}${discountMessage}. Cần xác nhận khi giao hàng.`,
+            type: "admin_payment",
+            idDonhang: orderIdNumber,
+            idThanhtoan: payment.idthanhtoan,
+            isRead: false,
+            createdAt: new Date(),
+          },
+        });
+
+        await pusherServer.trigger(
+          "admin-notifications",
+          "new-notification",
+          adminNotification
+        );
+
+        // Get user email to send confirmation
+        const user = await prisma.users.findUnique({
+          where: { idUsers: userId },
+          select: { Email: true },
+        });
+
+        if (user?.Email) {
+          // Create a properly formatted shipping address
+          const shippingAddress = {
+            idDiaChi: order.diaChiGiaoHang?.idDiaChi || 0,
+            tenNguoiNhan: order.diaChiGiaoHang?.tenNguoiNhan || "",
+            soDienThoai: order.diaChiGiaoHang?.soDienThoai || "",
+            diaChiChiTiet: order.diaChiGiaoHang?.diaChiChiTiet || "",
+            phuongXa: order.diaChiGiaoHang?.phuongXa || "",
+            quanHuyen: order.diaChiGiaoHang?.quanHuyen || "",
+            thanhPho: order.diaChiGiaoHang?.thanhPho || "",
+          };
+
+          // Format the items with proper type conversion
+          const formattedItems = order.chitietdonhang.map((item) => ({
+            idsanpham: item.idsanpham ?? 0,
+            soluong: item.soluong ?? 0,
+            dongia: Number(item.dongia),
+            sanpham: {
+              Tensanpham: item.sanpham?.tensanpham || "Unknown product",
+              hinhanh: item.sanpham?.hinhanh || "",
+              gia: Number(item.sanpham?.gia || 0),
+              giamgia: item.sanpham?.giamgia
+                ? Number(item.sanpham.giamgia)
+                : null,
+            },
+            size: item.size
+              ? {
+                  idSize: item.size.idSize,
+                  tenSize: item.size.tenSize,
+                }
+              : null,
+          }));
+
+          // Create the complete order details object with proper types
+          const orderDetails = {
+            iddonhang: order.iddonhang,
+            ngaydat: order.ngaydat,
+            tongsotien: Number(order.tongsotien),
+            tongsoluong: order.tongsoluong,
+            trangthai: order.trangthai,
+            discountValue: Number(order.discountValue || 0),
+            items: formattedItems,
+            paymentMethod: "cash",
+            shippingAddress: shippingAddress,
+            discount: order.discount
+              ? {
+                  code: order.discount.code || "",
+                  discountType: order.discount.discountType || "",
+                  value: Number(order.discount.value || 0),
+                }
+              : null,
+            payment: {
+              idthanhtoan: payment.idthanhtoan,
+              phuongthucthanhtoan: payment.phuongthucthanhtoan,
+              sotien: Number(payment.sotien),
+              trangthai: payment.trangthai,
+              ngaythanhtoan: payment.ngaythanhtoan,
+            },
+          };
+
+          // Send confirmation email
+          try {
+            await sendOrderConfirmationEmail(user.Email, orderDetails);
+            console.log(`Order confirmation email sent to ${user.Email}`);
+          } catch (emailError) {
+            console.error(
+              "Error sending order confirmation email:",
+              emailError
+            );
+          }
+        }
 
         return NextResponse.json({
           success: true,
@@ -441,6 +738,14 @@ export async function POST(req: Request) {
 
     // Handle new order creation
     if (cartItems && Array.isArray(cartItems)) {
+      // Validate address ID for new orders
+      if (!idDiaChi) {
+        return NextResponse.json(
+          { error: "Vui lòng chọn địa chỉ giao hàng" },
+          { status: 400 }
+        );
+      }
+
       // Check and process discount information
       let discountId = null;
       let discountAmount = 0;
@@ -448,7 +753,7 @@ export async function POST(req: Request) {
       if (DiscountInfo) {
         // Ensure discountId is a number
         discountId = DiscountInfo.idDiscount
-          ? parseInt(String(DiscountInfo.idDiscount), 10)
+          ? Number.parseInt(String(DiscountInfo.idDiscount), 10)
           : null;
         discountAmount = DiscountInfo.calculatedDiscount || 0;
 
@@ -464,10 +769,12 @@ export async function POST(req: Request) {
         cartItems,
         paymentMethod,
         userId,
-        session.name || "",
+        session.role || "",
         undefined,
         discountId,
-        discountAmount
+        discountAmount,
+        undefined,
+        Number(idDiaChi) // Pass address ID to processOrder
       );
     }
 
@@ -491,8 +798,9 @@ async function processOrder(
   customerName: string,
   stripeSessionId?: string,
   discountId?: number | null,
-  discountAmount: number = 0,
-  finalTotal?: number | null
+  discountAmount = 0,
+  finalTotal?: number | null,
+  addressId?: number | null // Added address ID parameter
 ) {
   if (!Array.isArray(cartItems)) {
     return NextResponse.json({ error: "Invalid cart data" }, { status: 400 });
@@ -507,6 +815,28 @@ async function processOrder(
       typeof discountId
     );
     console.log("processOrder - discountAmount:", discountAmount);
+    console.log("processOrder - addressId:", addressId);
+
+    // Validate address ID if provided
+    if (addressId) {
+      const address = await prisma.diaChi.findUnique({
+        where: { idDiaChi: addressId },
+      });
+
+      if (!address) {
+        return NextResponse.json(
+          { error: "Địa chỉ không tồn tại" },
+          { status: 404 }
+        );
+      }
+
+      if (address.idUsers !== userId) {
+        return NextResponse.json(
+          { error: "Bạn không có quyền sử dụng địa chỉ này" },
+          { status: 403 }
+        );
+      }
+    }
 
     const result = await prisma.$transaction<OrderData>(async (prisma) => {
       const cartItemsWithDetails = await getCartItemsWithDetails(
@@ -537,7 +867,8 @@ async function processOrder(
         actualFinalTotal,
         totalQuantity,
         discountId,
-        discountAmount
+        discountAmount,
+        addressId // Add address ID to order creation
       );
 
       console.log("Order created:", {
@@ -545,6 +876,7 @@ async function processOrder(
         tongsotien: order.tongsotien,
         idDiscount: order.idDiscount,
         discountValue: order.discountValue,
+        idDiaChi: order.idDiaChi,
       });
 
       const orderDetails = await createOrderDetails(
@@ -591,19 +923,39 @@ async function processOrder(
 
       await clearCart(prisma, cartItems);
 
-      // Create notification with discount information
+      // Get address details for notification
+      let addressDetails = "";
+      if (addressId) {
+        try {
+          const address = await prisma.diaChi.findUnique({
+            where: { idDiaChi: addressId },
+          });
+          if (address) {
+            addressDetails = `${address.tenNguoiNhan}, ${address.diaChiChiTiet}, ${address.phuongXa}, ${address.quanHuyen}, ${address.thanhPho}`;
+          }
+        } catch (error) {
+          console.error("Error getting address details:", error);
+        }
+      }
+
+      // Create customer notification with payment method and discount information
+      const paymentMethodText = getPaymentMethodText(paymentMethod);
       const discountText =
         discountAmount > 0
-          ? ` with discount ${formatCurrency(discountAmount)}`
+          ? ` với giảm giá ${formatCurrency(discountAmount)}`
           : "";
 
-      const notificationMessage = `Order #${order.iddonhang} has been created successfully${discountText}`;
+      const addressText = addressDetails
+        ? `\nĐịa chỉ giao hàng: ${addressDetails}`
+        : "";
+
+      const customerNotificationMessage = `Đơn hàng #${order.iddonhang} của bạn đã được tạo thành công${discountText}. Phương thức thanh toán: ${paymentMethodText}.${addressText}`;
 
       const notification = await prisma.notification.create({
         data: {
           idUsers: userId,
-          title: "New Order",
-          message: notificationMessage,
+          title: "Xác nhận đơn hàng",
+          message: customerNotificationMessage,
           type: "order",
           idDonhang: order.iddonhang,
           idThanhtoan: payment.idthanhtoan,
@@ -612,22 +964,143 @@ async function processOrder(
         },
       });
 
+      // Create admin notification
+      const adminNotificationMessage = `Đơn hàng mới #${order.iddonhang} được tạo bởi khách hàng ID: ${userId}${discountText}. Phương thức thanh toán: ${paymentMethodText}.${addressText}`;
+
+      const adminNotification = await prisma.notification.create({
+        data: {
+          idUsers: 1, // Assuming admin ID is 1, adjust as needed
+          title: "Đơn hàng mới",
+          message: adminNotificationMessage,
+          type: "admin_order",
+          idDonhang: order.iddonhang,
+          idThanhtoan: payment.idthanhtoan,
+          isRead: false,
+          createdAt: new Date(),
+        },
+      });
+
+      // Add both notifications to result
       return {
         orders: [order],
         orderDetails,
         payments: [payment],
         deliverySchedules,
         notification,
+        adminNotification,
       };
     });
 
-    // Send real-time notification
-    if (result.notification) {
-      await pusherServer.trigger(
-        "notifications",
-        "new-notification",
-        result.notification
-      );
+    // Get user email to send confirmation
+    const user = await prisma.users.findUnique({
+      where: { idUsers: userId },
+      select: { Email: true },
+    });
+
+    if (user?.Email) {
+      try {
+        // Get address details for the email
+        let shippingAddress = {
+          idDiaChi: addressId || 0,
+          tenNguoiNhan: customerName || "Khách hàng",
+          soDienThoai: "",
+          diaChiChiTiet: "",
+          phuongXa: "",
+          quanHuyen: "",
+          thanhPho: "",
+        };
+
+        if (addressId) {
+          const address = await prisma.diaChi.findUnique({
+            where: { idDiaChi: addressId },
+          });
+
+          if (address) {
+            shippingAddress = address;
+          }
+        }
+
+        // Get discount information if applicable
+        let discountInfo = null;
+        if (discountId) {
+          const discount = await prisma.discountCode.findUnique({
+            where: { idDiscount: discountId },
+          });
+          if (discount) {
+            discountInfo = {
+              code: discount.code,
+              discountType: discount.discountType,
+              value: Number(discount.value),
+            };
+          }
+        }
+
+        // Get complete product details with explicit type conversion
+        const orderItems = await Promise.all(
+          result.orderDetails.map(async (item) => {
+            const product = await prisma.sanpham.findUnique({
+              where: { idsanpham: item.idsanpham },
+            });
+
+            const size = item.idSize
+              ? await prisma.size.findUnique({
+                  where: { idSize: item.idSize },
+                })
+              : null;
+
+            // Create properly typed order item
+            return {
+              idsanpham: Number(item.idsanpham),
+              soluong: Number(item.soluong),
+              dongia: Number(item.dongia),
+              sanpham: {
+                Tensanpham: product?.tensanpham || "Sản phẩm không xác định",
+                hinhanh: product?.hinhanh || "",
+                gia: Number(product?.gia || 0),
+                // Convert Decimal to number explicitly
+                giamgia: product?.giamgia ? Number(product.giamgia) : undefined,
+              },
+              size: size
+                ? {
+                    idSize: size.idSize,
+                    tenSize: size.tenSize,
+                  }
+                : null,
+            };
+          })
+        );
+
+        // Get payment information
+        const payment = result.payments[0];
+
+        // Create properly typed order details
+        const emailOrderDetails = {
+          iddonhang: Number(result.orders[0].iddonhang),
+          ngaydat: result.orders[0].ngaydat,
+          tongsotien: Number(result.orders[0].tongsotien),
+          tongsoluong: Number(result.orders[0].tongsoluong || 0),
+          trangthai: result.orders[0].trangthai || null,
+          discountValue: Number(result.orders[0].discountValue || 0),
+          items: orderItems,
+          paymentMethod,
+          shippingAddress,
+          discount: discountInfo,
+          payment: {
+            idthanhtoan: payment.idthanhtoan,
+            phuongthucthanhtoan: payment.phuongthucthanhtoan,
+            sotien: Number(payment.sotien),
+            trangthai: payment.trangthai,
+            ngaythanhtoan: payment.ngaythanhtoan,
+          },
+        };
+
+        // Send confirmation email with properly typed data
+        await sendOrderConfirmationEmail(user.Email, emailOrderDetails);
+        console.log(`Order confirmation email sent to ${user.Email}`);
+      } catch (emailError) {
+        // Log error but don't fail the order process
+        console.error("Error sending order confirmation email:", emailError);
+      }
     }
 
     return NextResponse.json({
@@ -676,7 +1149,8 @@ async function createOrder(
   finalAmount: number,
   totalQuantity: number,
   discountId: number | null = null,
-  discountValue: number = 0
+  discountValue = 0,
+  addressId: number | null = null // Added address ID parameter
 ) {
   // Ensure proper handling of discountId format
   let finalDiscountId: number | null = null;
@@ -685,7 +1159,9 @@ async function createOrder(
   if (discountId !== null && discountId !== undefined) {
     // Convert to number if needed
     const parsedId =
-      typeof discountId === "string" ? parseInt(discountId, 10) : discountId;
+      typeof discountId === "string"
+        ? Number.parseInt(discountId, 10)
+        : discountId;
     // Only use if it's a valid number greater than 0
     finalDiscountId = !isNaN(parsedId) && parsedId > 0 ? parsedId : null;
   }
@@ -697,6 +1173,7 @@ async function createOrder(
     originalDiscountId: discountId,
     finalDiscountId: finalDiscountId,
     discountValue: discountValue,
+    addressId: addressId,
   });
 
   try {
@@ -709,6 +1186,7 @@ async function createOrder(
       tongsoluong: totalQuantity,
       idDiscount: finalDiscountId,
       discountValue: discountValue,
+      idDiaChi: addressId, // Add address ID to order data
     };
 
     console.log("createOrder - Order data prepared:", orderData);
@@ -721,6 +1199,7 @@ async function createOrder(
       iddonhang: order.iddonhang,
       idDiscount: order.idDiscount,
       discountValue: order.discountValue,
+      idDiaChi: order.idDiaChi,
     });
 
     return order;
@@ -846,7 +1325,20 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
-export async function GET(req: Request) {
+function getPaymentMethodText(method: string): string {
+  switch (method) {
+    case "stripe":
+      return "Thẻ tín dụng/ghi nợ (Stripe)";
+    case "online":
+      return "Chuyển khoản ngân hàng";
+    case "cash":
+      return "Tiền mặt khi nhận hàng";
+    default:
+      return method;
+  }
+}
+
+export async function GET(req: NextRequest) {
   try {
     const session = await getSession(req);
     if (!session) {
@@ -864,6 +1356,7 @@ export async function GET(req: Request) {
         thanhtoan: true,
         lichgiaohang: true,
         discount: true, // Ensure discount information is retrieved
+        diaChiGiaoHang: true, // Include address information
       },
       orderBy: { ngaydat: "desc" },
     });

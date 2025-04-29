@@ -42,6 +42,7 @@ model Users {
   luong          Luong[]
     lichlamviec   LichLamViec[]
     UserBehavior  UserBehavior[]
+  diachi         DiaChi[]
 
   avatar        String?  // Thêm trường avatar để lưu URL của ảnh
 
@@ -106,6 +107,8 @@ model Donhang {
   users          Users?    @relation(fields: [idUsers], references: [idUsers])
   idDiscount    Int?
   discountValue Decimal?  @db.Decimal(10,2)
+    idDiaChi       Int?
+  diaChiGiaoHang DiaChi?   @relation(fields: [idDiaChi], references: [idDiaChi])
   discount      DiscountCode? @relation(fields: [idDiscount], references: [idDiscount])
   chitietdonhang ChitietDonhang[]
   thanhtoan      Thanhtoan[]
@@ -113,7 +116,23 @@ model Donhang {
   notifications Notification[] // Add this line
 
 }
-
+model DiaChi {
+  idDiaChi      Int       @id @default(autoincrement())
+  idUsers       Int
+  diaChiChiTiet String    @db.VarChar(255)
+  thanhPho      String    @db.VarChar(100)
+  quanHuyen     String    @db.VarChar(100)
+  phuongXa      String    @db.VarChar(100)
+  soDienThoai   String    @db.VarChar(20)
+  tenNguoiNhan  String    @db.VarChar(100)
+  macDinh       Boolean   @default(false)
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  
+  // Relationships
+  user          Users     @relation(fields: [idUsers], references: [idUsers])
+  donhang       Donhang[]
+}
 model DiscountCode {
   idDiscount    Int       @id @default(autoincrement())
   code          String    @unique

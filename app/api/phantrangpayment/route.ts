@@ -1,46 +1,65 @@
 import prisma from "@/prisma/client";
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    // nếu trên url không cớ search page param thì gán bằng 1
+    // Nếu trên URL không có search page param thì gán bằng 1
     const page: number = searchParams.get("page")
       ? Number(searchParams.get("page"))
       : 1;
-    const limit_size: number = searchParams.get("limit_size")
-      ? Number(searchParams.get("limit_size"))
+    const pageSize: number = searchParams.get("pageSize")
+      ? Number(searchParams.get("pageSize"))
       : 10;
 
-    const skip = (page - 1) * limit_size;
-    // tính tổng số trang
-    // 1. đếm xem có bao nhiêu bản ghi hiện tại trong cở sở dữ liệu
+    const skip = (page - 1) * pageSize;
+
+    // Tính tổng số bản ghi
     const totalRecords = await prisma.thanhtoan.count();
+    const totalPages = Math.ceil(totalRecords / pageSize);
 
-    const totalPage = Math.ceil(totalRecords / limit_size);
-
-    const data = await prisma.thanhtoan.findMany({
+    // Lấy dữ liệu thanh toán với thông tin đơn hàng
+    const payments = await prisma.thanhtoan.findMany({
       skip: skip,
-      take: limit_size,
+      take: pageSize,
+      orderBy: {
+        idthanhtoan: "desc",
+      },
+      include: {
+        donhang: {
+          select: {
+            iddonhang: true,
+            tongsotien: true,
+            trangthai: true,
+            users: {
+              select: {
+                idUsers: true,
+                Email: true,
+                Hoten: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     return NextResponse.json(
       {
-        data,
+        data: payments,
         meta: {
           totalRecords,
-          totalPage,
+          totalPages,
           page,
-          limit_size,
+          pageSize,
           skip,
         },
       },
-
       { status: 200 }
     );
   } catch (error) {
+    console.error("Error fetching payments:", error);
     return NextResponse.json(
-      { error: "Failed to fetch data" },
+      { error: "Failed to fetch payment data" },
       { status: 500 }
     );
   }

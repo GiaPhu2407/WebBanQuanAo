@@ -335,8 +335,6 @@ interface User {
   };
 }
 
-
-
 const Menu: React.FC = () => {
   // State management
   const [userData, setUserData] = useState<User | null>(null);
@@ -419,7 +417,7 @@ const Menu: React.FC = () => {
               <div className="hidden sm:block">
                 <Notification />
               </div>
-              <NotificationBell />
+              <NotificationBell isAdmin={true} />
 
               {/* User Avatar and Menu */}
               {userData ? (

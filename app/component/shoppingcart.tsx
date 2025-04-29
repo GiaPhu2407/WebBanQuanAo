@@ -1,8 +1,8 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
-import { CartItem as CartItemType } from "@/app/component/type/cart";
+import type { CartItem as CartItemType } from "@/app/component/type/cart";
 import Footer from "./Footer";
 import { CartItem } from "./cart/CartItem";
 import Header from "./Header";
@@ -10,11 +10,10 @@ import { calculateDiscountedPrice } from "./utils/price";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import CheckoutForm from "@/components/ui/Stripecomponents";
-import { OnlinePayment } from "./OnlinePayment";
+import OnlinePayment, {
+  type OrderDetails as OnlinePaymentOrderDetails,
+} from "./OnlinePayment";
 import CartSummary from "./cart/Cartsummary";
-
-// Import the OrderDetails type from OnlinePayment
-import { OrderDetails as OnlinePaymentOrderDetails } from "@/app/component/OnlinePayment";
 
 // Discount info interface
 interface DiscountInfo {
@@ -45,11 +44,19 @@ export const ShoppingCart = () => {
   const [appliedDiscount, setAppliedDiscount] = useState<DiscountInfo | null>(
     null
   );
+  const [selectedAddressId, setSelectedAddressId] = useState<number | null>(
+    null
+  );
   const router = useRouter();
 
   useEffect(() => {
     fetchCartItems();
   }, []);
+
+  // Debug logging when selectedAddressId changes
+  useEffect(() => {
+    console.log("Selected Address ID updated:", selectedAddressId);
+  }, [selectedAddressId]);
 
   const fetchCartItems = async () => {
     try {
@@ -207,11 +214,13 @@ export const ShoppingCart = () => {
         body: JSON.stringify({
           cartItems: selectedItems,
           DiscountInfo: appliedDiscount,
+          idDiaChi: selectedAddressId,
           metadata: {
             cartItems: JSON.stringify(selectedItems),
             discountInfo: appliedDiscount
               ? JSON.stringify(appliedDiscount)
               : null,
+            addressId: selectedAddressId,
           },
         }),
       });
@@ -224,6 +233,14 @@ export const ShoppingCart = () => {
       const { clientSecret } = await response.json();
       setClientSecret(clientSecret);
       setShowStripeForm(true);
+
+      // Notify user about email confirmation
+      toast.success(
+        "Sau khi thanh toán thành công, email xác nhận đơn hàng sẽ được gửi đến địa chỉ email của bạn",
+        {
+          duration: 5000,
+        }
+      );
     } catch (error) {
       console.error("Payment error:", error);
       toast.error("Có lỗi xảy ra trong quá trình thanh toán");
@@ -235,9 +252,23 @@ export const ShoppingCart = () => {
     setAppliedDiscount(discountInfo);
   };
 
+  // FIXED: This function now properly handles address ID selection
+  const handleAddressChange = (addressId: number) => {
+    console.log("Address selected with ID:", addressId);
+    setSelectedAddressId(addressId);
+  };
+
   const handleCheckout = async () => {
     if (!paymentMethod) {
       toast.error("Vui lòng chọn phương thức thanh toán");
+      return;
+    }
+
+    // Debug log to see the current state when checkout is attempted
+    console.log("Checking out with address ID:", selectedAddressId);
+
+    if (!selectedAddressId) {
+      toast.error("Vui lòng chọn địa chỉ giao hàng");
       return;
     }
 
@@ -265,6 +296,7 @@ export const ShoppingCart = () => {
       const requestBody = {
         cartItems: selectedItems,
         paymentMethod: paymentMethod,
+        idDiaChi: selectedAddressId, // Use the address ID
       };
 
       // Add discount information if available
@@ -292,6 +324,14 @@ export const ShoppingCart = () => {
 
       const orderData = result.data;
       const orderId = orderData.orders[0].iddonhang;
+
+      // Notify user about email confirmation
+      toast.success(
+        "Đơn hàng đã được tạo! Email xác nhận sẽ được gửi đến địa chỉ email của bạn.",
+        {
+          duration: 5000,
+        }
+      );
 
       // Trong phương thức handleCheckout của ShoppingCart
       if (paymentMethod === "online") {
@@ -433,6 +473,7 @@ export const ShoppingCart = () => {
                 onCheckout={handleCheckout}
                 processing={processing}
                 onApplyDiscount={handleAppliedDiscount}
+                onAddressChange={handleAddressChange}
               />
             </div>
 
@@ -453,6 +494,12 @@ export const ShoppingCart = () => {
                   amount={calculateFinalTotal()}
                   onSuccess={() => {
                     setShowStripeForm(false);
+                    toast.success(
+                      "Email xác nhận đơn hàng đã được gửi đến địa chỉ email của bạn",
+                      {
+                        duration: 5000,
+                      }
+                    );
                     router.push("/success");
                   }}
                   onCancel={() => {

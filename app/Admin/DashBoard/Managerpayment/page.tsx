@@ -1,5 +1,6 @@
 "use client";
-import React, { useState, useEffect } from "react";
+
+import { useState, useEffect } from "react";
 import SalesDashboard from "../NvarbarAdmin";
 import {
   AlertDialog,
@@ -13,8 +14,21 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
-
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RefreshCw, Plus } from "lucide-react";
 import PaymentTable from "../../Tablethanhtoan";
+import ResponsiveContainer from "@/app/Admin/responsive-container";
 
 // Interfaces
 interface Payment {
@@ -24,6 +38,16 @@ interface Payment {
   sotien: number | null;
   trangthai: string | null;
   ngaythanhtoan: string | null;
+  donhang?: {
+    iddonhang: number;
+    tongsotien: number | null;
+    trangthai: string | null;
+    users?: {
+      idUsers: number;
+      Email: string;
+      Hoten: string;
+    };
+  };
 }
 
 interface FormData {
@@ -32,15 +56,21 @@ interface FormData {
   sotien: number | null;
   trangthai: string | null;
   ngaythanhtoan: string | null;
+  sendEmail: boolean;
 }
 
 interface DonHang {
   iddonhang: number;
   tongsotien?: number;
   trangthai?: string;
+  users?: {
+    idUsers: number;
+    Email: string;
+    Hoten: string;
+  };
 }
 
-const PaymentManagementPage: React.FC = () => {
+const PaymentManagementPage = () => {
   // State management
   const [formData, setFormData] = useState<FormData>({
     iddonhang: null,
@@ -48,6 +78,7 @@ const PaymentManagementPage: React.FC = () => {
     sotien: null,
     trangthai: null,
     ngaythanhtoan: null,
+    sendEmail: true,
   });
 
   const [error, setError] = useState<string>("");
@@ -55,16 +86,17 @@ const PaymentManagementPage: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
-  const [showToast, setShowToast] = useState(false);
   const [loading, setLoading] = useState(true);
   const [fetchingDonHang, setFetchingDonHang] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [donHangs, setDonHangs] = useState<DonHang[]>([]);
   const [selectedDonHang, setSelectedDonHang] = useState<DonHang | null>(null);
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const { toast } = useToast();
 
-  // Dropdown options - Đã thêm "Chưa xác định" vào danh sách trạng thái
+  // Dropdown options
   const paymentStatuses = [
     { value: "Thành công", label: "Thành Công" },
     { value: "Đang chờ", label: "Đang Chờ" },
@@ -84,29 +116,11 @@ const PaymentManagementPage: React.FC = () => {
     setReloadKey((prevKey) => prevKey + 1);
   };
 
-  // Handle toast and error/success messages
-  useEffect(() => {
-    if (error || success) {
-      setShowToast(true);
-      const timer = setTimeout(() => {
-        setShowToast(false);
-        setError("");
-        setSuccess("");
-      }, 3000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [error, success]);
-
   // Fetch đơn hàng when component mounts
   useEffect(() => {
     fetchDonHangs();
+    setLoading(false);
   }, []);
-
-  // Debug: Log donHangs whenever it changes
-  useEffect(() => {
-    console.log("Danh sách đơn hàng:", donHangs);
-  }, [donHangs]);
 
   const fetchDonHangs = async () => {
     try {
@@ -115,32 +129,30 @@ const PaymentManagementPage: React.FC = () => {
 
       const response = await fetch("/api/donhang");
       if (!response.ok) {
-        console.error("API trả về lỗi:", response.status, response.statusText);
         throw new Error("Không thể tải danh sách đơn hàng");
       }
 
       const data = await response.json();
-      console.log("Dữ liệu đơn hàng từ API:", data);
 
       // Xử lý dữ liệu phù hợp với cấu trúc API
-      if (data.donhang && Array.isArray(data.donhang)) {
-        console.log("Đã tìm thấy array donhang trong response");
-        setDonHangs(data.donhang);
+      if (data.data && Array.isArray(data.data)) {
+        setDonHangs(data.data);
+      } else if (data.success && data.data && Array.isArray(data.data)) {
+        setDonHangs(data.data);
       } else if (Array.isArray(data)) {
-        console.log("Response là một array");
         setDonHangs(data);
       } else {
-        console.error("Dữ liệu đơn hàng không đúng định dạng", data);
         toast({
-          title: "Lỗi",
-          description: "Dữ liệu đơn hàng không đúng định dạng",
-          variant: "destructive",
+          title: "Lưu ý",
+          description:
+            "Định dạng dữ liệu đơn hàng không như mong đợi. Vui lòng kiểm tra API.",
+          variant: "default",
         });
+        // Fallback to empty array instead of failing
         setDonHangs([]);
       }
     } catch (error) {
       console.error("Lỗi tải đơn hàng:", error);
-      setError("Không thể tải danh sách đơn hàng");
       toast({
         title: "Lỗi",
         description: "Không thể tải danh sách đơn hàng",
@@ -148,7 +160,6 @@ const PaymentManagementPage: React.FC = () => {
       });
       setDonHangs([]);
     } finally {
-      setLoading(false);
       setFetchingDonHang(false);
     }
   };
@@ -156,20 +167,24 @@ const PaymentManagementPage: React.FC = () => {
   // Fetch chi tiết đơn hàng theo ID
   const fetchDonHangDetails = async (iddonhang: number) => {
     try {
-      console.log(`Đang tải chi tiết đơn hàng ID: ${iddonhang}`);
-
       const response = await fetch(`/api/donhang/${iddonhang}`);
       if (!response.ok) {
         throw new Error("Không thể tải chi tiết đơn hàng");
       }
 
       const data = await response.json();
-      console.log("Chi tiết đơn hàng:", data);
 
       // Lưu thông tin đơn hàng đã chọn
-      setSelectedDonHang(data);
-
-      return data;
+      if (data.success && data.data) {
+        setSelectedDonHang(data.data);
+        return data.data;
+      } else if (data.data) {
+        setSelectedDonHang(data.data);
+        return data.data;
+      } else {
+        setSelectedDonHang(data);
+        return data;
+      }
     } catch (error) {
       console.error("Lỗi khi tải chi tiết đơn hàng:", error);
       toast({
@@ -189,6 +204,7 @@ const PaymentManagementPage: React.FC = () => {
       sotien: null,
       trangthai: null,
       ngaythanhtoan: null,
+      sendEmail: true,
     });
     setEditingId(null);
     setIsEditing(false);
@@ -196,7 +212,10 @@ const PaymentManagementPage: React.FC = () => {
   };
 
   // Handle form input changes
-  const handleChange = (name: string, value: string | number | null) => {
+  const handleChange = (
+    name: string,
+    value: string | number | null | boolean
+  ) => {
     setFormData((prev) => {
       const newData = { ...prev, [name]: value };
 
@@ -213,25 +232,16 @@ const PaymentManagementPage: React.FC = () => {
   const handleOpenCreateModal = () => {
     resetForm();
     setIsEditing(false);
+    setIsModalOpen(true);
 
     // Đảm bảo rằng danh sách đơn hàng đã được tải
     if (donHangs.length === 0 && !fetchingDonHang) {
-      console.log("Tải lại danh sách đơn hàng trước khi mở modal");
       fetchDonHangs();
-    }
-
-    const dialog = document.getElementById(
-      "payment-modal"
-    ) as HTMLDialogElement;
-    if (dialog) {
-      dialog.showModal();
     }
   };
 
   // Handle edit payment
   const handleEdit = async (payment: Payment) => {
-    console.log("Đang chỉnh sửa thanh toán:", payment);
-
     if (payment.iddonhang) {
       // Tải chi tiết đơn hàng theo ID
       await fetchDonHangDetails(payment.iddonhang);
@@ -243,16 +253,11 @@ const PaymentManagementPage: React.FC = () => {
       sotien: payment.sotien,
       trangthai: payment.trangthai,
       ngaythanhtoan: payment.ngaythanhtoan,
+      sendEmail: true,
     });
     setEditingId(payment.idthanhtoan);
     setIsEditing(true);
-
-    const dialog = document.getElementById(
-      "payment-modal"
-    ) as HTMLDialogElement;
-    if (dialog) {
-      dialog.showModal();
-    }
+    setIsModalOpen(true);
   };
 
   // Submit form (create/update payment)
@@ -261,15 +266,12 @@ const PaymentManagementPage: React.FC = () => {
     setError("");
     setSuccess("");
 
-    console.log("Đang gửi form với dữ liệu:", formData);
-
     // Validation
     if (
       !formData.iddonhang ||
       !formData.phuongthucthanhtoan ||
       !formData.sotien
     ) {
-      setError("Vui lòng điền đầy đủ thông tin");
       toast({
         title: "Lỗi",
         description: "Vui lòng điền đầy đủ thông tin",
@@ -289,10 +291,10 @@ const PaymentManagementPage: React.FC = () => {
     }
 
     try {
+      setSendingEmail(formData.sendEmail);
+
       const url = isEditing ? `/api/thanhtoan/${editingId}` : "/api/thanhtoan";
       const method = isEditing ? "PUT" : "POST";
-
-      console.log(`Đang gửi request ${method} đến ${url}`);
 
       const response = await fetch(url, {
         method,
@@ -302,33 +304,31 @@ const PaymentManagementPage: React.FC = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error("API trả về lỗi:", errorData);
         throw new Error(
           errorData.error || `Lỗi ${isEditing ? "cập nhật" : "tạo"} thanh toán`
         );
       }
 
       const data = await response.json();
-      setSuccess(
+
+      // Handle email notification success
+      let successMessage =
         data.message ||
-          `${isEditing ? "Cập nhật" : "Thêm mới"} thanh toán thành công`
-      );
+        `${isEditing ? "Cập nhật" : "Thêm mới"} thanh toán thành công`;
+      if (formData.sendEmail && data.emailSent) {
+        successMessage +=
+          " Email xác nhận thanh toán đã được gửi đến khách hàng.";
+      }
+
+      setSuccess(successMessage);
 
       resetForm();
       refreshData();
-
-      const dialog = document.getElementById(
-        "payment-modal"
-      ) as HTMLDialogElement;
-      if (dialog) {
-        dialog.close();
-      }
+      setIsModalOpen(false);
 
       toast({
         title: "Thành Công!",
-        description:
-          data.message ||
-          `${isEditing ? "Cập nhật" : "Thêm mới"} thanh toán thành công`,
+        description: successMessage,
         variant: "success",
       });
     } catch (err) {
@@ -346,6 +346,8 @@ const PaymentManagementPage: React.FC = () => {
           err instanceof Error ? err.message : "Lỗi khi thực hiện thao tác",
         variant: "destructive",
       });
+    } finally {
+      setSendingEmail(false);
     }
   };
 
@@ -353,8 +355,6 @@ const PaymentManagementPage: React.FC = () => {
   const handleDelete = async () => {
     if (deleteConfirmId) {
       try {
-        console.log(`Đang xóa thanh toán với ID: ${deleteConfirmId}`);
-
         const response = await fetch(`/api/thanhtoan/${deleteConfirmId}`, {
           method: "DELETE",
         });
@@ -387,292 +387,313 @@ const PaymentManagementPage: React.FC = () => {
     }
   };
 
-  const handleModalClose = () => {
-    console.log("Đóng modal");
-    if (!isEditing) {
-      resetForm();
-    }
-    const dialog = document.getElementById(
-      "payment-modal"
-    ) as HTMLDialogElement;
-    if (dialog) {
-      dialog.close();
-    }
-  };
-
   if (loading) {
     return (
-      <div
-        className="flex justify-center items-center h-screen"
-        data-theme="light"
-      >
-        <span className="loading loading-spinner text-blue-600 loading-lg"></span>
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="flex">
+    <div className="flex flex-col">
       <SalesDashboard />
+      <ResponsiveContainer children={undefined} />
       <div className="p-6 flex-1 mt-20">
         <Toaster />
 
-        {showToast && (
-          <div className="toast toast-top toast-end mt-16 z-[9999]">
-            {error && (
-              <div role="alert" className="alert alert-error">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 shrink-0 stroke-current"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <span>{error}</span>
-              </div>
-            )}
-
-            {success && (
-              <div role="alert" className="alert alert-success">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 shrink-0 stroke-current"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <span>{success}</span>
-              </div>
-            )}
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-2xl font-bold">Quản Lý Thanh Toán</h1>
+            <p className="text-gray-500 mt-1">
+              Quản lý tất cả các giao dịch thanh toán
+            </p>
           </div>
-        )}
+          <Button
+            onClick={handleOpenCreateModal}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Thêm Mới Thanh Toán
+          </Button>
+        </div>
 
-        <dialog id="payment-modal" className="modal">
-          <div className="modal-box w-11/12 max-w-5xl">
-            <form method="dialog">
-              <button
-                className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
-                onClick={handleModalClose}
-              >
-                ✕
-              </button>
-            </form>
-            <h3 className="font-bold text-lg mb-4">
-              {isEditing ? "Cập Nhật Thanh Toán" : "Thêm Mới Thanh Toán"}
-            </h3>
-            <div className="flex w-full">
-              <div className="pt-6 w-[20000px]">
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  {/* Đơn Hàng Select/Display */}
-                  <div className="flex w-full gap-4">
-                    <div className="flex-1">
-                      <label className="block font-medium text-gray-700 mb-1">
-                        Đơn Hàng
-                      </label>
-                      {isEditing ? (
-                        // Khi đang chỉnh sửa, hiển thị thông tin đơn hàng
-                        <div className="w-full px-3 py-2 border bg-gray-100 border-gray-300 rounded-md">
-                          {selectedDonHang ? (
-                            <div>
-                              <span className="font-medium">
-                                Đơn hàng #{formData.iddonhang}
-                              </span>
-                              {selectedDonHang.tongsotien && (
-                                <span className="ml-2 text-gray-600">
-                                  - Tổng tiền:{" "}
-                                  {parseInt(
-                                    selectedDonHang.tongsotien.toString()
-                                  ).toLocaleString("vi-VN")}{" "}
-                                  đ
-                                </span>
-                              )}
-                              {selectedDonHang.trangthai && (
-                                <span className="ml-2 text-gray-600">
-                                  - Trạng thái: {selectedDonHang.trangthai}
-                                </span>
-                              )}
-                            </div>
-                          ) : (
-                            <span>Đơn hàng #{formData.iddonhang}</span>
+        <Card className="mb-6">
+          <CardContent className="p-6">
+            <PaymentTable
+              key={reloadKey}
+              onEdit={handleEdit}
+              onDelete={(id) => setDeleteConfirmId(id)}
+              refreshTrigger={reloadKey}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Payment Form Modal */}
+        <AlertDialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+          <AlertDialogContent className="max-w-3xl">
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {isEditing ? "Cập Nhật Thanh Toán" : "Thêm Mới Thanh Toán"}
+              </AlertDialogTitle>
+            </AlertDialogHeader>
+
+            <form onSubmit={handleSubmit} className="space-y-4 py-2">
+              {/* Đơn Hàng Select/Display */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="iddonhang" className="text-sm font-medium">
+                    Đơn Hàng
+                  </Label>
+                  {isEditing ? (
+                    <div className="mt-1 p-2 border rounded-md bg-gray-50">
+                      {selectedDonHang ? (
+                        <div>
+                          <span className="font-medium">
+                            Đơn hàng #{formData.iddonhang}
+                          </span>
+                          {selectedDonHang.tongsotien && (
+                            <span className="ml-2 text-gray-600 text-sm">
+                              - Tổng tiền:{" "}
+                              {Number(
+                                selectedDonHang.tongsotien
+                              ).toLocaleString("vi-VN")}{" "}
+                              đ
+                            </span>
+                          )}
+                          {selectedDonHang.trangthai && (
+                            <span className="ml-2 text-gray-600 text-sm">
+                              - Trạng thái: {selectedDonHang.trangthai}
+                            </span>
                           )}
                         </div>
                       ) : (
-                        // Khi tạo mới, cho phép chọn đơn hàng
-                        <select
-                          value={formData.iddonhang?.toString() || ""}
-                          onChange={(e) =>
-                            handleChange("iddonhang", parseInt(e.target.value))
-                          }
-                          className="w-full px-3 py-2 border text-black bg-white border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          required
-                        >
-                          <option value="">Chọn đơn hàng</option>
-                          {fetchingDonHang ? (
-                            <option value="" disabled>
-                              Đang tải danh sách đơn hàng...
-                            </option>
-                          ) : Array.isArray(donHangs) && donHangs.length > 0 ? (
-                            donHangs.map((donHang) => (
-                              <option
-                                key={donHang.iddonhang}
-                                value={donHang.iddonhang}
-                              >
-                                Đơn hàng #{donHang.iddonhang}
-                              </option>
-                            ))
-                          ) : (
-                            <option value="" disabled>
-                              Không có đơn hàng nào
-                            </option>
-                          )}
-                        </select>
+                        <span>Đơn hàng #{formData.iddonhang}</span>
                       )}
-                      {!isEditing &&
-                        donHangs.length === 0 &&
-                        !fetchingDonHang && (
-                          <p className="text-sm text-red-500 mt-1">
-                            <button
-                              type="button"
-                              className="text-blue-500 underline"
-                              onClick={fetchDonHangs}
-                            >
-                              Tải lại danh sách đơn hàng
-                            </button>
-                          </p>
-                        )}
                     </div>
-                  </div>
-
-                  {/* Phương Thức Thanh Toán */}
-                  <div className="flex w-full gap-4">
-                    <div className="flex-1">
-                      <label className="block font-medium text-gray-700 mb-1">
-                        Phương Thức Thanh Toán
-                      </label>
-                      <select
-                        value={formData.phuongthucthanhtoan || ""}
-                        onChange={(e) =>
-                          handleChange("phuongthucthanhtoan", e.target.value)
-                        }
-                        className="w-full px-3 py-2 border text-black bg-white border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                      >
-                        <option value="">Chọn phương thức</option>
-                        {paymentMethods.map((method) => (
-                          <option key={method.value} value={method.value}>
-                            {method.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Số Tiền */}
-                  <div className="flex w-full gap-4">
-                    <div className="flex-1">
-                      <label className="block font-medium text-gray-700 mb-1">
-                        Số Tiền
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.sotien || ""}
-                        onChange={(e) =>
-                          handleChange(
-                            "sotien",
-                            e.target.value ? parseFloat(e.target.value) : null
-                          )
-                        }
-                        className="w-full px-3 py-2 border text-black bg-white border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Nhập số tiền"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  {/* Trạng Thái */}
-                  <div className="flex w-full gap-4">
-                    <div className="flex-1">
-                      <label className="block font-medium text-gray-700 mb-1">
-                        Trạng Thái
-                      </label>
-                      <select
-                        value={formData.trangthai || ""}
-                        onChange={(e) =>
-                          handleChange("trangthai", e.target.value)
-                        }
-                        className="w-full px-3 py-2 border text-black bg-white border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                        disabled={formData.phuongthucthanhtoan === "Online"}
-                      >
-                        <option value="">Chọn trạng thái</option>
-                        {paymentStatuses.map((status) => (
-                          <option key={status.value} value={status.value}>
-                            {status.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Ngày Thanh Toán */}
-                  <div className="flex w-full gap-4">
-                    <div className="flex-1">
-                      <label className="block font-medium text-gray-700 mb-1">
-                        Ngày Thanh Toán
-                      </label>
-                      <input
-                        type="date"
-                        value={formData.ngaythanhtoan || ""}
-                        onChange={(e) =>
-                          handleChange("ngaythanhtoan", e.target.value || null)
-                        }
-                        className="w-full px-3 py-2 border text-black bg-white border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end mt-6">
-                    <button
-                      type="submit"
-                      className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                  ) : (
+                    <Select
+                      value={formData.iddonhang?.toString() || ""}
+                      onValueChange={(value) =>
+                        handleChange("iddonhang", Number(value))
+                      }
                     >
-                      {isEditing ? "Cập Nhật" : "Thêm Mới"}
-                    </button>
-                  </div>
-                </form>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Chọn đơn hàng" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {fetchingDonHang ? (
+                          <SelectItem value="" disabled>
+                            Đang tải danh sách đơn hàng...
+                          </SelectItem>
+                        ) : donHangs.length > 0 ? (
+                          donHangs.map((donHang) => (
+                            <SelectItem
+                              key={donHang.iddonhang}
+                              value={donHang.iddonhang.toString()}
+                            >
+                              Đơn hàng #{donHang.iddonhang}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="" disabled>
+                            Không có đơn hàng nào
+                          </SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  {!isEditing && donHangs.length === 0 && !fetchingDonHang && (
+                    <p className="text-sm text-red-500 mt-1">
+                      <Button
+                        type="button"
+                        variant="link"
+                        className="p-0 h-auto text-blue-500"
+                        onClick={fetchDonHangs}
+                      >
+                        <RefreshCw className="h-3 w-3 mr-1" />
+                        Tải lại danh sách đơn hàng
+                      </Button>
+                    </p>
+                  )}
+                </div>
+
+                {/* Phương Thức Thanh Toán */}
+                <div>
+                  <Label
+                    htmlFor="phuongthucthanhtoan"
+                    className="text-sm font-medium"
+                  >
+                    Phương Thức Thanh Toán
+                  </Label>
+                  <Select
+                    value={formData.phuongthucthanhtoan || ""}
+                    onValueChange={(value) =>
+                      handleChange("phuongthucthanhtoan", value)
+                    }
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Chọn phương thức" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {paymentMethods.map((method) => (
+                        <SelectItem key={method.value} value={method.value}>
+                          {method.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-            </div>
-          </div>
-        </dialog>
 
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Quản Lý Thanh Toán</h1>
-          <button
-            onClick={handleOpenCreateModal}
-            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-          >
-            Thêm Mới Thanh Toán
-          </button>
-        </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Số Tiền */}
+                <div>
+                  <Label htmlFor="sotien" className="text-sm font-medium">
+                    Số Tiền
+                  </Label>
+                  <Input
+                    id="sotien"
+                    type="number"
+                    value={formData.sotien || ""}
+                    onChange={(e) =>
+                      handleChange(
+                        "sotien",
+                        e.target.value ? Number(e.target.value) : null
+                      )
+                    }
+                    placeholder="Nhập số tiền"
+                    className="mt-1"
+                  />
+                </div>
 
-        <PaymentTable
-          key={reloadKey}
-          onEdit={handleEdit}
-          onDelete={(id) => setDeleteConfirmId(id)}
-          refreshTrigger={reloadKey}
-        />
+                {/* Trạng Thái */}
+                <div>
+                  <Label htmlFor="trangthai" className="text-sm font-medium">
+                    Trạng Thái
+                  </Label>
+                  <Select
+                    value={formData.trangthai || ""}
+                    onValueChange={(value) => handleChange("trangthai", value)}
+                    disabled={formData.phuongthucthanhtoan === "Online"}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Chọn trạng thái" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {paymentStatuses.map((status) => (
+                        <SelectItem key={status.value} value={status.value}>
+                          {status.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Ngày Thanh Toán */}
+              <div>
+                <Label htmlFor="ngaythanhtoan" className="text-sm font-medium">
+                  Ngày Thanh Toán
+                </Label>
+                <Input
+                  id="ngaythanhtoan"
+                  type="date"
+                  value={formData.ngaythanhtoan || ""}
+                  onChange={(e) =>
+                    handleChange("ngaythanhtoan", e.target.value || null)
+                  }
+                  className="mt-1"
+                />
+              </div>
+
+              {/* Email notification option */}
+              <div className="flex items-center space-x-2 mt-4">
+                <Checkbox
+                  id="sendEmail"
+                  checked={formData.sendEmail}
+                  onCheckedChange={(checked) =>
+                    handleChange("sendEmail", checked === true)
+                  }
+                />
+                <Label
+                  htmlFor="sendEmail"
+                  className="text-sm font-medium cursor-pointer"
+                >
+                  Gửi email xác nhận thanh toán đến khách hàng
+                </Label>
+              </div>
+
+              {selectedDonHang?.users?.Email && (
+                <div className="bg-blue-50 p-3 rounded-md mt-2">
+                  <div className="flex items-start">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5 text-blue-500 mr-2 mt-0.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                      />
+                    </svg>
+                    <div>
+                      <p className="text-sm text-blue-700">
+                        Email sẽ được gửi đến:{" "}
+                        <span className="font-medium">
+                          {selectedDonHang.users.Email}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </form>
+
+            <AlertDialogFooter>
+              <AlertDialogCancel>Hủy</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleSubmit}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                disabled={sendingEmail}
+              >
+                {sendingEmail ? (
+                  <>
+                    <svg
+                      className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Đang xử lý...
+                  </>
+                ) : isEditing ? (
+                  "Cập Nhật"
+                ) : (
+                  "Thêm Mới"
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Delete Confirmation Dialog */}
         <AlertDialog
@@ -688,10 +709,13 @@ const PaymentManagementPage: React.FC = () => {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setDeleteConfirmId(null)}>
-                Hủy
-              </AlertDialogCancel>
-              <AlertDialogAction onClick={handleDelete}>Xóa</AlertDialogAction>
+              <AlertDialogCancel>Hủy</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDelete}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                Xóa
+              </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>

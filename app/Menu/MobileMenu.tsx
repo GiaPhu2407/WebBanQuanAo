@@ -113,6 +113,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
 
     return (
       <div className="py-4 border-t border-gray-200">
+        
         <div className="flex items-center gap-3 px-4 mb-3">
           <Avatar className="h-8 w-8">
             <AvatarImage

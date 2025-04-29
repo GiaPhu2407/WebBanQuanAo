@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { Eye, Trash2, Edit } from "lucide-react";
-import Image from "next/image";
+"use client";
+
+import type React from "react";
+import { useEffect, useState } from "react";
+import { Eye, Trash2, Edit, MapPin } from "lucide-react";
 
 interface DonHang {
   iddonhang: number;
@@ -9,6 +11,9 @@ interface DonHang {
   tongsotien: number;
   ngaydat: string;
   idUsers: number;
+  idDiaChi?: number | null;
+  idDiscount?: number | null;
+  discountValue?: number | null;
   chitietdonhang: {
     idchitietdonhang: number;
     iddonhang: number;
@@ -25,13 +30,24 @@ interface DonHang {
     };
   }[];
   users?: {
+    idUsers: number;
     Hoten: string;
     Email: string;
     Sdt: string;
+    Diachi: string;
   };
   lichgiaohang?: {
     NgayGiao: string;
   }[];
+  diaChiGiaoHang?: {
+    idDiaChi: number;
+    tenNguoiNhan: string;
+    soDienThoai: string;
+    diaChiChiTiet: string;
+    phuongXa: string;
+    quanHuyen: string;
+    thanhPho: string;
+  } | null;
 }
 
 interface ChitietDonhang {
@@ -60,6 +76,7 @@ interface TableDonHangProps {
   onDelete: (id: number) => void;
   reloadKey: number;
   userId?: number;
+  addressesCache?: Record<number, any>;
 }
 
 const TableDonHang: React.FC<TableDonHangProps> = ({
@@ -68,6 +85,7 @@ const TableDonHang: React.FC<TableDonHangProps> = ({
   onDelete,
   reloadKey,
   userId,
+  addressesCache = {},
 }) => {
   const [donHangs, setDonHangs] = useState<DonHang[]>([]);
   const [chiTietDonHang, setChiTietDonHang] = useState<ChitietDonhang[]>([]);
@@ -78,6 +96,7 @@ const TableDonHang: React.FC<TableDonHangProps> = ({
     totalPage: 1,
   });
   const [loading, setLoading] = useState(false);
+  const [sidebarExpanded, setSidebarExpanded] = useState(true);
 
   const fetchDonHangs = async () => {
     setLoading(true);
@@ -94,9 +113,23 @@ const TableDonHang: React.FC<TableDonHangProps> = ({
         throw new Error("Không thể tải danh sách đơn hàng");
       }
       const result = await response.json();
-      console.log("API Response:", result);
       if (result.data) {
-        setDonHangs(result.data);
+        // Enhance orders with address data from cache if available
+        const enhancedOrders = result.data.map((order: DonHang) => {
+          if (
+            order.idDiaChi &&
+            !order.diaChiGiaoHang &&
+            addressesCache[order.idDiaChi]
+          ) {
+            return {
+              ...order,
+              diaChiGiaoHang: addressesCache[order.idDiaChi],
+            };
+          }
+          return order;
+        });
+
+        setDonHangs(enhancedOrders);
         setMeta({
           page: result.meta.page,
           limit_size: result.meta.limit_size,
@@ -112,23 +145,23 @@ const TableDonHang: React.FC<TableDonHangProps> = ({
     }
   };
 
-  const fetchChiTietDonHang = async (idDonHang: number) => {
-    try {
-      const response = await fetch(`/api/chitietdonhang/${idDonHang}`);
-      if (!response.ok) {
-        throw new Error("Không thể tải chi tiết đơn hàng");
-      }
-      const result = await response.json();
-      setChiTietDonHang(result.data);
-    } catch (error) {
-      console.error("Lỗi:", error);
-      setChiTietDonHang([]);
-    }
-  };
+  // Lắng nghe sự kiện sidebar toggle để điều chỉnh kích thước bảng
+  useEffect(() => {
+    const handleSidebarToggle = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      setSidebarExpanded(customEvent.detail.expanded);
+    };
+
+    window.addEventListener("sidebarToggle", handleSidebarToggle);
+
+    return () => {
+      window.removeEventListener("sidebarToggle", handleSidebarToggle);
+    };
+  }, []);
 
   useEffect(() => {
     fetchDonHangs();
-  }, [meta.page, meta.limit_size, reloadKey, userId]);
+  }, [meta.page, meta.limit_size, reloadKey, userId, addressesCache]);
 
   const handlePageChange = (newPage: number) => {
     setMeta((prev) => ({ ...prev, page: newPage }));
@@ -162,247 +195,249 @@ const TableDonHang: React.FC<TableDonHangProps> = ({
     if (!sanpham) return "/no-image.jpg";
 
     if (sanpham.hinhanh) {
-      // Check if it's already a full URL
       if (sanpham.hinhanh.startsWith("http")) {
         return sanpham.hinhanh;
       }
-      // If it's not a full URL, construct it with NEXT_PUBLIC_SUPABASE_URL
       return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/images/${sanpham.hinhanh}`;
     }
 
     return "/no-image.jpg";
   };
 
+  // Tính toán lớp CSS cho vùng container chính dựa trên trạng thái sidebar
+  const mainContainerClass = sidebarExpanded
+    ? "ml-64 transition-all duration-300 pt-16"
+    : "ml-16 transition-all duration-300 pt-16";
+
+  // Get shipping address display text
+  const getShippingAddressText = (order: DonHang) => {
+    if (order.diaChiGiaoHang) {
+      return `${order.diaChiGiaoHang.tenNguoiNhan}, ${order.diaChiGiaoHang.soDienThoai}`;
+    }
+
+    if (order.idDiaChi && addressesCache[order.idDiaChi]) {
+      const address = addressesCache[order.idDiaChi];
+      return `${address.tenNguoiNhan}, ${address.soDienThoai}`;
+    }
+
+    return order.idDiaChi ? "Có địa chỉ (click để xem)" : "Không có địa chỉ";
+  };
+
   return (
-    <div className="space-y-4">
-      <div className="w-full rounded-lg shadow mt-10">
-        <table className="w-full divide-gray-200 bg-gradient-to-r from-blue-500 to-purple-400">
-          <thead>
-            <tr>
-              <th className="px-4 py-3 text-white">Mã ĐH</th>
-              <th className="px-4 py-3 text-white">Tổng SL</th>
-              <th className="px-4 py-3 text-white">Hình ảnh</th>
-              <th className="px-4 py-3 text-white">Tổng Tiền</th>
-              <th className="px-4 py-3 text-white">Ngày Đặt</th>
-              <th className="px-4 py-3 text-white">Trạng Thái</th>
-              <th className="px-4 py-3 text-white">Khách Hàng</th>
-              <th className="px-4 py-3 text-white">Ngày Giao</th>
-              <th className="px-4 py-3 text-white">Thao Tác</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {loading ? (
-              <tr>
-                <td colSpan={9} className="px-6 py-4 text-center">
-                  <div className="flex items-center justify-center">
-                    <div className="w-6 h-6 border-2 border-blue-600 rounded-full animate-spin border-t-transparent"></div>
-                    <span className="ml-2">Đang tải dữ liệu...</span>
-                  </div>
-                </td>
-              </tr>
-            ) : donHangs.length > 0 ? (
-              donHangs.map((donhang) => (
-                <tr
-                  key={donhang.iddonhang}
-                  className="hover:bg-blue-50 transition-colors"
-                >
-                  <td className="px-4 py-4 text-center">{donhang.iddonhang}</td>
-                  <td className="px-4 py-4 text-center">
-                    {donhang.tongsoluong || 0}
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="flex justify-center">
-                      {donhang.chitietdonhang?.[0]?.sanpham ? (
-                        <div className="relative w-16 h-16">
+    <div className={`${mainContainerClass} px-4`}>
+      <div className="bg-white shadow-md rounded-lg overflow-hidden">
+        {loading ? (
+          <div className="flex justify-center items-center h-40">
+            <span className="loading loading-spinner text-blue-600 loading-lg"></span>
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="table w-full">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="px-4 py-3 text-left">Mã ĐH</th>
+                    <th className="px-4 py-3 text-left">Ngày đặt</th>
+                    <th className="px-4 py-3 text-left">Khách hàng</th>
+                    <th className="px-4 py-3 text-left">Địa chỉ giao hàng</th>
+                    <th className="px-4 py-3 text-center">Tổng SL</th>
+                    <th className="px-4 py-3 text-center">Hình ảnh</th>
+                    <th className="px-4 py-3 text-right">Tổng tiền</th>
+                    <th className="px-4 py-3 text-center">Trạng thái</th>
+                    <th className="px-4 py-3 text-center">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {donHangs.length > 0 ? (
+                    donHangs.map((donhang) => (
+                      <tr
+                        key={donhang.iddonhang}
+                        className="border-b hover:bg-gray-50"
+                      >
+                        <td className="px-4 py-3">#{donhang.iddonhang}</td>
+                        <td className="px-4 py-3">
+                          {formatDate(donhang.ngaydat)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div>
+                            <p className="font-medium">
+                              {donhang.users?.Hoten || "Không có thông tin"}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {donhang.users?.Email || "Không có email"}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {donhang.users?.Sdt || "Không có SĐT"}
+                            </p>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div
+                            className={`flex items-center ${
+                              donhang.idDiaChi
+                                ? "text-blue-600"
+                                : "text-gray-500 italic"
+                            }`}
+                          >
+                            <MapPin className="h-4 w-4 mr-1 flex-shrink-0" />
+                            <span className="text-sm truncate max-w-[150px]">
+                              {getShippingAddressText(donhang)}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          {donhang.tongsoluong}
+                        </td>
+                        <td className="px-4 py-3 text-center">
                           <img
-                            src={getImageUrl(donhang.chitietdonhang[0].sanpham)}
+                            src={
+                              getImageUrl(donhang.chitietdonhang[0]?.sanpham) ||
+                              "/placeholder.svg"
+                            }
                             alt={
-                              donhang.chitietdonhang[0].sanpham.tensanpham ||
+                              donhang.chitietdonhang[0]?.sanpham?.tensanpham ||
                               "Sản phẩm"
                             }
-                            className="w-16 h-16 object-cover rounded-lg"
+                            className="w-16 h-16 object-cover rounded"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
                               target.src = "/no-image.jpg";
                               target.onerror = null;
                             }}
                           />
-                        </div>
-                      ) : (
-                        <div className="relative w-16 h-16">
-                          <img
-                            src="/no-image.jpg"
-                            alt="No Image"
-                            className="w-16 h-16 object-cover rounded-lg"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-4 text-right">
-                    {formatCurrency(donhang.tongsotien || 0)}
-                  </td>
-                  <td className="px-4 py-4">{formatDate(donhang.ngaydat)}</td>
-                  <td className="px-4 py-4">
-                    <span
-                      className={`font-semibold ${getStatusColor(
-                        donhang.trangthai || ""
-                      )}`}
-                    >
-                      {donhang.trangthai || "Chưa xác định"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4">
-                    {donhang.users?.Hoten || "Không xác định"}
-                  </td>
-                  <td className="px-4 py-4">
-                    {donhang.lichgiaohang?.[0]?.NgayGiao
-                      ? formatDate(donhang.lichgiaohang[0].NgayGiao)
-                      : "Chưa giao"}
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="flex justify-center space-x-2">
-                      <button
-                        onClick={() => onView(donhang)}
-                        className="p-1 text-blue-600 hover:text-blue-800"
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          {formatCurrency(donhang.tongsotien)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex justify-center">
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs ${getStatusColor(
+                                donhang.trangthai
+                              )} bg-opacity-20 ${
+                                donhang.trangthai.toLowerCase() === "đã giao"
+                                  ? "bg-green-100"
+                                  : donhang.trangthai.toLowerCase() ===
+                                    "đang xử lý"
+                                  ? "bg-blue-100"
+                                  : "bg-red-100"
+                              }`}
+                            >
+                              {donhang.trangthai}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex justify-center space-x-2">
+                            <button
+                              onClick={() => onView(donhang)}
+                              className="btn btn-sm btn-circle btn-ghost text-blue-600"
+                              title="Xem chi tiết"
+                            >
+                              <Eye size={18} />
+                            </button>
+                            <button
+                              onClick={() => onEdit(donhang)}
+                              className="btn btn-sm btn-circle btn-ghost text-amber-600"
+                              title="Cập nhật trạng thái"
+                            >
+                              <Edit size={18} />
+                            </button>
+                            <button
+                              onClick={() => onDelete(donhang.iddonhang)}
+                              className="btn btn-sm btn-circle btn-ghost text-red-600"
+                              title="Xóa đơn hàng"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={9}
+                        className="text-center py-8 text-gray-500"
                       >
-                        <Eye className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => onEdit(donhang)}
-                        className="p-1 text-green-600 hover:text-green-800"
-                      >
-                        <Edit className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => onDelete(donhang.iddonhang)}
-                        className="p-1 text-red-600 hover:text-red-800"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={9} className="px-6 py-4 text-center text-gray-500">
-                  Không có đơn hàng nào
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="flex items-center justify-between px-4">
-        <div className="text-sm text-gray-700">
-          Kết quả: {(meta.page - 1) * meta.limit_size + 1} -{" "}
-          {Math.min(meta.page * meta.limit_size, meta.totalRecords)} của{" "}
-          {meta.totalRecords}
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => handlePageChange(meta.page - 1)}
-            disabled={meta.page === 1}
-            className="p-2 rounded-lg border bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-          </button>
-
-          {[1, 2, 3].map((number) => (
-            <button
-              key={number}
-              onClick={() => handlePageChange(number)}
-              className={`min-w-[40px] h-[40px] flex items-center justify-center rounded-lg border text-sm
-                  ${
-                    number === meta.page
-                      ? "bg-blue-500 text-white border-blue-500"
-                      : "bg-white hover:bg-gray-50"
-                  }`}
-            >
-              {number}
-            </button>
-          ))}
-
-          {meta.totalPage > 3 && <span className="px-2">...</span>}
-
-          {meta.totalPage > 3 && (
-            <button
-              onClick={() => handlePageChange(meta.totalPage)}
-              className={`min-w-[40px] h-[40px] flex items-center justify-center rounded-lg border text-sm bg-white hover:bg-gray-50`}
-            >
-              {meta.totalPage}
-            </button>
-          )}
-
-          <button
-            onClick={() => handlePageChange(meta.page + 1)}
-            disabled={meta.page >= meta.totalPage}
-            className="p-2 rounded-lg border bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </button>
-
-          <div className="relative ml-2">
-            <select
-              value={meta.limit_size}
-              onChange={(e) =>
-                setMeta((prev) => ({
-                  ...prev,
-                  limit_size: Number(e.target.value),
-                  page: 1,
-                }))
-              }
-              className="appearance-none bg-white border rounded-lg px-4 py-2 pr-8 cursor-pointer text-sm"
-            >
-              <option value="10">10</option>
-              <option value="20">20</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2">
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
+                        Không có đơn hàng nào
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
-          </div>
-        </div>
+
+            {/* Phân trang */}
+            {meta.totalPage > 1 && (
+              <div className="flex justify-between items-center px-6 py-4 bg-gray-50">
+                <div>
+                  <p className="text-sm text-gray-600">
+                    Hiển thị {donHangs.length} / {meta.totalRecords} đơn hàng
+                  </p>
+                </div>
+                <div className="join">
+                  <button
+                    className="join-item btn btn-sm"
+                    onClick={() => handlePageChange(1)}
+                    disabled={meta.page === 1}
+                  >
+                    «
+                  </button>
+                  <button
+                    className="join-item btn btn-sm"
+                    onClick={() => handlePageChange(meta.page - 1)}
+                    disabled={meta.page === 1}
+                  >
+                    ‹
+                  </button>
+                  {Array.from(
+                    { length: Math.min(5, meta.totalPage) },
+                    (_, i) => {
+                      // Logic để hiển thị trang hiện tại và các trang xung quanh
+                      let pageToShow = meta.page - 2 + i;
+                      if (meta.page < 3) {
+                        pageToShow = i + 1;
+                      } else if (meta.page > meta.totalPage - 2) {
+                        pageToShow = meta.totalPage - 4 + i;
+                      }
+
+                      // Đảm bảo các trang hiển thị nằm trong phạm vi hợp lệ
+                      if (pageToShow > 0 && pageToShow <= meta.totalPage) {
+                        return (
+                          <button
+                            key={pageToShow}
+                            className={`join-item btn btn-sm ${
+                              meta.page === pageToShow ? "btn-active" : ""
+                            }`}
+                            onClick={() => handlePageChange(pageToShow)}
+                          >
+                            {pageToShow}
+                          </button>
+                        );
+                      }
+                      return null;
+                    }
+                  )}
+                  <button
+                    className="join-item btn btn-sm"
+                    onClick={() => handlePageChange(meta.page + 1)}
+                    disabled={meta.page === meta.totalPage}
+                  >
+                    ›
+                  </button>
+                  <button
+                    className="join-item btn btn-sm"
+                    onClick={() => handlePageChange(meta.totalPage)}
+                    disabled={meta.page === meta.totalPage}
+                  >
+                    »
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

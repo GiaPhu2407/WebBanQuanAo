@@ -3,9 +3,32 @@ export interface OrderItem {
   ngaydat: string;
   trangthai: string;
   tongsotien: number;
-  chitietdonhang: OrderDetail[];
-  lichGiaoHang?: DeliverySchedule[];
-  thanhtoan: Payment[];
+  tongsoluong: number;
+  chitietdonhang: Array<{
+    soluong: number;
+    dongia: number;
+    idSize?: number;
+    sanpham?: {
+      tensanpham: string;
+      hinhanh: string;
+    };
+  }>;
+  thanhtoan?: Array<{
+    phuongthucthanhtoan: string;
+    ngaythanhtoan: string;
+  }>;
+  lichGiaoHang?: Array<{
+    NgayGiao: string;
+    TrangThai: string;
+  }>;
+  diaChiGiaoHang?: {
+    tenNguoiNhan: string;
+    soDienThoai: string;
+    diaChiChiTiet: string;
+    phuongXa: string;
+    quanHuyen: string;
+    thanhPho: string;
+  };
 }
 
 export interface OrderDetail {

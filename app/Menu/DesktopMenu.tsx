@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { MenuProps } from "@/app/Menu/type/menu";
 import { ShoppingCart } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { NotificationBell } from "@/components/ui/notification-bell";
 
 interface DesktopMenuProps
   extends Pick<
@@ -247,7 +248,7 @@ const DesktopMenu: React.FC<DesktopMenuProps> = ({
               </div>
             </div>
           </div>
-
+          <NotificationBell />
           {/* User Profile Section */}
           <div className="flex items-center">
             {userData ? (
@@ -325,6 +326,12 @@ const DesktopMenu: React.FC<DesktopMenuProps> = ({
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
                         Yêu Thích
+                      </Link>
+                      <Link
+                        href="/component/Order"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        Xem Đơn Hàng
                       </Link>
                       <Link
                         href="/ChangePassword"

@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
-import { CreditCard, Trash2, RefreshCw } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+"use client";
+
+import { useState, useEffect } from "react";
+import { CreditCard, Trash2, RefreshCw, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -10,7 +11,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 // TypeScript interfaces for type safety
 interface Payment {
@@ -20,6 +30,16 @@ interface Payment {
   sotien: number | null;
   trangthai: string | null;
   ngaythanhtoan: string | null;
+  donhang?: {
+    iddonhang: number;
+    tongsotien: number | null;
+    trangthai: string | null;
+    users?: {
+      idUsers: number;
+      Email: string;
+      Hoten: string;
+    };
+  };
 }
 
 interface PaginationMeta {
@@ -35,51 +55,61 @@ interface PaymentTableProps {
   refreshTrigger?: number;
 }
 
-const PaymentStatusBadge: React.FC<{ status: string | null }> = ({
-  status,
-}) => {
+const PaymentStatusBadge = ({ status }: { status: string | null }) => {
   const getStatusConfig = (status: string | null) => {
     switch (status?.toLowerCase()) {
       case "completed":
       case "thành công":
+      case "đã thanh toán":
         return {
           label: "Thành Công",
-          className: "bg-green-100 text-green-800 border border-green-300",
+          variant: "success" as const,
         };
       case "pending":
       case "đang chờ":
         return {
           label: "Đang Chờ",
-          className: "bg-yellow-100 text-yellow-800 border border-yellow-300",
+          variant: "warning" as const,
         };
       case "failed":
       case "thất bại":
         return {
           label: "Thất Bại",
-          className: "bg-red-100 text-red-800 border border-red-300",
+          variant: "destructive" as const,
         };
       default:
         return {
-          label: "Chưa Xác Định",
-          className: "bg-gray-100 text-gray-800 border border-gray-300",
+          label: status || "Chưa Xác Định",
+          variant: "outline" as const,
         };
     }
   };
 
-  const { label, className } = getStatusConfig(status);
+  const { label, variant } = getStatusConfig(status);
+
+  // Map variant to appropriate Tailwind classes
+  const variantClasses = {
+    success: "bg-green-100 text-green-800 border-green-200",
+    warning: "bg-yellow-100 text-yellow-800 border-yellow-200",
+    destructive: "bg-red-100 text-red-800 border-red-200",
+    outline: "bg-gray-100 text-gray-800 border-gray-200",
+  };
 
   return (
-    <span className={`px-2 py-1 rounded-full text-xs font-medium ${className}`}>
+    <Badge
+      className={`font-medium ${variantClasses[variant]}`}
+      variant="outline"
+    >
       {label}
-    </span>
+    </Badge>
   );
 };
 
-const PaymentTable: React.FC<PaymentTableProps> = ({
+const PaymentTable = ({
   onDelete,
   onEdit,
   refreshTrigger,
-}) => {
+}: PaymentTableProps) => {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState<PaginationMeta>({
@@ -108,7 +138,6 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
       }));
     } catch (error) {
       console.error("Fetch payments error:", error);
-      // Optional: Add toast or error notification
     } finally {
       setLoading(false);
     }
@@ -122,135 +151,207 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
     setPagination((prev) => ({ ...prev, page: newPage }));
   };
 
-  const renderPaginationControls = () => {
-    const { page, totalPages } = pagination;
-    const pageNumbers = [];
+  const formatCurrency = (amount: number | null) => {
+    if (amount === null) return "0 ₫";
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(amount);
+  };
 
-    // Generate page numbers
-    for (let i = 1; i <= Math.min(totalPages, 3); i++) {
-      pageNumbers.push(
-        <Button
-          key={i}
-          variant={page === i ? "default" : "outline"}
-          size="sm"
-          onClick={() => handlePageChange(i)}
-        >
-          {i}
-        </Button>
-      );
-    }
-
-    return (
-      <div className="flex items-center justify-between mt-4">
-        <div className="text-sm text-muted-foreground">
-          Trang {page} / {totalPages} (Tổng: {pagination.totalRecords} bản ghi)
-        </div>
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(page - 1)}
-            disabled={page === 1}
-          >
-            Trước
-          </Button>
-          {pageNumbers}
-          {totalPages > 3 && <span>...</span>}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(page + 1)}
-            disabled={page === totalPages}
-          >
-            Tiếp
-          </Button>
-        </div>
-      </div>
-    );
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "N/A";
+    return new Date(dateString).toLocaleDateString("vi-VN");
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex justify-between items-center">
-          <CardTitle>Danh Sách Thanh Toán</CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchPayments}
-            disabled={loading}
-          >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Tải Lại
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold">Danh Sách Thanh Toán</h2>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={fetchPayments}
+          disabled={loading}
+          className="flex items-center gap-1"
+        >
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCw className="h-4 w-4" />
+          )}
+          <span>Tải lại</span>
+        </Button>
+      </div>
+
+      <div className="rounded-md border overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Mã Thanh Toán</TableHead>
-              <TableHead>Đơn Hàng</TableHead>
-              <TableHead>Phương Thức</TableHead>
-              <TableHead className="text-right">Số Tiền</TableHead>
-              <TableHead>Trạng Thái</TableHead>
-              <TableHead>Ngày Thanh Toán</TableHead>
-              {(onDelete || onEdit) && <TableHead>Thao Tác</TableHead>}
+            <TableRow className="bg-gray-50">
+              <TableHead className="w-[100px] font-semibold">Mã TT</TableHead>
+              <TableHead className="font-semibold">Đơn Hàng</TableHead>
+              <TableHead className="font-semibold">Phương Thức</TableHead>
+              <TableHead className="text-right font-semibold">
+                Số Tiền
+              </TableHead>
+              <TableHead className="font-semibold">Trạng Thái</TableHead>
+              <TableHead className="font-semibold">Ngày Thanh Toán</TableHead>
+              {(onDelete || onEdit) && (
+                <TableHead className="text-right font-semibold">
+                  Thao Tác
+                </TableHead>
+              )}
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center">
-                  <div className="flex justify-center items-center">
-                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                    Đang tải dữ liệu...
-                  </div>
-                </TableCell>
-              </TableRow>
+              Array.from({ length: 5 }).map((_, index) => (
+                <TableRow key={index}>
+                  <TableCell>
+                    <Skeleton className="h-5 w-12" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-5 w-20" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-5 w-32" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-5 w-24" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-5 w-24" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-5 w-28" />
+                  </TableCell>
+                  {(onDelete || onEdit) && (
+                    <TableCell>
+                      <Skeleton className="h-9 w-24 float-right" />
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))
             ) : payments.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={7}
-                  className="text-center text-muted-foreground"
+                  className="h-24 text-center text-muted-foreground"
                 >
                   Không có thanh toán nào
                 </TableCell>
               </TableRow>
             ) : (
               payments.map((payment) => (
-                <TableRow key={payment.idthanhtoan}>
-                  <TableCell>{payment.idthanhtoan}</TableCell>
-                  <TableCell>{payment.iddonhang ?? "N/A"}</TableCell>
-                  <TableCell>
-                    {payment.phuongthucthanhtoan ?? "Không xác định"}
+                <TableRow
+                  key={payment.idthanhtoan}
+                  className="hover:bg-gray-50"
+                >
+                  <TableCell className="font-medium">
+                    {payment.idthanhtoan}
                   </TableCell>
-                  <TableCell className="text-right">
-                    {formatCurrency(payment.sotien ?? 0)}
+                  <TableCell>
+                    {payment.iddonhang ? (
+                      <div className="flex flex-col">
+                        <span>#{payment.iddonhang}</span>
+                        {payment.donhang?.users && (
+                          <span className="text-xs text-gray-500 truncate max-w-[150px]">
+                            {payment.donhang.users.Hoten ||
+                              payment.donhang.users.Email}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      "N/A"
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <span className="inline-flex items-center">
+                      {payment.phuongthucthanhtoan === "Chuyển khoản" && (
+                        <svg
+                          className="w-4 h-4 mr-1"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                          />
+                        </svg>
+                      )}
+                      {payment.phuongthucthanhtoan === "Tiền mặt" && (
+                        <svg
+                          className="w-4 h-4 mr-1"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"
+                          />
+                        </svg>
+                      )}
+                      {payment.phuongthucthanhtoan === "Online" && (
+                        <svg
+                          className="w-4 h-4 mr-1"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"
+                          />
+                        </svg>
+                      )}
+                      {payment.phuongthucthanhtoan ?? "Không xác định"}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-right font-medium">
+                    {formatCurrency(payment.sotien)}
                   </TableCell>
                   <TableCell>
                     <PaymentStatusBadge status={payment.trangthai} />
                   </TableCell>
                   <TableCell>{formatDate(payment.ngaythanhtoan)}</TableCell>
                   {(onDelete || onEdit) && (
-                    <TableCell>
-                      <div className="flex space-x-2">
+                    <TableCell className="text-right">
+                      <div className="flex justify-end space-x-2">
                         {onEdit && (
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => onEdit(payment)}
+                            className="text-blue-600 border-blue-200 hover:bg-blue-50"
                           >
-                            <CreditCard className="h-4 w-4 mr-2" /> Sửa
+                            <CreditCard className="h-4 w-4 mr-1" />
+                            <span className="sr-only sm:not-sr-only sm:inline-block">
+                              Sửa
+                            </span>
                           </Button>
                         )}
                         {onDelete && (
                           <Button
-                            variant="destructive"
+                            variant="outline"
                             size="sm"
                             onClick={() => onDelete(payment.idthanhtoan)}
+                            className="text-red-600 border-red-200 hover:bg-red-50"
                           >
-                            <Trash2 className="h-4 w-4 mr-2" /> Xóa
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            <span className="sr-only sm:not-sr-only sm:inline-block">
+                              Xóa
+                            </span>
                           </Button>
                         )}
                       </div>
@@ -261,9 +362,73 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
             )}
           </TableBody>
         </Table>
-        {renderPaginationControls()}
-      </CardContent>
-    </Card>
+      </div>
+
+      {!loading && pagination.totalPages > 1 && (
+        <Pagination className="mt-4">
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={() =>
+                  handlePageChange(Math.max(1, pagination.page - 1))
+                }
+                className={`${
+                  pagination.page === 1
+                    ? "pointer-events-none opacity-50"
+                    : "cursor-pointer"
+                }`}
+                tabIndex={pagination.page === 1 ? -1 : undefined}
+              />
+            </PaginationItem>
+
+            {Array.from(
+              { length: Math.min(5, pagination.totalPages) },
+              (_, i) => {
+                let pageToShow = pagination.page - 2 + i;
+                if (pagination.page < 3) {
+                  pageToShow = i + 1;
+                } else if (pagination.page > pagination.totalPages - 2) {
+                  pageToShow = pagination.totalPages - 4 + i;
+                }
+
+                if (pageToShow > 0 && pageToShow <= pagination.totalPages) {
+                  return (
+                    <PaginationItem key={pageToShow}>
+                      <PaginationLink
+                        isActive={pagination.page === pageToShow}
+                        onClick={() => handlePageChange(pageToShow)}
+                        className="cursor-pointer"
+                      >
+                        {pageToShow}
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+                }
+                return null;
+              }
+            )}
+
+            <PaginationItem>
+              <PaginationNext
+                onClick={() =>
+                  handlePageChange(
+                    Math.min(pagination.totalPages, pagination.page + 1)
+                  )
+                }
+                className={`${
+                  pagination.page === pagination.totalPages
+                    ? "pointer-events-none opacity-50"
+                    : "cursor-pointer"
+                }`}
+                tabIndex={
+                  pagination.page === pagination.totalPages ? -1 : undefined
+                }
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
+    </div>
   );
 };
 
