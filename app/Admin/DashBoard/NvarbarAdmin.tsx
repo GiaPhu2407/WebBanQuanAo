@@ -21,6 +21,7 @@ import {
   ChevronRight,
   ChevronLeft,
   Star,
+  Calendar,
 } from "lucide-react";
 import Menu from "./HeaderDashboard";
 
@@ -312,6 +313,12 @@ const SalesDashboard: React.FC<SalesDashboardProps> = ({ onSidebarToggle }) => {
               icon={<CreditCard size={18} />}
               label="Tính Lương"
               onClick={() => router.push("/Admin/DashBoard/TinhLuong")}
+              isExpanded={sidebarExpanded}
+            />
+            <SidebarItem
+              icon={<Calendar size={18} />}
+              label="Lịch Làm Việc"
+              onClick={() => router.push("/Admin/LichLamViec")}
               isExpanded={sidebarExpanded}
             />
           </SidebarSection>

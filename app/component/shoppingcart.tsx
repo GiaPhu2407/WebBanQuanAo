@@ -33,7 +33,7 @@ export const ShoppingCart = () => {
   const [cartItems, setCartItems] = useState<CartItemType[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<string>("");
+  const [paymentMethod, setPaymentMethod] = useState<string>("vnpay"); // Default to VNPay
   const [itemProcessingId, setItemProcessingId] = useState<number | null>(null);
   const [isAllSelected, setIsAllSelected] = useState(false);
   const [showStripeForm, setShowStripeForm] = useState(false);
@@ -51,12 +51,33 @@ export const ShoppingCart = () => {
 
   useEffect(() => {
     fetchCartItems();
+    // Try to get default address on component mount
+    fetchDefaultAddress();
   }, []);
 
   // Debug logging when selectedAddressId changes
   useEffect(() => {
     console.log("Selected Address ID updated:", selectedAddressId);
   }, [selectedAddressId]);
+
+  // Fetch default address on component mount
+  const fetchDefaultAddress = async () => {
+    try {
+      const response = await fetch("/api/Address");
+      if (response.ok) {
+        const data = await response.json();
+        const defaultAddress = data.addresses?.find(
+          (addr: any) => addr.macDinh
+        );
+        if (defaultAddress) {
+          console.log("Setting default address:", defaultAddress.idDiaChi);
+          setSelectedAddressId(defaultAddress.idDiaChi);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching default address:", error);
+    }
+  };
 
   const fetchCartItems = async () => {
     try {
@@ -207,31 +228,45 @@ export const ShoppingCart = () => {
 
   const handleStripePayment = async () => {
     try {
+      console.log(
+        "Starting Stripe payment with address ID:",
+        selectedAddressId
+      );
+
+      if (!selectedAddressId) {
+        toast.error("Vui lòng chọn địa chỉ giao hàng");
+        setProcessing(false);
+        return;
+      }
+
       const selectedItems = cartItems.filter((item) => item.isSelected);
-      const response = await fetch("/api/check", {
+      const response = await fetch("/api/thanhtoan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           cartItems: selectedItems,
+          paymentMethod: "stripe",
           DiscountInfo: appliedDiscount,
           idDiaChi: selectedAddressId,
-          metadata: {
-            cartItems: JSON.stringify(selectedItems),
-            discountInfo: appliedDiscount
-              ? JSON.stringify(appliedDiscount)
-              : null,
-            addressId: selectedAddressId,
-          },
         }),
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message);
+        throw new Error(
+          error.error || error.message || "Error processing Stripe payment"
+        );
       }
 
-      const { clientSecret } = await response.json();
-      setClientSecret(clientSecret);
+      const data = await response.json();
+      console.log("Stripe payment response:", data);
+
+      if (!data.clientSecret) {
+        console.error("No client secret in response:", data);
+        throw new Error("Không nhận được client secret từ server");
+      }
+
+      setClientSecret(data.clientSecret);
       setShowStripeForm(true);
 
       // Notify user about email confirmation
@@ -241,9 +276,65 @@ export const ShoppingCart = () => {
           duration: 5000,
         }
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error("Payment error:", error);
-      toast.error("Có lỗi xảy ra trong quá trình thanh toán");
+      toast.error(error.message || "Có lỗi xảy ra trong quá trình thanh toán");
+      setProcessing(false);
+    }
+  };
+
+  const handleVNPayPayment = async () => {
+    try {
+      if (!selectedAddressId) {
+        toast.error("Vui lòng chọn địa chỉ giao hàng");
+        setProcessing(false);
+        return;
+      }
+
+      const selectedItems = cartItems.filter((item) => item.isSelected);
+      const requestBody = {
+        cartItems: selectedItems,
+        paymentMethod: "vnpay",
+        idDiaChi: selectedAddressId,
+      };
+
+      // Add discount information if available
+      if (appliedDiscount) {
+        Object.assign(requestBody, { DiscountInfo: appliedDiscount });
+      }
+
+      const response = await fetch("/api/vnpay", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Tạo thanh toán VNPay thất bại");
+      }
+
+      const result = await response.json();
+
+      if (result.success && result.paymentUrl) {
+        // Notify user about email confirmation
+        toast.success(
+          "Bạn sẽ được chuyển đến cổng thanh toán VNPay. Email xác nhận sẽ được gửi sau khi thanh toán thành công.",
+          {
+            duration: 3000,
+          }
+        );
+
+        // Redirect to VNPay payment gateway
+        window.location.href = result.paymentUrl;
+        return;
+      } else {
+        throw new Error("Không nhận được URL thanh toán từ VNPay");
+      }
+    } catch (error: any) {
+      console.error("VNPay payment error:", error);
+      toast.error(error.message || "Có lỗi xảy ra khi xử lý thanh toán VNPay");
+      setProcessing(false);
     }
   };
 
@@ -252,7 +343,7 @@ export const ShoppingCart = () => {
     setAppliedDiscount(discountInfo);
   };
 
-  // FIXED: This function now properly handles address ID selection
+  // This function handles address ID selection
   const handleAddressChange = (addressId: number) => {
     console.log("Address selected with ID:", addressId);
     setSelectedAddressId(addressId);
@@ -292,7 +383,12 @@ export const ShoppingCart = () => {
         return;
       }
 
-      // Tạo đơn hàng
+      if (paymentMethod === "vnpay") {
+        await handleVNPayPayment();
+        return;
+      }
+
+      // Tạo đơn hàng cho các phương thức khác (online, cash)
       const requestBody = {
         cartItems: selectedItems,
         paymentMethod: paymentMethod,
@@ -313,7 +409,8 @@ export const ShoppingCart = () => {
       });
 
       if (!response.ok) {
-        throw new Error("Tạo đơn hàng thất bại");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Tạo đơn hàng thất bại");
       }
 
       const result = await response.json();

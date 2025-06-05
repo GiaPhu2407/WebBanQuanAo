@@ -385,6 +385,30 @@ model CaLamViec {
 //   ngaythanhtoan        DateTime? @db.Date
 //   donhang              Donhang?  @relation(fields: [iddonhang], references: [iddonhang])
 // }
+// model Thanhtoan {
+//   idthanhtoan             Int       @id @default(autoincrement())
+//   iddonhang              Int?      @unique
+//   phuongthucthanhtoan    String?   @db.VarChar(45)
+//   sotien                 Decimal?  @db.Decimal(10,2)
+//   trangthai              String?   @db.VarChar(255)
+//   ngaythanhtoan          DateTime? @db.DateTime
+  
+//   // Payment proof image
+//   hinhanhthanhtoan       String?   @db.Text
+  
+//   // Stripe payment fields (optional)
+//   stripe_session_id      String?   @db.VarChar(255)
+//   stripe_payment_intent_id String? @db.VarChar(255)
+//   stripe_payment_status   String?   @db.VarChar(50)
+
+//   // Relations
+//   donhang               Donhang?   @relation(fields: [iddonhang], references: [iddonhang])
+//   notifications         Notification[]
+
+//   @@index([stripe_session_id])
+//   @@index([stripe_payment_intent_id])
+// }
+// Thanhtoan model
 model Thanhtoan {
   idthanhtoan             Int       @id @default(autoincrement())
   iddonhang              Int?      @unique
@@ -400,6 +424,12 @@ model Thanhtoan {
   stripe_session_id      String?   @db.VarChar(255)
   stripe_payment_intent_id String? @db.VarChar(255)
   stripe_payment_status   String?   @db.VarChar(50)
+  
+  // VNPay payment fields (optional)
+  maGiaoDich             String?   @db.VarChar(255)
+  vnp_TxnRef             String?   @db.VarChar(255)
+  vnp_TransactionNo      String?   @db.VarChar(255)
+  vnp_ResponseCode       String?   @db.VarChar(10)
 
   // Relations
   donhang               Donhang?   @relation(fields: [iddonhang], references: [iddonhang])
@@ -407,7 +437,10 @@ model Thanhtoan {
 
   @@index([stripe_session_id])
   @@index([stripe_payment_intent_id])
+  @@index([vnp_TxnRef])
+  @@index([vnp_TransactionNo])
 }
+
 model LichGiaoHang {
   idLichGiaoXe Int       @id @default(autoincrement())
   idsanpham         Int?      

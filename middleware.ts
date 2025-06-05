@@ -16,6 +16,8 @@ export async function middleware(request: NextRequest) {
     "/Register",
     "/ForgotPassword",
     "/Staff",
+    "/success",
+    "/images/clothing",
     "/unauthorized",
   ];
   const isPublicPath = publicPaths.some(

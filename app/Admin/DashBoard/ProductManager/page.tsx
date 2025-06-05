@@ -41,6 +41,9 @@ export default function ProductManagementPage() {
   }>({});
   const [releaseDate, setReleaseDate] = useState<Date | null>(null);
 
+  // State để track trạng thái sidebar
+  const [sidebarExpanded, setSidebarExpanded] = useState(true);
+
   const [formData, setFormData] = useState({
     tensanpham: "",
     gia: "",
@@ -52,6 +55,29 @@ export default function ProductManagementPage() {
     productSizes: {},
   });
   const [imageUrl, setImageUrl] = useState("");
+
+  // Handler để nhận thông tin từ SalesDashboard về trạng thái sidebar
+  const handleSidebarToggle = (expanded: boolean) => {
+    setSidebarExpanded(expanded);
+  };
+
+  // Listen cho custom event từ sidebar
+  useEffect(() => {
+    const handleSidebarEvent = (event: CustomEvent) => {
+      setSidebarExpanded(event.detail.expanded);
+    };
+
+    window.addEventListener(
+      "sidebarToggle",
+      handleSidebarEvent as EventListener
+    );
+    return () => {
+      window.removeEventListener(
+        "sidebarToggle",
+        handleSidebarEvent as EventListener
+      );
+    };
+  }, []);
 
   useEffect(() => {
     fetchProducts();
@@ -274,8 +300,13 @@ export default function ProductManagementPage() {
   return (
     <div>
       <div className="flex">
-        <SalesDashboard />
-        <div className="p-6 mt-16 w-full">
+        <SalesDashboard onSidebarToggle={handleSidebarToggle} />
+        {/* Main content với margin-left động dựa trên trạng thái sidebar */}
+        <div
+          className={`p-6 mt-16 w-full transition-all duration-300 ease-in-out ${
+            sidebarExpanded ? "md:ml-64" : "md:ml-16"
+          }`}
+        >
           <div className="mb-6">
             <div className="flex justify-between items-center mb-6">
               <h1 className="text-2xl font-bold">Quản lý sản phẩm</h1>

@@ -1,10 +1,10 @@
 "use client";
 
 import type React from "react";
-
 import { useState, useEffect } from "react";
 import { formatCurrency } from "../utils/currency";
-import { AdministrativeData } from "./AdministrativeData"; // Import the new component
+import { AdministrativeData } from "./AdministrativeData"; // Import the administrative data component
+import Image from "next/image";
 
 interface CartSummaryProps {
   selectedItemsCount: number;
@@ -73,6 +73,7 @@ export const CartSummary = ({
   const [showNewAddressForm, setShowNewAddressForm] = useState(false);
   const [isLoadingAddresses, setIsLoadingAddresses] = useState(true);
   const [addressUpdateMessage, setAddressUpdateMessage] = useState("");
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   // New address form state
   const [newAddress, setNewAddress] = useState({
@@ -96,7 +97,7 @@ export const CartSummary = ({
     onApplyDiscount(appliedDiscount);
   }, [appliedDiscount, onApplyDiscount]);
 
-  // Update parent component with the address ID, not the formatted address string
+  // Update parent component with the address ID
   useEffect(() => {
     if (selectedAddressId) {
       console.log(
@@ -106,6 +107,10 @@ export const CartSummary = ({
       onAddressChange(selectedAddressId);
     }
   }, [selectedAddressId, onAddressChange]);
+
+  const toggleExpand = (method: string) => {
+    setExpanded(expanded === method ? null : method);
+  };
 
   const fetchUserInfo = async () => {
     try {
@@ -719,6 +724,53 @@ export const CartSummary = ({
                 <p className="text-sm text-gray-500">
                   Chuyển khoản ngân hàng & tải ảnh chứng minh
                 </p>
+              </div>
+            </label>
+
+            <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+              <input
+                type="radio"
+                name="paymentMethod"
+                value="vnpay"
+                checked={paymentMethod === "vnpay"}
+                onChange={(e) => onPaymentMethodChange(e.target.value)}
+                className="mr-3 h-4 w-4 text-blue-600"
+              />
+              <div className="flex-grow">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Thanh toán qua VNPay</p>
+                    <p className="text-sm text-gray-500">
+                      Thanh toán an toàn qua cổng thanh toán VNPay
+                    </p>
+                  </div>
+                  <div className="flex items-center">
+                    <Image
+                      src="/images/vnpay-logo.png"
+                      alt="VNPay"
+                      width={60}
+                      height={30}
+                      className="object-contain"
+                    />
+                  </div>
+                </div>
+                {expanded === "vnpay" && (
+                  <div className="mt-2 text-sm text-gray-600">
+                    <p>Hỗ trợ thanh toán qua:</p>
+                    <ul className="list-disc pl-5 mt-1">
+                      <li>Thẻ ATM nội địa</li>
+                      <li>Thẻ tín dụng/ghi nợ quốc tế</li>
+                      <li>Ví điện tử</li>
+                      <li>QR Code</li>
+                    </ul>
+                  </div>
+                )}
+                <button
+                  onClick={() => toggleExpand("vnpay")}
+                  className="text-blue-500 text-sm mt-1 hover:underline"
+                >
+                  {expanded === "vnpay" ? "Thu gọn" : "Xem thêm"}
+                </button>
               </div>
             </label>
 

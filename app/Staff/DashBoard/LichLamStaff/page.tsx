@@ -22,7 +22,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "react-hot-toast";
-import SalesDashboard from "../DashBoard/NvarbarAdmin";
+
+// No need to import these - they'll be provided by the layout
+// import Menu from "@/app/Staff/DashBoard/Header";
+// import StaffSidebar from "@/app/Staff/DashBoard/component/StaffSidebar";
 
 interface User {
   idUsers: number;
@@ -111,7 +114,6 @@ const CustomToolbar: React.FC<ToolbarProps<CalendarEvent, object>> = ({
 };
 
 export default function LichLamViecPage() {
-  const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<LichLamViec | null>(null);
@@ -329,99 +331,83 @@ export default function LichLamViecPage() {
     return user.Hoten || user.Tentaikhoan || "Chưa có tên";
   };
 
-  // Xử lý sự kiện khi sidebar thay đổi trạng thái
-  const handleSidebarToggle = (expanded: boolean) => {
-    setSidebarExpanded(expanded);
-  };
-
   return (
-    <div className="min-h-screen bg-gray-100">
-      <SalesDashboard onSidebarToggle={handleSidebarToggle} />
+    <div className="h-full">
+      <h1 className="text-2xl font-bold mt-10">Quản Lý Lịch Làm Việc</h1>
 
-      {/* Main Content Area - will expand/contract based on sidebar state */}
-      <div
-        className={`transition-all duration-300 ease-in-out ${
-          sidebarExpanded ? "md:ml-64" : "md:ml-16"
-        } pt-16`}
-      >
-        <div className="container mx-auto px-4 py-6">
-          <h1 className="text-2xl font-bold mb-6">Quản Lý Lịch Làm Việc</h1>
-
-          <div className="mb-4 bg-white p-4 rounded-lg shadow-md">
-            <div className="flex flex-col md:flex-row md:items-center gap-4">
-              <Label htmlFor="filterUser" className="min-w-[100px]">
-                Chọn nhân viên:
-              </Label>
-              <select
-                id="filterUser"
-                name="idUsers"
-                className="flex h-10 w-full md:max-w-xs rounded-md border border-input bg-background px-3 py-2"
-                value={formData.idUsers || ""}
-                onChange={(e) => {
-                  const value = e.target.value ? Number(e.target.value) : 0;
-                  setFormData((prev) => ({ ...prev, idUsers: value }));
-                }}
-              >
-                <option value="">Chọn nhân viên</option>
-                {users.map((user) => (
-                  <option key={user.idUsers} value={user.idUsers}>
-                    {getUserDisplayName(user)}
-                  </option>
-                ))}
-              </select>
-              <Button onClick={fetchLichLamViec} disabled={!formData.idUsers}>
-                Xem lịch
-              </Button>
-            </div>
-          </div>
-
-          <div
-            className="bg-white p-4 rounded-lg shadow-md"
-            style={{ height: "calc(100vh - 250px)" }}
+      <div className="mb-4 bg-white p-4 rounded-lg shadow-md">
+        <div className="flex items-center gap-4">
+          <Label htmlFor="filterUser" className="min-w-[100px]">
+            Chọn nhân viên:
+          </Label>
+          <select
+            id="filterUser"
+            name="idUsers"
+            className="flex h-10 w-full max-w-xs rounded-md border border-input bg-background px-3 py-2"
+            value={formData.idUsers || ""}
+            onChange={(e) => {
+              const value = e.target.value ? Number(e.target.value) : 0;
+              setFormData((prev) => ({ ...prev, idUsers: value }));
+            }}
           >
-            {isLoading ? (
-              <div className="flex justify-center items-center h-full">
-                <p>Đang tải dữ liệu...</p>
-              </div>
-            ) : (
-              <Calendar
-                localizer={localizer}
-                events={events}
-                startAccessor="start"
-                endAccessor="end"
-                style={{ height: "100%" }}
-                selectable
-                onSelectSlot={handleSelectSlot}
-                onSelectEvent={handleSelectEvent}
-                view={view}
-                onView={setView}
-                date={date}
-                onNavigate={setDate}
-                components={{
-                  toolbar: CustomToolbar,
-                }}
-                messages={{
-                  today: "Hôm nay",
-                  previous: "Trước",
-                  next: "Sau",
-                  month: "Tháng",
-                  week: "Tuần",
-                  day: "Ngày",
-                  agenda: "Lịch trình",
-                  date: "Ngày",
-                  time: "Thời gian",
-                  event: "Sự kiện",
-                  allDay: "Cả ngày",
-                  work_week: "Tuần làm việc",
-                  yesterday: "Hôm qua",
-                  tomorrow: "Ngày mai",
-                  noEventsInRange:
-                    "Không có lịch hẹn nào trong khoảng thời gian này",
-                }}
-              />
-            )}
-          </div>
+            <option value="">Chọn nhân viên</option>
+            {users.map((user) => (
+              <option key={user.idUsers} value={user.idUsers}>
+                {getUserDisplayName(user)}
+              </option>
+            ))}
+          </select>
+          <Button onClick={fetchLichLamViec} disabled={!formData.idUsers}>
+            Xem lịch
+          </Button>
         </div>
+      </div>
+
+      <div
+        className="bg-white p-4 rounded-lg shadow-md"
+        style={{ height: "calc(100vh - 250px)" }}
+      >
+        {isLoading ? (
+          <div className="flex justify-center items-center h-full">
+            <p>Đang tải dữ liệu...</p>
+          </div>
+        ) : (
+          <Calendar
+            localizer={localizer}
+            events={events}
+            startAccessor="start"
+            endAccessor="end"
+            style={{ height: "100%" }}
+            selectable
+            onSelectSlot={handleSelectSlot}
+            onSelectEvent={handleSelectEvent}
+            view={view}
+            onView={setView}
+            date={date}
+            onNavigate={setDate}
+            components={{
+              toolbar: CustomToolbar,
+            }}
+            messages={{
+              today: "Hôm nay",
+              previous: "Trước",
+              next: "Sau",
+              month: "Tháng",
+              week: "Tuần",
+              day: "Ngày",
+              agenda: "Lịch trình",
+              date: "Ngày",
+              time: "Thời gian",
+              event: "Sự kiện",
+              allDay: "Cả ngày",
+              work_week: "Tuần làm việc",
+              yesterday: "Hôm qua",
+              tomorrow: "Ngày mai",
+              noEventsInRange:
+                "Không có lịch hẹn nào trong khoảng thời gian này",
+            }}
+          />
+        )}
       </div>
 
       {/* Dialog Form tạo/chỉnh sửa lịch */}

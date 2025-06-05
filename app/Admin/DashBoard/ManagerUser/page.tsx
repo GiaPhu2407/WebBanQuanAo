@@ -48,6 +48,7 @@ const UserManagementPage: React.FC = () => {
   const [reloadKey, setReloadKey] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { toast } = useToast();
+  const [sidebarExpanded, setSidebarExpanded] = useState(true);
 
   // New state for delete confirmation
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -197,195 +198,210 @@ const UserManagementPage: React.FC = () => {
     setIsEditing(false);
     setIsModalOpen(false);
   };
+  const handleSidebarToggle = (expanded: boolean) => {
+    setSidebarExpanded(expanded);
+  };
 
   // Render component
   return (
     <div className="flex h-screen bg-gray-100">
-      <SalesDashboard />
-      <div className="flex-1 p-8 mt-16">
-        <Toaster />
+      <SalesDashboard onSidebarToggle={handleSidebarToggle} />
 
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">
-            Quản lý người dùng
-          </h1>
-          <Button
-            onClick={() => {
-              resetForm();
-              setIsModalOpen(true);
-            }}
-          >
-            Thêm người dùng
-          </Button>
-        </div>
+      {/* Main content - chỉ giữ lại 1 phần styling duy nhất */}
+      <div
+        className={`flex-1 transition-all duration-300 ease-in-out ${
+          sidebarExpanded ? "md:ml-64" : "md:ml-16"
+        }`}
+      >
+        <div className="flex-1 p-8 mt-16">
+          <Toaster />
 
-        {isModalOpen && (
-          <dialog
-            open
-            className="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
-          >
-            <div className="bg-white rounded-lg p-8 w-full max-w-3xl">
-              <form onSubmit={handleSubmit}>
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-semibold">
-                    {isEditing ? "Cập nhật người dùng" : "Thêm người dùng mới"}
-                  </h2>
-                  <button
-                    type="button"
-                    onClick={() => setIsModalOpen(false)}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    ✕
-                  </button>
-                </div>
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold text-gray-800">
+              Quản lý người dùng
+            </h1>
+            <Button
+              onClick={() => {
+                resetForm();
+                setIsModalOpen(true);
+              }}
+            >
+              Thêm người dùng
+            </Button>
+          </div>
 
-                <div className="grid grid-cols-2 gap-6">
-                  {/* Tên tài khoản */}
-                  <div>
-                    <label className="block font-medium text-gray-700">
-                      Tên tài khoản
-                    </label>
-                    <input
-                      type="text"
-                      name="Tentaikhoan"
-                      value={formData.Tentaikhoan}
-                      onChange={handleInputChange}
-                      className="mt-1 p-2 border rounded-lg w-full"
-                      required
-                    />
-                  </div>
-
-                  {/* Mật khẩu */}
-                  <div>
-                    <label className="block font-medium text-gray-700">
-                      Mật khẩu
-                    </label>
-                    <input
-                      type="password"
-                      name="Matkhau"
-                      value={formData.Matkhau || ""}
-                      onChange={handleInputChange}
-                      className="mt-1 p-2 border rounded-lg w-full"
-                      required={!isEditing}
-                      disabled={isEditing}
-                    />
-                  </div>
-
-                  {/* Email */}
-                  <div>
-                    <label className="block font-medium text-gray-700">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      name="Email"
-                      value={formData.Email}
-                      onChange={handleInputChange}
-                      className="mt-1 p-2 border rounded-lg w-full"
-                      required
-                    />
-                  </div>
-
-                  {/* Họ tên */}
-                  <div>
-                    <label className="block font-medium text-gray-700">
-                      Họ tên
-                    </label>
-                    <input
-                      type="text"
-                      name="Hoten"
-                      value={formData.Hoten}
-                      onChange={handleInputChange}
-                      className="mt-1 p-2 border rounded-lg w-full"
-                      required
-                    />
-                  </div>
-
-                  {/* Số điện thoại */}
-                  <div>
-                    <label className="block font-medium text-gray-700">
-                      Số điện thoại
-                    </label>
-                    <input
-                      type="text"
-                      name="Sdt"
-                      value={formData.Sdt}
-                      onChange={handleInputChange}
-                      className="mt-1 p-2 border rounded-lg w-full"
-                      required
-                    />
-                  </div>
-
-                  {/* Địa chỉ */}
-                  <div>
-                    <label className="block font-medium text-gray-700">
-                      Địa chỉ
-                    </label>
-                    <input
-                      type="text"
-                      name="Diachi"
-                      value={formData.Diachi}
-                      onChange={handleInputChange}
-                      className="mt-1 p-2 border rounded-lg w-full"
-                      required
-                    />
-                  </div>
-
-                  {/* Vai trò */}
-                  <div>
-                    <label className="block font-medium text-gray-700">
-                      Vai trò
-                    </label>
-                    <select
-                      name="idRole"
-                      value={formData.idRole}
-                      onChange={handleInputChange}
-                      className="mt-1 p-2 border rounded-lg w-full"
+          {isModalOpen && (
+            <dialog
+              open
+              className="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+            >
+              <div className="bg-white rounded-lg p-8 w-full max-w-3xl">
+                <form onSubmit={handleSubmit}>
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-semibold">
+                      {isEditing
+                        ? "Cập nhật người dùng"
+                        : "Thêm người dùng mới"}
+                    </h2>
+                    <button
+                      type="button"
+                      onClick={() => setIsModalOpen(false)}
+                      className="text-gray-500 hover:text-gray-700"
                     >
-                      <option value={1}>User</option>
-                      <option value={2}>Admin</option>
-                      <option value={3}>NhanVien</option>
-                    </select>
+                      ✕
+                    </button>
                   </div>
-                </div>
 
-                <div className="flex justify-end mt-6">
-                  <Button type="submit">
-                    {isEditing ? "Cập nhật" : "Thêm mới"}
-                  </Button>
-                </div>
-              </form>
-            </div>
-          </dialog>
-        )}
+                  <div className="grid grid-cols-2 gap-6">
+                    {/* Tên tài khoản */}
+                    <div>
+                      <label className="block font-medium text-gray-700">
+                        Tên tài khoản
+                      </label>
+                      <input
+                        type="text"
+                        name="Tentaikhoan"
+                        value={formData.Tentaikhoan}
+                        onChange={handleInputChange}
+                        className="mt-1 p-2 border rounded-lg w-full"
+                        required
+                      />
+                    </div>
 
-        <TableUserDashboard
-          reloadKey={reloadKey}
-          onEdit={handleEdit}
-          onDelete={handleDeleteRequest}
-        />
+                    {/* Mật khẩu */}
+                    <div>
+                      <label className="block font-medium text-gray-700">
+                        Mật khẩu
+                      </label>
+                      <input
+                        type="password"
+                        name="Matkhau"
+                        value={formData.Matkhau || ""}
+                        onChange={handleInputChange}
+                        className="mt-1 p-2 border rounded-lg w-full"
+                        required={!isEditing}
+                        disabled={isEditing}
+                      />
+                    </div>
 
-        {/* Delete Confirmation Dialog */}
-        <AlertDialog
-          open={isDeleteDialogOpen}
-          onOpenChange={setIsDeleteDialogOpen}
-        >
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
-              <AlertDialogDescription>
-                Bạn có chắc chắn muốn xóa người dùng này? Hành động này không
-                thể hoàn tác.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>
-                Hủy
-              </AlertDialogCancel>
-              <AlertDialogAction onClick={confirmDelete}>Xóa</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+                    {/* Email */}
+                    <div>
+                      <label className="block font-medium text-gray-700">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        name="Email"
+                        value={formData.Email}
+                        onChange={handleInputChange}
+                        className="mt-1 p-2 border rounded-lg w-full"
+                        required
+                      />
+                    </div>
+
+                    {/* Họ tên */}
+                    <div>
+                      <label className="block font-medium text-gray-700">
+                        Họ tên
+                      </label>
+                      <input
+                        type="text"
+                        name="Hoten"
+                        value={formData.Hoten}
+                        onChange={handleInputChange}
+                        className="mt-1 p-2 border rounded-lg w-full"
+                        required
+                      />
+                    </div>
+
+                    {/* Số điện thoại */}
+                    <div>
+                      <label className="block font-medium text-gray-700">
+                        Số điện thoại
+                      </label>
+                      <input
+                        type="text"
+                        name="Sdt"
+                        value={formData.Sdt}
+                        onChange={handleInputChange}
+                        className="mt-1 p-2 border rounded-lg w-full"
+                        required
+                      />
+                    </div>
+
+                    {/* Địa chỉ */}
+                    <div>
+                      <label className="block font-medium text-gray-700">
+                        Địa chỉ
+                      </label>
+                      <input
+                        type="text"
+                        name="Diachi"
+                        value={formData.Diachi}
+                        onChange={handleInputChange}
+                        className="mt-1 p-2 border rounded-lg w-full"
+                        required
+                      />
+                    </div>
+
+                    {/* Vai trò */}
+                    <div>
+                      <label className="block font-medium text-gray-700">
+                        Vai trò
+                      </label>
+                      <select
+                        name="idRole"
+                        value={formData.idRole}
+                        onChange={handleInputChange}
+                        className="mt-1 p-2 border rounded-lg w-full"
+                      >
+                        <option value={1}>User</option>
+                        <option value={2}>Admin</option>
+                        <option value={3}>NhanVien</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end mt-6">
+                    <Button type="submit">
+                      {isEditing ? "Cập nhật" : "Thêm mới"}
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </dialog>
+          )}
+
+          <TableUserDashboard
+            reloadKey={reloadKey}
+            onEdit={handleEdit}
+            onDelete={handleDeleteRequest}
+          />
+
+          {/* Delete Confirmation Dialog */}
+          <AlertDialog
+            open={isDeleteDialogOpen}
+            onOpenChange={setIsDeleteDialogOpen}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Bạn có chắc chắn muốn xóa người dùng này? Hành động này không
+                  thể hoàn tác.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>
+                  Hủy
+                </AlertDialogCancel>
+                <AlertDialogAction onClick={confirmDelete}>
+                  Xóa
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </div>
     </div>
   );

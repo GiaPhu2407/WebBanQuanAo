@@ -40,6 +40,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import SalesDashboard from "../NvarbarAdmin";
 import { ExportOptions } from "./component/ExportOptions";
+import { div } from "@tensorflow/tfjs";
+
 interface LoaiSanPham {
   idloaisanpham: number;
   tenloai: string;
@@ -84,6 +86,7 @@ export default function LoaiSanPhamManagementPage() {
     [key: number]: LoaiSanPham;
   }>({});
   const [showExportOptions, setShowExportOptions] = useState(false);
+  const [sidebarExpanded, setSidebarExpanded] = useState(true);
 
   const { toast } = useToast();
 
@@ -360,6 +363,10 @@ export default function LoaiSanPhamManagementPage() {
     setIsModalOpen(true);
   };
 
+  const handleSidebarToggle = (expanded: boolean) => {
+    setSidebarExpanded(expanded);
+  };
+
   // Custom LoaiSanPhamTable component with icon buttons
   const CustomLoaiSanPhamTable = () => {
     return (
@@ -465,201 +472,211 @@ export default function LoaiSanPhamManagementPage() {
   };
 
   return (
-    <div className="flex flex-col  bg-gray-100">
-      <SalesDashboard />
-      <div className="flex-1  p-4 sm:p-6 pt-16 sm:pt-20">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-4">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
-              Quản lý loại sản phẩm
-            </h1>
+    <div className="flex min-h-screen bg-gray-100">
+      <SalesDashboard onSidebarToggle={handleSidebarToggle} />
 
-            {/* Desktop Actions */}
-            <div className="hidden sm:flex space-x-2">
-              <Button onClick={handleAddNewClick}>
-                <Plus className="h-4 w-4 mr-1" />
-                Thêm loại sản phẩm
-              </Button>
-              {modifiedExportOptions}
+      {/* Main content - chỉ giữ lại 1 phần styling duy nhất */}
+      <div
+        className={`flex-1 transition-all duration-300 ease-in-out ${
+          sidebarExpanded ? "md:ml-64" : "md:ml-16"
+        }`}
+      >
+        <div className="p-4 mt-6 sm:p-6 pt-16 md:pt-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-4">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
+                Quản lý loại sản phẩm
+              </h1>
+
+              {/* Desktop Actions */}
+              <div className="hidden sm:flex space-x-2 mt-2">
+                <Button onClick={handleAddNewClick}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Thêm loại sản phẩm
+                </Button>
+                {modifiedExportOptions}
+              </div>
+
+              {/* Mobile Actions */}
+              <div className="flex sm:hidden w-full justify-between">
+                <Button onClick={handleAddNewClick} size="sm">
+                  <Plus className="h-4 w-4 mr-1" />
+                  Thêm mới
+                </Button>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={() => setShowExportOptions(!showExportOptions)}
+                    >
+                      Xuất/Nhập dữ liệu
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
 
-            {/* Mobile Actions */}
-            <div className="flex sm:hidden w-full justify-between">
-              <Button onClick={handleAddNewClick} size="sm">
-                <Plus className="h-4 w-4 mr-1" />
-                Thêm mới
-              </Button>
+            {/* Mobile Export Options */}
+            {showExportOptions && (
+              <div className="sm:hidden mb-4">{modifiedExportOptions}</div>
+            )}
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={() => setShowExportOptions(!showExportOptions)}
-                  >
-                    Xuất/Nhập dữ liệu
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+              <div className="w-full sm:max-w-md relative">
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="Tìm kiếm theo tên loại hoặc mô tả..."
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  className="pl-8 w-full"
+                />
+              </div>
 
-          {/* Mobile Export Options */}
-          {showExportOptions && (
-            <div className="sm:hidden mb-4">{modifiedExportOptions}</div>
-          )}
-
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
-            <div className="w-full sm:max-w-md relative">
-              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                type="text"
-                placeholder="Tìm kiếm theo tên loại hoặc mô tả..."
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                className="pl-8 w-full"
-              />
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 text-xs sm:text-sm text-gray-600 w-full sm:w-auto">
+                {renderSelectionInfo()}
+                <div>Tổng số: {meta.totalRecords} loại sản phẩm</div>
+              </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 text-xs sm:text-sm text-gray-600 w-full sm:w-auto">
-              {renderSelectionInfo()}
-              <div>Tổng số: {meta.totalRecords} loại sản phẩm</div>
+            {/* Sử dụng custom table với icon buttons thay vì LoaiSanPhamTable component */}
+            <CustomLoaiSanPhamTable />
+
+            {/* Thêm phân trang */}
+            <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-3">
+              <div className="text-xs sm:text-sm text-gray-600 order-2 sm:order-1">
+                Hiển thị {(meta.page - 1) * meta.limit_size + 1} -{" "}
+                {Math.min(meta.page * meta.limit_size, meta.totalRecords)} trong{" "}
+                {meta.totalRecords} loại sản phẩm
+              </div>
+
+              <div className="flex items-center gap-1 sm:gap-2 order-1 sm:order-2">
+                <Button
+                  variant="outline"
+                  onClick={() => handlePageChange(meta.page - 1)}
+                  disabled={meta.page === 1}
+                  size="sm"
+                  className="h-8 w-8 p-0 sm:h-10 sm:w-10"
+                >
+                  <span className="sr-only">Previous</span>←
+                </Button>
+
+                {renderPagination()}
+
+                <Button
+                  variant="outline"
+                  onClick={() => handlePageChange(meta.page + 1)}
+                  disabled={meta.page >= meta.totalPages}
+                  size="sm"
+                  className="h-8 w-8 p-0 sm:h-10 sm:w-10"
+                >
+                  <span className="sr-only">Next</span>→
+                </Button>
+
+                <Select
+                  value={String(meta.limit_size)}
+                  onValueChange={(value) =>
+                    setMeta((prev) => ({
+                      ...prev,
+                      limit_size: Number(value),
+                      page: 1,
+                    }))
+                  }
+                >
+                  <SelectTrigger className="w-16 sm:w-20 h-8 sm:h-10 text-xs sm:text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          </div>
 
-          {/* Sử dụng custom table với icon buttons thay vì LoaiSanPhamTable component */}
-          <CustomLoaiSanPhamTable />
+            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>
+                    {isEditing
+                      ? "Cập nhật loại sản phẩm"
+                      : "Thêm loại sản phẩm mới"}
+                  </DialogTitle>
+                </DialogHeader>
 
-          {/* Thêm phân trang */}
-          <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-3">
-            <div className="text-xs sm:text-sm text-gray-600 order-2 sm:order-1">
-              Hiển thị {(meta.page - 1) * meta.limit_size + 1} -{" "}
-              {Math.min(meta.page * meta.limit_size, meta.totalRecords)} trong{" "}
-              {meta.totalRecords} loại sản phẩm
-            </div>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">
+                      Tên loại sản phẩm
+                    </label>
+                    <Input
+                      type="text"
+                      name="tenloai"
+                      value={formData.tenloai}
+                      onChange={handleChange}
+                      placeholder="Nhập tên loại sản phẩm"
+                    />
+                  </div>
 
-            <div className="flex items-center gap-1 sm:gap-2 order-1 sm:order-2">
-              <Button
-                variant="outline"
-                onClick={() => handlePageChange(meta.page - 1)}
-                disabled={meta.page === 1}
-                size="sm"
-                className="h-8 w-8 p-0 sm:h-10 sm:w-10"
-              >
-                <span className="sr-only">Previous</span>←
-              </Button>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Mô tả</label>
+                    <Textarea
+                      name="mota"
+                      value={formData.mota}
+                      onChange={handleChange}
+                      placeholder="Nhập mô tả loại sản phẩm"
+                      className="min-h-[100px]"
+                    />
+                  </div>
 
-              {renderPagination()}
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleCloseModal}
+                    >
+                      Hủy
+                    </Button>
+                    <Button type="submit">
+                      {isEditing ? "Cập nhật" : "Thêm mới"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
 
-              <Button
-                variant="outline"
-                onClick={() => handlePageChange(meta.page + 1)}
-                disabled={meta.page >= meta.totalPages}
-                size="sm"
-                className="h-8 w-8 p-0 sm:h-10 sm:w-10"
-              >
-                <span className="sr-only">Next</span>→
-              </Button>
-
-              <Select
-                value={String(meta.limit_size)}
-                onValueChange={(value) =>
-                  setMeta((prev) => ({
-                    ...prev,
-                    limit_size: Number(value),
-                    page: 1,
-                  }))
-                }
-              >
-                <SelectTrigger className="w-16 sm:w-20 h-8 sm:h-10 text-xs sm:text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="20">20</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                  <SelectItem value="100">100</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>
-                  {isEditing
-                    ? "Cập nhật loại sản phẩm"
-                    : "Thêm loại sản phẩm mới"}
-                </DialogTitle>
-              </DialogHeader>
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Tên loại sản phẩm
-                  </label>
-                  <Input
-                    type="text"
-                    name="tenloai"
-                    value={formData.tenloai}
-                    onChange={handleChange}
-                    placeholder="Nhập tên loại sản phẩm"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Mô tả</label>
-                  <Textarea
-                    name="mota"
-                    value={formData.mota}
-                    onChange={handleChange}
-                    placeholder="Nhập mô tả loại sản phẩm"
-                    className="min-h-[100px]"
-                  />
-                </div>
-
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleCloseModal}
+            <AlertDialog
+              open={isDeleteDialogOpen}
+              onOpenChange={setIsDeleteDialogOpen}
+            >
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Bạn có chắc chắn muốn xóa loại sản phẩm này? Hành động này
+                    không thể hoàn tác.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel
+                    onClick={() => setIsDeleteDialogOpen(false)}
                   >
                     Hủy
-                  </Button>
-                  <Button type="submit">
-                    {isEditing ? "Cập nhật" : "Thêm mới"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-
-          <AlertDialog
-            open={isDeleteDialogOpen}
-            onOpenChange={setIsDeleteDialogOpen}
-          >
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Bạn có chắc chắn muốn xóa loại sản phẩm này? Hành động này
-                  không thể hoàn tác.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>
-                  Hủy
-                </AlertDialogCancel>
-                <AlertDialogAction onClick={confirmDelete}>
-                  Xóa
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+                  </AlertDialogCancel>
+                  <AlertDialogAction onClick={confirmDelete}>
+                    Xóa
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
       </div>
     </div>

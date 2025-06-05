@@ -5,13 +5,12 @@ import {
   Package,
   Grid,
   Image,
-  Users,
+  Calendar,
   Settings,
   ChevronRight,
   ChevronLeft,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import PaymentChart from "@/app/Staff/DashBoard/component/linechart";
 
 const menuItems = [
   {
@@ -21,7 +20,7 @@ const menuItems = [
   },
   {
     label: "Quản Lý Loại Sản Phẩm",
-    icon: Package,
+    icon: Grid,
     href: "/Admin/Dashboard/LoaiSanPham",
   },
   {
@@ -30,9 +29,14 @@ const menuItems = [
     href: "/Admin/Dashboard/ManagerImage",
   },
   {
+    label: "Lịch Làm Việc",
+    icon: Calendar,
+    href: "/Admin/LichLamViec",
+  },
+  {
     label: "Cài Đặt",
     icon: Settings,
-    href: "/staff/settings",
+    href: "/Admin/settings",
   },
 ];
 

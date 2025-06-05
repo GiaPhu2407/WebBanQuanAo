@@ -1,18 +1,19 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import prisma from "@/prisma/client";
 import Stripe from "stripe";
 import { Prisma } from "@prisma/client";
 import { pusherServer } from "@/lib/pusher";
-import {
-  sendOrderConfirmationEmail,
-  sendPaymentConfirmationEmail,
-} from "@/lib/emailOrder";
-import { request } from "http";
+import { sendOrderConfirmationEmail } from "@/lib/emailOrder";
 
+// Initialize Stripe with the latest API version
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-01-27.acacia",
 });
+
+// Constants
+const USD_TO_VND_RATE = 24000; // Conversion rate
+const MAX_USD_AMOUNT = 999999; // Maximum amount allowed by Stripe in USD
 
 interface CartItem {
   idsanpham: number;
@@ -60,7 +61,7 @@ export async function POST(req: NextRequest) {
       imageURL,
       orderId,
       DiscountInfo,
-      idDiaChi, // Added shipping address ID
+      idDiaChi,
     } = body;
 
     // Debug discount information
@@ -130,50 +131,22 @@ export async function POST(req: NextRequest) {
           `Original Total: ${originalTotal}, Discount: ${discountAmount}, Final Amount: ${finalTotal}, Discount ID: ${discountId}`
         );
 
-        // Prepare items for Stripe
-        const lineItems = cartItems.map((item: CartItem) => {
-          return {
-            price_data: {
-              currency: "vnd",
-              product_data: {
-                name: item.sanpham.Tensanpham,
-                images: [item.sanpham.hinhanh],
-                description:
-                  discountAmount > 0
-                    ? `Original price: ${formatCurrency(
-                        Number(item.sanpham.gia)
-                      )}${discountAmount > 0 ? " (Discount applied)" : ""}`
-                    : undefined,
-              },
-              unit_amount: Number(item.sanpham.gia),
-            },
-            quantity: item.soluong,
-          };
-        });
+        // Convert VND to USD for Stripe (Stripe doesn't support VND directly)
+        const finalAmountInUSD = finalTotal / USD_TO_VND_RATE;
 
-        // Add discount line item if applicable
-        if (discountAmount > 0) {
-          lineItems.push({
-            price_data: {
-              currency: "vnd",
-              product_data: {
-                name: `Discount (${DiscountInfo.code})`,
-                images: [],
-                description: `Applied discount code: ${DiscountInfo.code}`,
-              },
-              unit_amount: -discountAmount,
-            },
-            quantity: 1,
-          });
-        }
+        // Cap the amount to Stripe's maximum and convert to cents
+        const cappedAmountInUSD = Math.min(
+          Math.round(finalAmountInUSD * 100),
+          MAX_USD_AMOUNT * 100
+        );
 
-        // Create Stripe session with the discounted total
-        const stripeSession = await stripe.checkout.sessions.create({
-          payment_method_types: ["card"],
-          line_items: lineItems,
-          mode: "payment",
-          success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-          cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/checkout/cancel`,
+        // Create Stripe payment intent
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: cappedAmountInUSD,
+          currency: "usd",
+          automatic_payment_methods: {
+            enabled: true,
+          },
           metadata: {
             userId: userId.toString(),
             cartItems: JSON.stringify(cartItems),
@@ -182,20 +155,23 @@ export async function POST(req: NextRequest) {
             discountAmount: discountAmount.toString(),
             originalTotal: originalTotal.toString(),
             finalTotal: finalTotal.toString(),
-            addressId: idDiaChi ? idDiaChi.toString() : "", // Include address ID in metadata
+            addressId: idDiaChi ? idDiaChi.toString() : "",
+            conversion_rate: USD_TO_VND_RATE.toString(),
+            capped_amount:
+              cappedAmountInUSD > MAX_USD_AMOUNT * 100 ? "true" : "false",
           },
         });
 
         return NextResponse.json({
           success: true,
-          url: stripeSession.url,
-          sessionId: stripeSession.id,
+          clientSecret: paymentIntent.client_secret,
           originalTotal,
           discountAmount,
           finalTotal,
+          cappedAmount: cappedAmountInUSD > MAX_USD_AMOUNT * 100,
         });
       } catch (error) {
-        console.error("Error creating Stripe session:", error);
+        console.error("Error creating Stripe payment intent:", error);
         return NextResponse.json(
           { error: "Could not create Stripe payment session" },
           { status: 500 }
@@ -206,51 +182,64 @@ export async function POST(req: NextRequest) {
     // Handle Stripe payment completion
     if (stripeSessionId) {
       try {
-        const session = await stripe.checkout.sessions.retrieve(
+        // Retrieve the payment intent from Stripe
+        const paymentIntent = await stripe.paymentIntents.retrieve(
           stripeSessionId
         );
 
-        if (!session.metadata?.cartItems) {
+        if (!paymentIntent.metadata?.cartItems) {
           throw new Error("Cart items not found in metadata");
         }
 
-        const cartItems = JSON.parse(session.metadata.cartItems);
+        const cartItems = JSON.parse(paymentIntent.metadata.cartItems);
 
         // Ensure proper conversion of discountId to number
         const discountId =
-          session.metadata.discountId && session.metadata.discountId !== ""
-            ? Number.parseInt(session.metadata.discountId, 10)
+          paymentIntent.metadata.discountId &&
+          paymentIntent.metadata.discountId !== ""
+            ? Number.parseInt(paymentIntent.metadata.discountId, 10)
             : null;
 
-        const discountAmount = session.metadata.discountAmount
-          ? Number.parseFloat(session.metadata.discountAmount)
+        const discountAmount = paymentIntent.metadata.discountAmount
+          ? Number.parseFloat(paymentIntent.metadata.discountAmount)
           : 0;
 
-        const finalTotal = session.metadata.finalTotal
-          ? Number.parseFloat(session.metadata.finalTotal)
+        const finalTotal = paymentIntent.metadata.finalTotal
+          ? Number.parseFloat(paymentIntent.metadata.finalTotal)
           : null;
 
         // Get address ID from metadata
-        const addressId = session.metadata.addressId
-          ? Number.parseInt(session.metadata.addressId, 10)
+        const addressId = paymentIntent.metadata.addressId
+          ? Number.parseInt(paymentIntent.metadata.addressId, 10)
           : null;
 
-        console.log("Stripe session metadata:", {
+        console.log("Stripe payment intent metadata:", {
           discountId,
           discountAmount,
           finalTotal,
           addressId,
         });
 
+        // Check if payment has already been processed
+        const existingPayment = await prisma.thanhtoan.findFirst({
+          where: { trangthai: `STRIPE:${stripeSessionId}` },
+        });
+
+        if (existingPayment) {
+          return NextResponse.json({
+            success: true,
+            message: "Payment already processed",
+            data: { existingPayment },
+          });
+        }
+
         // Create admin notification for Stripe payment
         const adminNotification = await prisma.notification.create({
           data: {
             idUsers: 1, // Assuming admin ID is 1, adjust as needed
             title: "Thanh toán Stripe mới",
-            message: `Khách hàng ${
-              session.customer_details?.name || userId
-            } đã hoàn tất thanh toán đơn hàng qua Stripe. Số tiền: ${formatCurrency(
-              Number.parseFloat(session.metadata.finalTotal || "0")
+            message: `Khách hàng ${userId} đã hoàn tất thanh toán đơn hàng qua Stripe. Số tiền: ${formatCurrency(
+              Number.parseFloat(paymentIntent.metadata.finalTotal || "0")
             )}`,
             type: "admin_payment",
             isRead: false,
@@ -265,12 +254,26 @@ export async function POST(req: NextRequest) {
           adminNotification
         );
 
+        // Get customer name if available
+        let customerName = "";
+        if (paymentIntent.customer) {
+          try {
+            const customer = await stripe.customers.retrieve(
+              paymentIntent.customer as string
+            );
+            customerName =
+              typeof customer !== "string" ? customer.id || "" : "";
+          } catch (error) {
+            console.error("Error retrieving customer details:", error);
+          }
+        }
+
         // Pass the final total from Stripe session to processOrder
         return await processOrder(
           cartItems,
           "stripe",
           userId,
-          session.customer_details?.name || "",
+          customerName,
           stripeSessionId,
           discountId,
           discountAmount,
@@ -800,7 +803,7 @@ async function processOrder(
   discountId?: number | null,
   discountAmount = 0,
   finalTotal?: number | null,
-  addressId?: number | null // Added address ID parameter
+  addressId?: number | null
 ) {
   if (!Array.isArray(cartItems)) {
     return NextResponse.json({ error: "Invalid cart data" }, { status: 400 });
@@ -868,7 +871,7 @@ async function processOrder(
         totalQuantity,
         discountId,
         discountAmount,
-        addressId // Add address ID to order creation
+        addressId
       );
 
       console.log("Order created:", {
@@ -1150,7 +1153,7 @@ async function createOrder(
   totalQuantity: number,
   discountId: number | null = null,
   discountValue = 0,
-  addressId: number | null = null // Added address ID parameter
+  addressId: number | null = null
 ) {
   // Ensure proper handling of discountId format
   let finalDiscountId: number | null = null;
@@ -1186,7 +1189,7 @@ async function createOrder(
       tongsoluong: totalQuantity,
       idDiscount: finalDiscountId,
       discountValue: discountValue,
-      idDiaChi: addressId, // Add address ID to order data
+      idDiaChi: addressId,
     };
 
     console.log("createOrder - Order data prepared:", orderData);
@@ -1355,8 +1358,8 @@ export async function GET(req: NextRequest) {
         },
         thanhtoan: true,
         lichgiaohang: true,
-        discount: true, // Ensure discount information is retrieved
-        diaChiGiaoHang: true, // Include address information
+        discount: true,
+        diaChiGiaoHang: true,
       },
       orderBy: { ngaydat: "desc" },
     });

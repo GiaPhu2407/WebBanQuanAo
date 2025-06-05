@@ -28,7 +28,6 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { RefreshCw, Plus } from "lucide-react";
 import PaymentTable from "../../Tablethanhtoan";
-import ResponsiveContainer from "@/app/Admin/responsive-container";
 
 // Interfaces
 interface Payment {
@@ -93,8 +92,14 @@ const PaymentManagementPage = () => {
   const [selectedDonHang, setSelectedDonHang] = useState<DonHang | null>(null);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [sidebarExpanded, setSidebarExpanded] = useState(true);
 
   const { toast } = useToast();
+
+  // Handle sidebar toggle from SalesDashboard
+  const handleSidebarToggle = (expanded: boolean) => {
+    setSidebarExpanded(expanded);
+  };
 
   // Dropdown options
   const paymentStatuses = [
@@ -115,6 +120,22 @@ const PaymentManagementPage = () => {
   const refreshData = () => {
     setReloadKey((prevKey) => prevKey + 1);
   };
+
+  // Listen for sidebar toggle events
+  useEffect(() => {
+    const handleSidebarEvent = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      if (customEvent.detail && customEvent.detail.expanded !== undefined) {
+        setSidebarExpanded(customEvent.detail.expanded);
+      }
+    };
+
+    window.addEventListener("sidebarToggle", handleSidebarEvent);
+
+    return () => {
+      window.removeEventListener("sidebarToggle", handleSidebarEvent);
+    };
+  }, []);
 
   // Fetch đơn hàng when component mounts
   useEffect(() => {
@@ -396,329 +417,343 @@ const PaymentManagementPage = () => {
   }
 
   return (
-    <div className="flex flex-col">
-      <SalesDashboard />
-      <ResponsiveContainer children={undefined} />
-      <div className="p-6 flex-1 mt-20">
-        <Toaster />
+    <div className="flex h-screen bg-gray-100">
+      <SalesDashboard onSidebarToggle={handleSidebarToggle} />
 
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-2xl font-bold">Quản Lý Thanh Toán</h1>
-            <p className="text-gray-500 mt-1">
-              Quản lý tất cả các giao dịch thanh toán
-            </p>
+      {/* Main content area with dynamic width based on sidebar state */}
+      <div
+        className={`flex-1 flex flex-col transition-all duration-300 ease-in-out overflow-auto ${
+          sidebarExpanded ? "md:ml-64" : "md:ml-16"
+        } mt-14`}
+      >
+        <div className="p-6 flex-1">
+          <Toaster />
+
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h1 className="text-2xl font-bold">Quản Lý Thanh Toán</h1>
+              <p className="text-gray-500 mt-1">
+                Quản lý tất cả các giao dịch thanh toán
+              </p>
+            </div>
+            <Button
+              onClick={handleOpenCreateModal}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Thêm Mới Thanh Toán
+            </Button>
           </div>
-          <Button
-            onClick={handleOpenCreateModal}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Thêm Mới Thanh Toán
-          </Button>
-        </div>
 
-        <Card className="mb-6">
-          <CardContent className="p-6">
-            <PaymentTable
-              key={reloadKey}
-              onEdit={handleEdit}
-              onDelete={(id) => setDeleteConfirmId(id)}
-              refreshTrigger={reloadKey}
-            />
-          </CardContent>
-        </Card>
+          <Card className="mb-6">
+            <CardContent className="p-6">
+              <PaymentTable
+                key={reloadKey}
+                onEdit={handleEdit}
+                onDelete={(id) => setDeleteConfirmId(id)}
+                refreshTrigger={reloadKey}
+              />
+            </CardContent>
+          </Card>
 
-        {/* Payment Form Modal */}
-        <AlertDialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <AlertDialogContent className="max-w-3xl">
-            <AlertDialogHeader>
-              <AlertDialogTitle>
-                {isEditing ? "Cập Nhật Thanh Toán" : "Thêm Mới Thanh Toán"}
-              </AlertDialogTitle>
-            </AlertDialogHeader>
+          {/* Payment Form Modal */}
+          <AlertDialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+            <AlertDialogContent className="max-w-3xl">
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  {isEditing ? "Cập Nhật Thanh Toán" : "Thêm Mới Thanh Toán"}
+                </AlertDialogTitle>
+              </AlertDialogHeader>
 
-            <form onSubmit={handleSubmit} className="space-y-4 py-2">
-              {/* Đơn Hàng Select/Display */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="iddonhang" className="text-sm font-medium">
-                    Đơn Hàng
-                  </Label>
-                  {isEditing ? (
-                    <div className="mt-1 p-2 border rounded-md bg-gray-50">
-                      {selectedDonHang ? (
-                        <div>
-                          <span className="font-medium">
-                            Đơn hàng #{formData.iddonhang}
-                          </span>
-                          {selectedDonHang.tongsotien && (
-                            <span className="ml-2 text-gray-600 text-sm">
-                              - Tổng tiền:{" "}
-                              {Number(
-                                selectedDonHang.tongsotien
-                              ).toLocaleString("vi-VN")}{" "}
-                              đ
+              <form onSubmit={handleSubmit} className="space-y-4 py-2">
+                {/* Đơn Hàng Select/Display */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="iddonhang" className="text-sm font-medium">
+                      Đơn Hàng
+                    </Label>
+                    {isEditing ? (
+                      <div className="mt-1 p-2 border rounded-md bg-gray-50">
+                        {selectedDonHang ? (
+                          <div>
+                            <span className="font-medium">
+                              Đơn hàng #{formData.iddonhang}
                             </span>
+                            {selectedDonHang.tongsotien && (
+                              <span className="ml-2 text-gray-600 text-sm">
+                                - Tổng tiền:{" "}
+                                {Number(
+                                  selectedDonHang.tongsotien
+                                ).toLocaleString("vi-VN")}{" "}
+                                đ
+                              </span>
+                            )}
+                            {selectedDonHang.trangthai && (
+                              <span className="ml-2 text-gray-600 text-sm">
+                                - Trạng thái: {selectedDonHang.trangthai}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span>Đơn hàng #{formData.iddonhang}</span>
+                        )}
+                      </div>
+                    ) : (
+                      <Select
+                        value={formData.iddonhang?.toString() || ""}
+                        onValueChange={(value) =>
+                          handleChange("iddonhang", Number(value))
+                        }
+                      >
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Chọn đơn hàng" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {fetchingDonHang ? (
+                            <SelectItem value="" disabled>
+                              Đang tải danh sách đơn hàng...
+                            </SelectItem>
+                          ) : donHangs.length > 0 ? (
+                            donHangs.map((donHang) => (
+                              <SelectItem
+                                key={donHang.iddonhang}
+                                value={donHang.iddonhang.toString()}
+                              >
+                                Đơn hàng #{donHang.iddonhang}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <SelectItem value="" disabled>
+                              Không có đơn hàng nào
+                            </SelectItem>
                           )}
-                          {selectedDonHang.trangthai && (
-                            <span className="ml-2 text-gray-600 text-sm">
-                              - Trạng thái: {selectedDonHang.trangthai}
-                            </span>
-                          )}
-                        </div>
-                      ) : (
-                        <span>Đơn hàng #{formData.iddonhang}</span>
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {!isEditing &&
+                      donHangs.length === 0 &&
+                      !fetchingDonHang && (
+                        <p className="text-sm text-red-500 mt-1">
+                          <Button
+                            type="button"
+                            variant="link"
+                            className="p-0 h-auto text-blue-500"
+                            onClick={fetchDonHangs}
+                          >
+                            <RefreshCw className="h-3 w-3 mr-1" />
+                            Tải lại danh sách đơn hàng
+                          </Button>
+                        </p>
                       )}
-                    </div>
-                  ) : (
+                  </div>
+
+                  {/* Phương Thức Thanh Toán */}
+                  <div>
+                    <Label
+                      htmlFor="phuongthucthanhtoan"
+                      className="text-sm font-medium"
+                    >
+                      Phương Thức Thanh Toán
+                    </Label>
                     <Select
-                      value={formData.iddonhang?.toString() || ""}
+                      value={formData.phuongthucthanhtoan || ""}
                       onValueChange={(value) =>
-                        handleChange("iddonhang", Number(value))
+                        handleChange("phuongthucthanhtoan", value)
                       }
                     >
                       <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Chọn đơn hàng" />
+                        <SelectValue placeholder="Chọn phương thức" />
                       </SelectTrigger>
                       <SelectContent>
-                        {fetchingDonHang ? (
-                          <SelectItem value="" disabled>
-                            Đang tải danh sách đơn hàng...
+                        {paymentMethods.map((method) => (
+                          <SelectItem key={method.value} value={method.value}>
+                            {method.label}
                           </SelectItem>
-                        ) : donHangs.length > 0 ? (
-                          donHangs.map((donHang) => (
-                            <SelectItem
-                              key={donHang.iddonhang}
-                              value={donHang.iddonhang.toString()}
-                            >
-                              Đơn hàng #{donHang.iddonhang}
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <SelectItem value="" disabled>
-                            Không có đơn hàng nào
-                          </SelectItem>
-                        )}
+                        ))}
                       </SelectContent>
                     </Select>
-                  )}
-                  {!isEditing && donHangs.length === 0 && !fetchingDonHang && (
-                    <p className="text-sm text-red-500 mt-1">
-                      <Button
-                        type="button"
-                        variant="link"
-                        className="p-0 h-auto text-blue-500"
-                        onClick={fetchDonHangs}
-                      >
-                        <RefreshCw className="h-3 w-3 mr-1" />
-                        Tải lại danh sách đơn hàng
-                      </Button>
-                    </p>
-                  )}
+                  </div>
                 </div>
 
-                {/* Phương Thức Thanh Toán */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Số Tiền */}
+                  <div>
+                    <Label htmlFor="sotien" className="text-sm font-medium">
+                      Số Tiền
+                    </Label>
+                    <Input
+                      id="sotien"
+                      type="number"
+                      value={formData.sotien || ""}
+                      onChange={(e) =>
+                        handleChange(
+                          "sotien",
+                          e.target.value ? Number(e.target.value) : null
+                        )
+                      }
+                      placeholder="Nhập số tiền"
+                      className="mt-1"
+                    />
+                  </div>
+
+                  {/* Trạng Thái */}
+                  <div>
+                    <Label htmlFor="trangthai" className="text-sm font-medium">
+                      Trạng Thái
+                    </Label>
+                    <Select
+                      value={formData.trangthai || ""}
+                      onValueChange={(value) =>
+                        handleChange("trangthai", value)
+                      }
+                      disabled={formData.phuongthucthanhtoan === "Online"}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Chọn trạng thái" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {paymentStatuses.map((status) => (
+                          <SelectItem key={status.value} value={status.value}>
+                            {status.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Ngày Thanh Toán */}
                 <div>
                   <Label
-                    htmlFor="phuongthucthanhtoan"
+                    htmlFor="ngaythanhtoan"
                     className="text-sm font-medium"
                   >
-                    Phương Thức Thanh Toán
-                  </Label>
-                  <Select
-                    value={formData.phuongthucthanhtoan || ""}
-                    onValueChange={(value) =>
-                      handleChange("phuongthucthanhtoan", value)
-                    }
-                  >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Chọn phương thức" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {paymentMethods.map((method) => (
-                        <SelectItem key={method.value} value={method.value}>
-                          {method.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Số Tiền */}
-                <div>
-                  <Label htmlFor="sotien" className="text-sm font-medium">
-                    Số Tiền
+                    Ngày Thanh Toán
                   </Label>
                   <Input
-                    id="sotien"
-                    type="number"
-                    value={formData.sotien || ""}
+                    id="ngaythanhtoan"
+                    type="date"
+                    value={formData.ngaythanhtoan || ""}
                     onChange={(e) =>
-                      handleChange(
-                        "sotien",
-                        e.target.value ? Number(e.target.value) : null
-                      )
+                      handleChange("ngaythanhtoan", e.target.value || null)
                     }
-                    placeholder="Nhập số tiền"
                     className="mt-1"
                   />
                 </div>
 
-                {/* Trạng Thái */}
-                <div>
-                  <Label htmlFor="trangthai" className="text-sm font-medium">
-                    Trạng Thái
-                  </Label>
-                  <Select
-                    value={formData.trangthai || ""}
-                    onValueChange={(value) => handleChange("trangthai", value)}
-                    disabled={formData.phuongthucthanhtoan === "Online"}
+                {/* Email notification option */}
+                <div className="flex items-center space-x-2 mt-4">
+                  <Checkbox
+                    id="sendEmail"
+                    checked={formData.sendEmail}
+                    onCheckedChange={(checked) =>
+                      handleChange("sendEmail", checked === true)
+                    }
+                  />
+                  <Label
+                    htmlFor="sendEmail"
+                    className="text-sm font-medium cursor-pointer"
                   >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Chọn trạng thái" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {paymentStatuses.map((status) => (
-                        <SelectItem key={status.value} value={status.value}>
-                          {status.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    Gửi email xác nhận thanh toán đến khách hàng
+                  </Label>
                 </div>
-              </div>
 
-              {/* Ngày Thanh Toán */}
-              <div>
-                <Label htmlFor="ngaythanhtoan" className="text-sm font-medium">
-                  Ngày Thanh Toán
-                </Label>
-                <Input
-                  id="ngaythanhtoan"
-                  type="date"
-                  value={formData.ngaythanhtoan || ""}
-                  onChange={(e) =>
-                    handleChange("ngaythanhtoan", e.target.value || null)
-                  }
-                  className="mt-1"
-                />
-              </div>
-
-              {/* Email notification option */}
-              <div className="flex items-center space-x-2 mt-4">
-                <Checkbox
-                  id="sendEmail"
-                  checked={formData.sendEmail}
-                  onCheckedChange={(checked) =>
-                    handleChange("sendEmail", checked === true)
-                  }
-                />
-                <Label
-                  htmlFor="sendEmail"
-                  className="text-sm font-medium cursor-pointer"
-                >
-                  Gửi email xác nhận thanh toán đến khách hàng
-                </Label>
-              </div>
-
-              {selectedDonHang?.users?.Email && (
-                <div className="bg-blue-50 p-3 rounded-md mt-2">
-                  <div className="flex items-start">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5 text-blue-500 mr-2 mt-0.5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                      />
-                    </svg>
-                    <div>
-                      <p className="text-sm text-blue-700">
-                        Email sẽ được gửi đến:{" "}
-                        <span className="font-medium">
-                          {selectedDonHang.users.Email}
-                        </span>
-                      </p>
+                {selectedDonHang?.users?.Email && (
+                  <div className="bg-blue-50 p-3 rounded-md mt-2">
+                    <div className="flex items-start">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 text-blue-500 mr-2 mt-0.5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                        />
+                      </svg>
+                      <div>
+                        <p className="text-sm text-blue-700">
+                          Email sẽ được gửi đến:{" "}
+                          <span className="font-medium">
+                            {selectedDonHang.users.Email}
+                          </span>
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
-            </form>
-
-            <AlertDialogFooter>
-              <AlertDialogCancel>Hủy</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleSubmit}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-                disabled={sendingEmail}
-              >
-                {sendingEmail ? (
-                  <>
-                    <svg
-                      className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    Đang xử lý...
-                  </>
-                ) : isEditing ? (
-                  "Cập Nhật"
-                ) : (
-                  "Thêm Mới"
                 )}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+              </form>
 
-        {/* Delete Confirmation Dialog */}
-        <AlertDialog
-          open={!!deleteConfirmId}
-          onOpenChange={() => setDeleteConfirmId(null)}
-        >
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Xác Nhận Xóa</AlertDialogTitle>
-              <AlertDialogDescription>
-                Bạn có chắc chắn muốn xóa thanh toán này? Hành động này không
-                thể hoàn tác.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Hủy</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDelete}
-                className="bg-red-600 hover:bg-red-700 text-white"
-              >
-                Xóa
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Hủy</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleSubmit}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  disabled={sendingEmail}
+                >
+                  {sendingEmail ? (
+                    <>
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Đang xử lý...
+                    </>
+                  ) : isEditing ? (
+                    "Cập Nhật"
+                  ) : (
+                    "Thêm Mới"
+                  )}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          {/* Delete Confirmation Dialog */}
+          <AlertDialog
+            open={!!deleteConfirmId}
+            onOpenChange={() => setDeleteConfirmId(null)}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Xác Nhận Xóa</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Bạn có chắc chắn muốn xóa thanh toán này? Hành động này không
+                  thể hoàn tác.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Hủy</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDelete}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                  Xóa
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </div>
     </div>
   );

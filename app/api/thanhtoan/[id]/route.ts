@@ -166,64 +166,17 @@ export async function PUT(
           throw new Error("User email is missing");
         }
 
-        // Create a properly formatted shipping address
-        const shippingAddress = {
-          idDiaChi: order.diaChiGiaoHang?.idDiaChi || 0,
-          tenNguoiNhan: order.diaChiGiaoHang?.tenNguoiNhan || "",
-          soDienThoai: order.diaChiGiaoHang?.soDienThoai || "",
-          diaChiChiTiet: order.diaChiGiaoHang?.diaChiChiTiet || "",
-          phuongXa: order.diaChiGiaoHang?.phuongXa || "",
-          quanHuyen: order.diaChiGiaoHang?.quanHuyen || "",
-          thanhPho: order.diaChiGiaoHang?.thanhPho || "",
+        // Tạo đối tượng PaymentConfirmation phù hợp với interface yêu cầu
+        const paymentConfirmation = {
+          orderNumber: Number(order.iddonhang),
+          amount: Number(updatedPayment.sotien || 0),
+          paymentMethod: updatedPayment.phuongthucthanhtoan || "",
+          transactionId: `PAY-${updatedPayment.idthanhtoan}-${Date.now()
+            .toString()
+            .substring(7)}`,
         };
 
-        // Format the items with proper type conversion
-        const formattedItems = order.chitietdonhang.map((item) => ({
-          idsanpham: Number(item.idsanpham),
-          soluong: Number(item.soluong || 0),
-          dongia: Number(item.dongia),
-          sanpham: {
-            Tensanpham: item.sanpham?.tensanpham || "Sản phẩm không xác định",
-            hinhanh: item.sanpham?.hinhanh || "",
-            gia: Number(item.sanpham?.gia || 0),
-            giamgia: item.sanpham?.giamgia
-              ? Number(item.sanpham.giamgia)
-              : null,
-          },
-          size: item.size,
-        }));
-
-        // Format the discount object to match the expected interface
-        const formattedDiscount = order.discount
-          ? {
-              code: order.discount.code || "",
-              discountType: order.discount.discountType || "",
-              value: Number(order.discount.value || 0), // Convert Decimal to number
-            }
-          : null;
-
-        // Prepare order details for email
-        const orderDetails = {
-          iddonhang: Number(order.iddonhang),
-          ngaydat: order.ngaydat,
-          tongsotien: Number(order.tongsotien),
-          tongsoluong: Number(order.tongsoluong || 0),
-          trangthai: order.trangthai || "Đang xử lý",
-          discountValue: Number(order.discountValue || 0),
-          items: formattedItems,
-          paymentMethod: phuongthucthanhtoan,
-          shippingAddress: shippingAddress,
-          discount: formattedDiscount, // Use the formatted discount object
-          payment: {
-            idthanhtoan: Number(updatedPayment.idthanhtoan),
-            phuongthucthanhtoan: updatedPayment.phuongthucthanhtoan || "",
-            sotien: Number(updatedPayment.sotien || 0),
-            trangthai: updatedPayment.trangthai || "",
-            ngaythanhtoan: updatedPayment.ngaythanhtoan,
-          },
-        };
-
-        await sendPaymentConfirmationEmail(userEmail, orderDetails);
+        await sendPaymentConfirmationEmail(userEmail, paymentConfirmation);
         emailSent = true;
         console.log(`Payment confirmation email sent to ${userEmail}`);
       } catch (emailError) {

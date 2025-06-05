@@ -65,6 +65,15 @@ export interface OrderDetails {
   payment?: Payment;
 }
 
+// Interface cho thông tin thanh toán đơn giản
+export interface PaymentConfirmation {
+  orderNumber: number; // Thay đổi từ orderId sang orderNumber
+  amount: number;
+  paymentMethod: string;
+  transactionId: string;
+}
+
+// Hàm gửi email xác nhận đơn hàng
 export async function sendOrderConfirmationEmail(
   email: string,
   order: OrderDetails
@@ -457,7 +466,7 @@ export async function sendOrderStatusUpdateEmail(
 
 export async function sendPaymentConfirmationEmail(
   email: string,
-  order: OrderDetails
+  paymentInfo: PaymentConfirmation
 ) {
   // Check credentials
   if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
@@ -468,60 +477,12 @@ export async function sendPaymentConfirmationEmail(
   console.log("Attempting to send payment confirmation email to:", email);
 
   // Format payment method for display
-  const paymentMethodText = getPaymentMethodText(order.paymentMethod);
-
-  // Generate HTML for order items
-  const itemsHtml = order.items
-    .map(
-      (item) => `
-    <tr>
-      <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">
-        <div style="display: flex; align-items: center;">
-          <img src="${item.sanpham.hinhanh}" alt="${
-        item.sanpham.Tensanpham
-      }" style="width: 60px; height: 60px; object-fit: cover; margin-right: 12px; border-radius: 4px;">
-          <div>
-            <p style="margin: 0; font-weight: 500;">${
-              item.sanpham.Tensanpham
-            }</p>
-            ${
-              item.size
-                ? `<p style="margin: 0; color: #64748b; font-size: 14px;">Size: ${item.size.tenSize}</p>`
-                : ""
-            }
-            <p style="margin: 0; color: #64748b; font-size: 14px;">Số lượng: ${
-              item.soluong
-            }</p>
-          </div>
-        </div>
-      </td>
-      <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: 500;">
-        ${formatCurrency(item.dongia * item.soluong)}
-      </td>
-    </tr>
-  `
-    )
-    .join("");
-
-  // Generate discount information if applicable
-  const discountInfo =
-    order.discountValue && order.discountValue > 0
-      ? `
-      <tr>
-        <td style="padding: 12px; text-align: right; font-weight: 500;">Giảm giá${
-          order.discount ? ` (${order.discount.code})` : ""
-        }:</td>
-        <td style="padding: 12px; text-align: right; font-weight: 500; color: #16a34a;">-${formatCurrency(
-          Number(order.discountValue)
-        )}</td>
-      </tr>
-    `
-      : "";
+  const paymentMethodText = getPaymentMethodText(paymentInfo.paymentMethod);
 
   const mailOptions = {
     from: `"GiPuDiHi Shop" <${process.env.GMAIL_USER}>`,
     to: email,
-    subject: `Xác nhận thanh toán đơn hàng #${order.iddonhang}`,
+    subject: `Xác nhận thanh toán đơn hàng #${paymentInfo.orderNumber}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
         <div style="text-align: center; margin-bottom: 24px;">
@@ -544,77 +505,27 @@ export async function sendPaymentConfirmationEmail(
         <div style="background-color: #f8fafc; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
           <h2 style="margin-top: 0; margin-bottom: 16px; color: #0f172a;">Thông tin thanh toán</h2>
           <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span style="color: #334155;">Mã đơn hàng:</span>
+            <span style="font-weight: 500;">#${paymentInfo.orderNumber}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
             <span style="color: #334155;">Phương thức thanh toán:</span>
             <span style="font-weight: 500;">${paymentMethodText}</span>
           </div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
             <span style="color: #334155;">Số tiền:</span>
             <span style="font-weight: 500;">${formatCurrency(
-              Number(order.tongsotien)
+              paymentInfo.amount
             )}</span>
           </div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-            <span style="color: #334155;">Ngày thanh toán:</span>
-            <span style="font-weight: 500;">${
-              order.payment?.ngaythanhtoan
-                ? new Date(order.payment.ngaythanhtoan).toLocaleString("vi-VN")
-                : new Date().toLocaleString("vi-VN")
-            }</span>
+            <span style="color: #334155;">Mã giao dịch:</span>
+            <span style="font-weight: 500;">${paymentInfo.transactionId}</span>
           </div>
           <div style="display: flex; justify-content: space-between;">
             <span style="color: #334155;">Trạng thái:</span>
             <span style="font-weight: 500; color: #16a34a;">Thành công</span>
           </div>
-        </div>
-        
-        <div style="background-color: #f8fafc; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
-          <h2 style="margin-top: 0; margin-bottom: 16px; color: #0f172a;">Thông tin đơn hàng #${
-            order.iddonhang
-          }</h2>
-          <p style="margin: 4px 0; color: #334155;"><strong>Ngày đặt:</strong> ${
-            order.ngaydat
-              ? new Date(order.ngaydat).toLocaleString("vi-VN")
-              : "N/A"
-          }</p>
-          <p style="margin: 4px 0; color: #334155;"><strong>Trạng thái:</strong> ${
-            order.trangthai || "Đang xử lý"
-          }</p>
-        </div>
-        
-        <div style="margin-bottom: 24px;">
-          <h2 style="margin-top: 0; margin-bottom: 16px; color: #0f172a;">Chi tiết đơn hàng</h2>
-          <table style="width: 100%; border-collapse: collapse;">
-            <thead>
-              <tr style="background-color: #f1f5f9;">
-                <th style="padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0;">Sản phẩm</th>
-                <th style="padding: 12px; text-align: right; border-bottom: 1px solid #e2e8f0;">Thành tiền</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${itemsHtml}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td style="padding: 12px; text-align: right; font-weight: 500;">Tạm tính:</td>
-                <td style="padding: 12px; text-align: right; font-weight: 500;">${formatCurrency(
-                  order.discountValue
-                    ? Number(order.tongsotien) + Number(order.discountValue)
-                    : Number(order.tongsotien)
-                )}</td>
-              </tr>
-              ${discountInfo}
-              <tr>
-                <td style="padding: 12px; text-align: right; font-weight: 500;">Phí vận chuyển:</td>
-                <td style="padding: 12px; text-align: right; font-weight: 500; color: #16a34a;">Miễn phí</td>
-              </tr>
-              <tr>
-                <td style="padding: 12px; text-align: right; font-weight: 700; font-size: 18px;">Tổng cộng:</td>
-                <td style="padding: 12px; text-align: right; font-weight: 700; font-size: 18px; color: #2563eb;">${formatCurrency(
-                  Number(order.tongsotien)
-                )}</td>
-              </tr>
-            </tfoot>
-          </table>
         </div>
         
         <div style="background-color: #f8fafc; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
@@ -650,11 +561,11 @@ export async function sendPaymentConfirmationEmail(
     try {
       await prisma.notification.create({
         data: {
-          idUsers: order.iddonhang, // Assuming this is the user ID
+          idUsers: paymentInfo.orderNumber, // Assuming this is the user ID
           title: "Email xác nhận thanh toán đã gửi",
-          message: `Email xác nhận thanh toán đơn hàng #${order.iddonhang} đã được gửi đến ${email}`,
+          message: `Email xác nhận thanh toán đơn hàng #${paymentInfo.orderNumber} đã được gửi đến ${email}`,
           type: "email",
-          idDonhang: order.iddonhang,
+          idDonhang: paymentInfo.orderNumber,
           isRead: false,
           createdAt: new Date(),
         },
@@ -691,6 +602,8 @@ function getPaymentMethodText(method: string): string {
       return "Thẻ tín dụng/ghi nợ";
     case "Online":
       return "Thanh toán online";
+    case "vnpay":
+      return "Thanh toán qua VNPay";
     default:
       return method;
   }

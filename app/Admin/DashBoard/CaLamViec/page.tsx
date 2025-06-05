@@ -77,6 +77,8 @@ export default function CaLamViecPage() {
   const [selectedCaLamViec, setSelectedCaLamViec] = useState<CaLamViec | null>(
     null
   );
+  // State để theo dõi trạng thái mở rộng của sidebar
+  const [sidebarExpanded, setSidebarExpanded] = useState(true);
 
   // Filter states
   const [filterType, setFilterType] = useState("all");
@@ -108,6 +110,19 @@ export default function CaLamViecPage() {
   useEffect(() => {
     fetchCaLamViec();
     fetchUsers();
+  }, []);
+
+  // Lắng nghe sự kiện sidebarToggle từ Navbar
+  useEffect(() => {
+    const handleSidebarToggle = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      setSidebarExpanded(customEvent.detail.expanded);
+    };
+
+    window.addEventListener("sidebarToggle", handleSidebarToggle);
+    return () => {
+      window.removeEventListener("sidebarToggle", handleSidebarToggle);
+    };
   }, []);
 
   // Apply filters when filter criteria or data changes
@@ -298,7 +313,6 @@ export default function CaLamViecPage() {
       }
 
       // Update corresponding Lịch Làm Việc
-      // Note: This assumes there's a matching lichlamviec record
       const lichLamViecResponse = await fetch(
         `/api/lichlamviec/${selectedCaLamViec.idCaLamViec}`,
         {
@@ -383,240 +397,263 @@ export default function CaLamViecPage() {
     setEditOpen(true);
   };
 
+  // Xử lý sự kiện khi sidebar thay đổi trạng thái
+  const handleSidebarToggle = (expanded: boolean) => {
+    setSidebarExpanded(expanded);
+  };
+
   return (
-    <div className="container mx-auto py-6">
-      <SalesDashboard />
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Quản Lý Ca Làm Việc</CardTitle>
-            <CardDescription>
-              Xem và quản lý tất cả ca làm việc của nhân viên
-            </CardDescription>
-          </div>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button>Thêm Ca Làm Việc</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Thêm Ca Làm Việc Mới</DialogTitle>
-                <DialogDescription>
-                  Nhập thông tin ca làm việc mới
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleAddCaLamViec}>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="add-idUsers" className="text-right">
-                      Nhân viên
-                    </Label>
-                    <div className="col-span-3">
-                      <Select
-                        value={formData.idUsers}
-                        onValueChange={(value) =>
-                          handleSelectChange("idUsers", value)
-                        }
-                      >
-                        <SelectTrigger id="add-idUsers">
-                          <SelectValue placeholder="Chọn nhân viên" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {users.map((user) => (
-                            <SelectItem
-                              key={user.idUsers}
-                              value={user.idUsers.toString()}
-                            >
-                              {user.Hoten || user.Tentaikhoan}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+    <div className="min-h-screen bg-gray-100">
+      {/* Truyền hàm xử lý toggle vào SalesDashboard */}
+      <SalesDashboard onSidebarToggle={handleSidebarToggle} />
+
+      {/* Container chính với margin-left động dựa trên trạng thái sidebar */}
+      <div
+        className={`transition-all duration-300 pt-20 ${
+          sidebarExpanded ? "md:ml-64" : "md:ml-16"
+        }`}
+      >
+        <div className="container mx-auto p-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Quản Lý Ca Làm Việc</CardTitle>
+                <CardDescription>
+                  Xem và quản lý tất cả ca làm việc của nhân viên
+                </CardDescription>
+              </div>
+              <Dialog open={open} onOpenChange={setOpen}>
+                <DialogTrigger asChild>
+                  <Button>Thêm Ca Làm Việc</Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Thêm Ca Làm Việc Mới</DialogTitle>
+                    <DialogDescription>
+                      Nhập thông tin ca làm việc mới
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleAddCaLamViec}>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="add-idUsers" className="text-right">
+                          Nhân viên
+                        </Label>
+                        <div className="col-span-3">
+                          <Select
+                            value={formData.idUsers}
+                            onValueChange={(value) =>
+                              handleSelectChange("idUsers", value)
+                            }
+                          >
+                            <SelectTrigger id="add-idUsers">
+                              <SelectValue placeholder="Chọn nhân viên" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {users.map((user) => (
+                                <SelectItem
+                                  key={user.idUsers}
+                                  value={user.idUsers.toString()}
+                                >
+                                  {user.Hoten || user.Tentaikhoan}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="add-ngaylam" className="text-right">
+                          Ngày làm
+                        </Label>
+                        <Input
+                          id="add-ngaylam"
+                          name="ngaylam"
+                          type="date"
+                          value={formData.ngaylam}
+                          onChange={handleChange}
+                          className="col-span-3"
+                          required
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="add-giobatdau" className="text-right">
+                          Giờ bắt đầu
+                        </Label>
+                        <Input
+                          id="add-giobatdau"
+                          name="giobatdau"
+                          type="time"
+                          value={formData.giobatdau}
+                          onChange={handleChange}
+                          className="col-span-3"
+                          required
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="add-gioketthuc" className="text-right">
+                          Giờ kết thúc
+                        </Label>
+                        <Input
+                          id="add-gioketthuc"
+                          name="gioketthuc"
+                          type="time"
+                          value={formData.gioketthuc}
+                          onChange={handleChange}
+                          className="col-span-3"
+                          required
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="add-diadiem" className="text-right">
+                          Địa điểm
+                        </Label>
+                        <Input
+                          id="add-diadiem"
+                          name="DiaDiem"
+                          type="text"
+                          value={formData.DiaDiem}
+                          onChange={handleChange}
+                          className="col-span-3"
+                        />
+                      </div>
                     </div>
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="add-ngaylam" className="text-right">
-                      Ngày làm
-                    </Label>
-                    <Input
-                      id="add-ngaylam"
-                      name="ngaylam"
-                      type="date"
-                      value={formData.ngaylam}
-                      onChange={handleChange}
-                      className="col-span-3"
-                      required
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="add-giobatdau" className="text-right">
-                      Giờ bắt đầu
-                    </Label>
-                    <Input
-                      id="add-giobatdau"
-                      name="giobatdau"
-                      type="time"
-                      value={formData.giobatdau}
-                      onChange={handleChange}
-                      className="col-span-3"
-                      required
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="add-gioketthuc" className="text-right">
-                      Giờ kết thúc
-                    </Label>
-                    <Input
-                      id="add-gioketthuc"
-                      name="gioketthuc"
-                      type="time"
-                      value={formData.gioketthuc}
-                      onChange={handleChange}
-                      className="col-span-3"
-                      required
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="add-diadiem" className="text-right">
-                      Địa điểm
-                    </Label>
-                    <Input
-                      id="add-diadiem"
-                      name="DiaDiem"
-                      type="text"
-                      value={formData.DiaDiem}
-                      onChange={handleChange}
-                      className="col-span-3"
-                    />
-                  </div>
+                    <DialogFooter>
+                      <Button type="submit">Thêm mới</Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </CardHeader>
+            <CardContent>
+              {/* Filter Controls */}
+              <div className="mb-6 grid grid-cols-2 md:grid-cols-5 gap-4">
+                <div>
+                  <Select
+                    value={filterType}
+                    onValueChange={(value) => setFilterType(value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn kiểu lọc" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tất cả</SelectItem>
+                      <SelectItem value="day">Theo ngày</SelectItem>
+                      <SelectItem value="week">Theo tuần</SelectItem>
+                      <SelectItem value="month">Theo tháng</SelectItem>
+                      <SelectItem value="year">Theo năm</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <DialogFooter>
-                  <Button type="submit">Thêm mới</Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </CardHeader>
-        <CardContent>
-          {/* Filter Controls */}
-          <div className="mb-6 grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div>
-              <Select
-                value={filterType}
-                onValueChange={(value) => setFilterType(value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn kiểu lọc" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tất cả</SelectItem>
-                  <SelectItem value="day">Theo ngày</SelectItem>
-                  <SelectItem value="week">Theo tuần</SelectItem>
-                  <SelectItem value="month">Theo tháng</SelectItem>
-                  <SelectItem value="year">Theo năm</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
 
-            {filterType === "day" && (
-              <Input
-                type="date"
-                value={filterDate}
-                onChange={(e) => setFilterDate(e.target.value)}
-              />
-            )}
-
-            {filterType === "week" && (
-              <Input
-                type="week"
-                value={filterWeek}
-                onChange={(e) => setFilterWeek(e.target.value)}
-              />
-            )}
-
-            {filterType === "month" && (
-              <Input
-                type="month"
-                value={filterMonth}
-                onChange={(e) => setFilterMonth(e.target.value)}
-              />
-            )}
-
-            {filterType === "year" && (
-              <Input
-                type="number"
-                placeholder="Năm"
-                min="2000"
-                max="2100"
-                value={filterYear}
-                onChange={(e) => setFilterYear(e.target.value)}
-              />
-            )}
-          </div>
-
-          {/* Table */}
-          {loading ? (
-            <div className="flex justify-center p-4">Đang tải dữ liệu...</div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Nhân Viên</TableHead>
-                  <TableHead>Ngày Làm</TableHead>
-                  <TableHead>Giờ Bắt Đầu</TableHead>
-                  <TableHead>Giờ Kết Thúc</TableHead>
-                  <TableHead className="text-right">Hành Động</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredList.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center">
-                      Không có dữ liệu ca làm việc
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredList.map((caLamViec) => (
-                    <TableRow key={caLamViec.idCaLamViec}>
-                      <TableCell>{caLamViec.idCaLamViec}</TableCell>
-                      <TableCell>
-                        {caLamViec.users?.Hoten ||
-                          caLamViec.users?.Tentaikhoan ||
-                          "N/A"}
-                      </TableCell>
-                      <TableCell>
-                        {formatDate(new Date(caLamViec.ngaylam), "dd/MM/yyyy")}
-                      </TableCell>
-                      <TableCell>{caLamViec.giobatdau}</TableCell>
-                      <TableCell>{caLamViec.gioketthuc}</TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="mr-2"
-                          onClick={() => handleEditClick(caLamViec)}
-                        >
-                          Sửa
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() =>
-                            handleDeleteCaLamViec(caLamViec.idCaLamViec)
-                          }
-                        >
-                          Xoá
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                {filterType === "day" && (
+                  <Input
+                    type="date"
+                    value={filterDate}
+                    onChange={(e) => setFilterDate(e.target.value)}
+                  />
                 )}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+
+                {filterType === "week" && (
+                  <Input
+                    type="week"
+                    value={filterWeek}
+                    onChange={(e) => setFilterWeek(e.target.value)}
+                  />
+                )}
+
+                {filterType === "month" && (
+                  <Input
+                    type="month"
+                    value={filterMonth}
+                    onChange={(e) => setFilterMonth(e.target.value)}
+                  />
+                )}
+
+                {filterType === "year" && (
+                  <Input
+                    type="number"
+                    placeholder="Năm"
+                    min="2000"
+                    max="2100"
+                    value={filterYear}
+                    onChange={(e) => setFilterYear(e.target.value)}
+                  />
+                )}
+              </div>
+
+              {/* Table */}
+              {loading ? (
+                <div className="flex justify-center p-4">
+                  Đang tải dữ liệu...
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Nhân Viên</TableHead>
+                        <TableHead>Ngày Làm</TableHead>
+                        <TableHead>Giờ Bắt Đầu</TableHead>
+                        <TableHead>Giờ Kết Thúc</TableHead>
+                        <TableHead className="text-right">Hành Động</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredList.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center">
+                            Không có dữ liệu ca làm việc
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        filteredList.map((caLamViec) => (
+                          <TableRow key={caLamViec.idCaLamViec}>
+                            <TableCell>{caLamViec.idCaLamViec}</TableCell>
+                            <TableCell>
+                              {caLamViec.users?.Hoten ||
+                                caLamViec.users?.Tentaikhoan ||
+                                "N/A"}
+                            </TableCell>
+                            <TableCell>
+                              {formatDate(
+                                new Date(caLamViec.ngaylam),
+                                "dd/MM/yyyy"
+                              )}
+                            </TableCell>
+                            <TableCell>{caLamViec.giobatdau}</TableCell>
+                            <TableCell>{caLamViec.gioketthuc}</TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="mr-2"
+                                onClick={() => handleEditClick(caLamViec)}
+                              >
+                                Sửa
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() =>
+                                  handleDeleteCaLamViec(caLamViec.idCaLamViec)
+                                }
+                              >
+                                Xoá
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
       {/* Edit Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>

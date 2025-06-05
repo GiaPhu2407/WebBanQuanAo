@@ -61,6 +61,7 @@ const ImageManagementPage = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [imageToDelete, setImageToDelete] = useState<number | null>(null);
+  const [sidebarExpanded, setSidebarExpanded] = useState(true);
 
   // Fetch products when component mounts
   useEffect(() => {
@@ -212,134 +213,150 @@ const ImageManagementPage = () => {
       setImageToDelete(null);
     }
   };
+  const handleSidebarToggle = (expanded: boolean) => {
+    setSidebarExpanded(expanded);
+  };
 
   return (
     <div className="flex h-screen bg-gray-100">
-      <SalesDashboard />
-      <div className="flex-1 p-8 mt-20">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-800">
-              Quản lý hình ảnh
-            </h1>
-            <Button onClick={handleOpenModal}>Thêm hình ảnh mới</Button>
-          </div>
+      <SalesDashboard onSidebarToggle={handleSidebarToggle} />
 
-          <div className="bg-white rounded-lg shadow">
-            <ImageTable
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              reloadKey={reloadKey}
-            />
-          </div>
+      {/* Main content - chỉ giữ lại 1 phần styling duy nhất */}
+      <div
+        className={`flex-1 transition-all duration-300 ease-in-out ${
+          sidebarExpanded ? "md:ml-64" : "md:ml-16"
+        }`}
+      >
+        <div className="flex-1 p-8 mt-20">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h1 className="text-2xl font-bold text-gray-800">
+                Quản lý hình ảnh
+              </h1>
+              <Button onClick={handleOpenModal}>Thêm hình ảnh mới</Button>
+            </div>
 
-          {/* Form Dialog */}
-          <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>
-                  {isEditing ? "Cập nhật hình ảnh" : "Thêm hình ảnh mới"}
-                </DialogTitle>
-              </DialogHeader>
+            <div className="bg-white rounded-lg shadow">
+              <ImageTable
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                reloadKey={reloadKey}
+              />
+            </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Hình ảnh</label>
-                  <Fileupload
-                    endpoint="imageUploader"
-                    onChange={(url) => {
-                      setImageUrl(url || "");
-                    }}
-                    showmodal={!imageUrl}
-                  />
-                  {imageUrl && (
-                    <div className="mt-2 flex flex-col items-center">
-                      <Image
-                        src={imageUrl}
-                        alt="Uploaded"
-                        width={320}
-                        height={240}
-                        className="max-w-xs max-h-48 object-contain"
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        onClick={() => setImageUrl("")}
-                        className="mt-2"
-                      >
-                        Hủy
-                      </Button>
-                    </div>
-                  )}
-                </div>
+            {/* Form Dialog */}
+            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>
+                    {isEditing ? "Cập nhật hình ảnh" : "Thêm hình ảnh mới"}
+                  </DialogTitle>
+                </DialogHeader>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Sản phẩm</label>
-                  <select
-                    name="idSanpham"
-                    value={formData.idSanpham || ""}
-                    onChange={handleChange}
-                    className="w-full p-2 border rounded-md"
-                  >
-                    <option value="">Chọn sản phẩm</option>
-                    {products.map((product) => (
-                      <option key={product.idsanpham} value={product.idsanpham}>
-                        {product.tensanpham}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Hình ảnh</label>
+                    <Fileupload
+                      endpoint="imageUploader"
+                      onChange={(url) => {
+                        setImageUrl(url || "");
+                      }}
+                      showmodal={!imageUrl}
+                    />
+                    {imageUrl && (
+                      <div className="mt-2 flex flex-col items-center">
+                        <Image
+                          src={imageUrl}
+                          alt="Uploaded"
+                          width={320}
+                          height={240}
+                          className="max-w-xs max-h-48 object-contain"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          onClick={() => setImageUrl("")}
+                          className="mt-2"
+                        >
+                          Hủy
+                        </Button>
+                      </div>
+                    )}
+                  </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Mô tả Alt</label>
-                  <Textarea
-                    name="altText"
-                    value={formData.altText}
-                    onChange={handleChange}
-                    placeholder="Nhập mô tả cho hình ảnh"
-                    className="min-h-[100px]"
-                  />
-                </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Sản phẩm</label>
+                    <select
+                      name="idSanpham"
+                      value={formData.idSanpham || ""}
+                      onChange={handleChange}
+                      className="w-full p-2 border rounded-md"
+                    >
+                      <option value="">Chọn sản phẩm</option>
+                      {products.map((product) => (
+                        <option
+                          key={product.idsanpham}
+                          value={product.idsanpham}
+                        >
+                          {product.tensanpham}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleCloseModal}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Mô tả Alt</label>
+                    <Textarea
+                      name="altText"
+                      value={formData.altText}
+                      onChange={handleChange}
+                      placeholder="Nhập mô tả cho hình ảnh"
+                      className="min-h-[100px]"
+                    />
+                  </div>
+
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleCloseModal}
+                    >
+                      Hủy
+                    </Button>
+                    <Button type="submit">
+                      {isEditing ? "Cập nhật" : "Thêm mới"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog
+              open={isDeleteDialogOpen}
+              onOpenChange={setIsDeleteDialogOpen}
+            >
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Bạn có chắc chắn muốn xóa hình ảnh này? Hành động này không
+                    thể hoàn tác.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel
+                    onClick={() => setIsDeleteDialogOpen(false)}
                   >
                     Hủy
-                  </Button>
-                  <Button type="submit">
-                    {isEditing ? "Cập nhật" : "Thêm mới"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-
-          {/* Delete Confirmation Dialog */}
-          <AlertDialog
-            open={isDeleteDialogOpen}
-            onOpenChange={setIsDeleteDialogOpen}
-          >
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Bạn có chắc chắn muốn xóa hình ảnh này? Hành động này không
-                  thể hoàn tác.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>
-                  Hủy
-                </AlertDialogCancel>
-                <AlertDialogAction onClick={confirmDelete}>
-                  Xóa
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+                  </AlertDialogCancel>
+                  <AlertDialogAction onClick={confirmDelete}>
+                    Xóa
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
       </div>
     </div>
