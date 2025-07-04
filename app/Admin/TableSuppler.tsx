@@ -19,6 +19,8 @@ interface TableSupplierProps {
   selectedItems?: number[];
   onSelectItem?: (id: number, checked: boolean) => void;
   onSelectAll?: (checked: boolean) => void;
+  data?: NhaCungCap[]; // Thêm prop data
+  loading?: boolean; // Thêm prop loading
 }
 
 export default function TableSupplier({
@@ -28,36 +30,62 @@ export default function TableSupplier({
   selectedItems = [],
   onSelectItem = () => {},
   onSelectAll = () => {},
+  data = [], // Nhận data từ props
+  loading = false, // Nhận loading từ props
 }: TableSupplierProps) {
   const [nhacungcapList, setNhacungcapList] = useState<NhaCungCap[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [internalLoading, setInternalLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
+  // Sử dụng data từ props nếu có, không thì fetch từ API
+  const shouldFetchFromAPI = data.length === 0;
+
   const fetchNhaCungCap = async () => {
-    setLoading(true);
+    setInternalLoading(true);
     try {
       const response = await fetch("/api/nhacungcap");
-      const data = await response.json();
-      setNhacungcapList(data);
+      const apiData = await response.json();
+      setNhacungcapList(apiData);
     } catch (err) {
       console.error("Failed to fetch nha cung cap:", err);
     } finally {
-      setLoading(false);
+      setInternalLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchNhaCungCap();
-  }, [reloadKey]);
+    if (shouldFetchFromAPI) {
+      fetchNhaCungCap();
+    } else {
+      setNhacungcapList(data);
+      setInternalLoading(false);
+    }
+  }, [reloadKey, data, shouldFetchFromAPI]);
 
-  const filteredList = nhacungcapList.filter(
-    (item) =>
-      item.tennhacungcap.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.sodienthoai.includes(searchTerm) ||
-      item.diachi.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Sử dụng loading từ props nếu có data từ props, không thì dùng internal loading
+  const isLoading = shouldFetchFromAPI ? internalLoading : loading;
 
+  // Sử dụng danh sách từ props hoặc từ state
+  const currentList = shouldFetchFromAPI ? nhacungcapList : data;
+  // Từ cao đến thấp
+  // const filteredList = currentList.filter(
+  //   (item) =>
+  //     item.tennhacungcap.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //     item.sodienthoai.includes(searchTerm) ||
+  //     item.diachi.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //     item.email.toLowerCase().includes(searchTerm.toLowerCase())
+  // );
+
+  //Từ thấp đến cao
+  const filteredList = currentList
+    .filter(
+      (item) =>
+        item.tennhacungcap.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.sodienthoai.includes(searchTerm) ||
+        item.diachi.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.email.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => a.idnhacungcap - b.idnhacungcap); // Sắp xếp theo ID từ thấp đến cao
   const allSelected =
     filteredList.length > 0 && selectedItems.length === filteredList.length;
   const someSelected =
@@ -112,7 +140,7 @@ export default function TableSupplier({
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
-          {loading ? (
+          {isLoading ? (
             <tr>
               <td colSpan={8} className="px-3 py-4 text-center">
                 <div className="flex items-center justify-center">

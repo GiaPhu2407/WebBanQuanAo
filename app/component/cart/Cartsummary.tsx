@@ -727,7 +727,7 @@ export const CartSummary = ({
               </div>
             </label>
 
-            <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+            {/* <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
               <input
                 type="radio"
                 name="paymentMethod"
@@ -772,7 +772,7 @@ export const CartSummary = ({
                   {expanded === "vnpay" ? "Thu gọn" : "Xem thêm"}
                 </button>
               </div>
-            </label>
+            </label> */}
 
             <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
               <input
