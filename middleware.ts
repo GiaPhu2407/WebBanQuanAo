@@ -7,6 +7,9 @@ export async function middleware(request: NextRequest) {
   const session = await getSession(request);
   const publicPaths = [
     "/",
+    "/ShowIntro",
+    "/ShowBlog",
+    "/ShowContact",
     "/Show",
     "/Admin",
     "/component/Category",

@@ -38,9 +38,7 @@ model Users {
   giohang          Giohang[]
   notifications Notification[] // Add this line
  tuvanhotro     Tuvanhotro[]
-  calamviec      CaLamViec[]
   luong          Luong[]
-    lichlamviec   LichLamViec[]
     UserBehavior  UserBehavior[]
   diachi         DiaChi[]
 
@@ -352,29 +350,7 @@ model Luong {
 //   user            Users    @relation(fields: [idUsers], references: [idUsers])
 // }
 
-model LichLamViec {
-  idLichLamViec   Int       @id @default(autoincrement())
-  idUsers         Int
-  NgayLamViec     DateTime
-  GioBatDau       DateTime
-  GioKetThuc      DateTime
-  DiaDiem         String?   @db.VarChar(225)
-  idCaLamViec     Int?      // Thêm dấu ? để trường này là tùy chọn
 
-  user            Users     @relation(fields: [idUsers], references: [idUsers])
-  caLamViec       CaLamViec? @relation(fields: [idCaLamViec], references: [idCaLamViec]) // Đảm bảo quan hệ là tùy chọn
-}
-
-model CaLamViec {
-  idCaLamViec Int       @id @default(autoincrement())
-  idUsers     Int?      
-  ngaylam     DateTime? @db.Date
-  giobatdau   String?   @db.VarChar(45)
-  gioketthuc  String?   @db.VarChar(45)
-  users       Users?    @relation(fields: [idUsers], references: [idUsers])
-  
-  lichLamViecs LichLamViec[] // Quan hệ ngược lại từ CaLamViec tới LichLamViec
-}
 
 // model Thanhtoan {
 //   idthanhtoan          Int       @id @default(autoincrement())
