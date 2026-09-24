@@ -13,7 +13,6 @@ export async function GET(request: NextRequest) {
     }
 
     // Assuming admin ID is 1, adjust as needed
-    // You might want to check if the user is an admin here
     const adminId = 1;
 
     const notifications = await prisma.notification.findMany({

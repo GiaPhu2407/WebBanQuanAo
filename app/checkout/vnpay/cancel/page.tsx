@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CheckCircle } from "lucide-react";
+import { XCircle } from "lucide-react";
 import Link from "next/link";
 
-export default function VNPaySuccess() {
+function CancelContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [orderDetails, setOrderDetails] = useState<any>(null);
@@ -53,14 +53,13 @@ export default function VNPaySuccess() {
       <div className="max-w-md mx-auto bg-white rounded-lg shadow-md overflow-hidden">
         <div className="p-6">
           <div className="flex justify-center mb-6">
-            <CheckCircle className="h-16 w-16 text-green-500" />
+            <XCircle className="h-16 w-16 text-red-500" />
           </div>
           <h1 className="text-2xl font-bold text-center text-gray-900 mb-4">
-            Thanh toán thành công
+            Thanh toán không thành công
           </h1>
           <p className="text-gray-600 text-center mb-6">
-            Cảm ơn bạn đã đặt hàng. Thanh toán của bạn đã được xác nhận qua
-            VNPay.
+            Giao dịch thanh toán qua VNPay đã bị hủy hoặc không thành công.
           </p>
 
           {orderDetails && (
@@ -75,19 +74,10 @@ export default function VNPaySuccess() {
                   {new Date(orderDetails.ngaydat).toLocaleDateString("vi-VN")}
                 </span>
               </div>
-              <div className="flex justify-between mb-2">
-                <span className="text-gray-600">Tổng tiền:</span>
-                <span className="font-medium">
-                  {Number(orderDetails.tongsotien).toLocaleString("vi-VN", {
-                    style: "currency",
-                    currency: "VND",
-                  })}
-                </span>
-              </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Trạng thái:</span>
-                <span className="font-medium text-green-600">
-                  Đã thanh toán
+                <span className="font-medium text-red-600">
+                  Chưa thanh toán
                 </span>
               </div>
             </div>
@@ -95,14 +85,20 @@ export default function VNPaySuccess() {
 
           <div className="flex flex-col space-y-3">
             <Link
-              href="/component/Order"
+              href={`/checkout?orderId=${orderDetails?.iddonhang}`}
               className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md text-center transition duration-200"
+            >
+              Thử thanh toán lại
+            </Link>
+            <Link
+              href="/component/Order"
+              className="w-full py-2 px-4 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-md text-center transition duration-200"
             >
               Xem đơn hàng của tôi
             </Link>
             <Link
               href="/"
-              className="w-full py-2 px-4 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-md text-center transition duration-200"
+              className="w-full py-2 px-4 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-md text-center transition duration-200"
             >
               Tiếp tục mua sắm
             </Link>
@@ -110,5 +106,19 @@ export default function VNPaySuccess() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function VNPayCancel() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex justify-center items-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      }
+    >
+      <CancelContent />
+    </Suspense>
   );
 }
