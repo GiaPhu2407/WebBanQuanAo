@@ -16,12 +16,21 @@ export async function POST(req: NextRequest) {
       productSizes,
       hinhanh,
       releaseDate,
+      // AI content fields
+      tenSanPhamHapDan,
+      seoTitle,
+      seoKeywords,
+      captionTiktok,
+      captionFacebook,
+      noiDungShopee,
+      hashtag,
+      traLoiKhachHang,
     } = await req.json();
 
     if (!tensanpham || !gia || !idloaisanpham || !productSizes) {
       return NextResponse.json(
         { message: "Vui lòng nhập đầy đủ thông tin" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -29,14 +38,14 @@ export async function POST(req: NextRequest) {
       ([idSize, soluong]) => ({
         idSize: Number(idSize),
         soluong: Number(soluong),
-      })
+      }),
     );
 
     // Convert releaseDate to UTC
     const utcReleaseDate = releaseDate ? new Date(releaseDate) : null;
     if (utcReleaseDate) {
       utcReleaseDate.setMinutes(
-        utcReleaseDate.getMinutes() - utcReleaseDate.getTimezoneOffset()
+        utcReleaseDate.getMinutes() - utcReleaseDate.getTimezoneOffset(),
       );
     }
 
@@ -51,6 +60,15 @@ export async function POST(req: NextRequest) {
         hinhanh,
         trangthai: releaseDate ? "SCHEDULED" : "ACTIVE",
         releaseDate: utcReleaseDate,
+        // AI content fields
+        tenSanPhamHapDan: tenSanPhamHapDan || null,
+        seoTitle: seoTitle || null,
+        seoKeywords: seoKeywords || null,
+        captionTiktok: captionTiktok || null,
+        captionFacebook: captionFacebook || null,
+        noiDungShopee: noiDungShopee || null,
+        hashtag: hashtag || null,
+        traLoiKhachHang: traLoiKhachHang || null,
         ProductSizes: {
           create: formattedSizes,
         },
@@ -66,7 +84,7 @@ export async function POST(req: NextRequest) {
         data: newProduct,
         message: "Thêm sản phẩm thành công",
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error: any) {
     console.error("Lỗi khi thêm sản phẩm:", error.message);
@@ -86,7 +104,7 @@ export async function DELETE(request: NextRequest) {
       {
         message: "Lỗi khi xoá sản phẩm: " + e.message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -96,7 +114,7 @@ export async function GET() {
     // Get current time in UTC
     const currentDate = new Date();
     currentDate.setMinutes(
-      currentDate.getMinutes() - currentDate.getTimezoneOffset()
+      currentDate.getMinutes() - currentDate.getTimezoneOffset(),
     );
 
     const products = await prisma.sanpham.findMany({
@@ -126,7 +144,7 @@ export async function GET() {
   } catch (error: any) {
     return NextResponse.json(
       { error: "Lỗi khi lấy danh sách sản phẩm" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

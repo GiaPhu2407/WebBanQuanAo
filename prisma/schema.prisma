@@ -172,6 +172,15 @@ model Loaisanpham {
   releaseDate DateTime?
   trangthai   String?   @default("ACTIVE") // Can be "ACTIVE", "SCHEDULED", "DRAFT"
   size            String?          @db.VarChar(255)
+  // Nội dung AI Marketing
+  tenSanPhamHapDan    String?  @db.Text  // 🏷️ Tên sản phẩm hấp dẫn
+  seoTitle            String?  @db.VarChar(255) // 🔍 SEO title
+  seoKeywords         String?  @db.Text  // 🔑 SEO keywords
+  captionTiktok       String?  @db.Text  // 📱 Caption TikTok
+  captionFacebook     String?  @db.Text  // 📸 Caption Facebook
+  noiDungShopee       String?  @db.Text  // 🛒 Nội dung Shopee
+  hashtag             String?  @db.Text  // #️⃣ Hashtag
+  traLoiKhachHang     String?  @db.Text  // 💬 Câu trả lời khách hàng
   loaisanpham     Loaisanpham?     @relation(fields: [idloaisanpham], references: [idloaisanpham])
   chitietnhap     Chitietnhap[]
   chitietdonhang  ChitietDonhang[]

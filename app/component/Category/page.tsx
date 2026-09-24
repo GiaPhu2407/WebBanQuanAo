@@ -20,7 +20,17 @@ interface ProductWithImages {
   giamgia: number;
   gioitinh: boolean;
   size: string;
+  totalViews: number;
   images: { idImage: number; url: string; altText: string | null }[];
+  // AI content fields
+  tenSanPhamHapDan?: string;
+  seoTitle?: string;
+  seoKeywords?: string;
+  captionTiktok?: string;
+  captionFacebook?: string;
+  noiDungShopee?: string;
+  hashtag?: string;
+  traLoiKhachHang?: string;
 }
 
 interface Size {
@@ -71,7 +81,7 @@ const ProductDetail = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [currentUser, setCurrentUser] = useState<{ idUsers: number } | null>(
-    null
+    null,
   );
   const [reviews, setReviews] = useState<Review[]>([]);
   const [rating, setRating] = useState(5);
@@ -117,6 +127,18 @@ const ProductDetail = () => {
         setProduct(productData);
         setSelectedImage(productData.hinhanh);
 
+        // ✅ Tăng lượt xem khi khách hàng vào xem sản phẩm
+        fetch(`/api/sanpham/${id}/view`, { method: "POST" })
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.totalViews !== undefined) {
+              setProduct((prev) =>
+                prev ? { ...prev, totalViews: data.totalViews } : prev,
+              );
+            }
+          })
+          .catch(() => {}); // Không ảnh hưởng nếu lỗi
+
         const sizesResponse = await fetch("/api/size");
         if (!sizesResponse.ok) {
           throw new Error("Không thể tải thông tin size");
@@ -135,20 +157,20 @@ const ProductDetail = () => {
           (size: { idSize: any; tenSize: any }) => {
             const productSize = productSizes.find(
               (ps: { idSize: any; idsanpham: number }) =>
-                ps.idSize === size.idSize && ps.idsanpham === parseInt(id)
+                ps.idSize === size.idSize && ps.idsanpham === parseInt(id),
             );
             return {
               idSize: size.idSize,
               tenSize: size.tenSize,
               soluong: productSize ? productSize.soluong : 0,
             };
-          }
+          },
         );
 
         setAvailableSizes(sizesWithQuantities);
 
         const firstAvailableSize = sizesWithQuantities.find(
-          (size: { soluong: number }) => size.soluong > 0
+          (size: { soluong: number }) => size.soluong > 0,
         );
         if (firstAvailableSize) {
           setSelectedSize(firstAvailableSize.idSize);
@@ -163,7 +185,7 @@ const ProductDetail = () => {
 
         // Fetch sold products count
         const soldProductsResponse = await fetch(
-          `/api/soldproducts?idsanpham=${id}`
+          `/api/soldproducts?idsanpham=${id}`,
         );
         if (soldProductsResponse.ok) {
           const soldProductsData = await soldProductsResponse.json();
@@ -201,7 +223,7 @@ const ProductDetail = () => {
     if (!selectedSize) return;
 
     const selectedSizeData = availableSizes.find(
-      (s) => s.idSize === selectedSize
+      (s) => s.idSize === selectedSize,
     );
     if (!selectedSizeData) return;
 
@@ -245,7 +267,7 @@ const ProductDetail = () => {
         if (productId !== parseInt(id || "0")) {
           try {
             const otherProductResponse = await fetch(
-              `/api/sanpham/${productId}`
+              `/api/sanpham/${productId}`,
             );
             if (!otherProductResponse.ok) {
               throw new Error("Không tìm thấy sản phẩm với mã vạch này");
@@ -299,7 +321,7 @@ const ProductDetail = () => {
     }
 
     const selectedSizeData = availableSizes.find(
-      (s) => s.idSize === selectedSize
+      (s) => s.idSize === selectedSize,
     );
     if (!selectedSizeData || selectedSizeData.soluong < quantity) {
       toast.error("Số lượng trong kho không đủ");
@@ -345,8 +367,8 @@ const ProductDetail = () => {
           prevSizes.map((size) =>
             size.idSize === selectedSize
               ? { ...size, soluong: size.soluong - quantity }
-              : size
-          )
+              : size,
+          ),
         );
 
         // Update sold count after successful purchase
@@ -362,7 +384,7 @@ const ProductDetail = () => {
           const existingItemIndex = prevItems.findIndex(
             (item) =>
               item.productId === newCartItem.productId &&
-              item.sizeId === newCartItem.sizeId
+              item.sizeId === newCartItem.sizeId,
           );
 
           if (existingItemIndex > -1) {
@@ -375,7 +397,7 @@ const ProductDetail = () => {
         });
 
         toast.success(
-          `Đã thêm ${quantity} sản phẩm ${product.tensanpham} size ${selectedSizeData.tenSize} vào giỏ hàng`
+          `Đã thêm ${quantity} sản phẩm ${product.tensanpham} size ${selectedSizeData.tenSize} vào giỏ hàng`,
         );
 
         if (isInstantBuy) {
@@ -383,7 +405,7 @@ const ProductDetail = () => {
         }
       } else {
         throw new Error(
-          cartData.error || "Có lỗi xảy ra khi thêm vào giỏ hàng"
+          cartData.error || "Có lỗi xảy ra khi thêm vào giỏ hàng",
         );
       }
     } catch (err) {
@@ -440,7 +462,7 @@ const ProductDetail = () => {
     } catch (error) {
       console.error("Error submitting review:", error);
       toast.error(
-        error instanceof Error ? error.message : "Lỗi khi gửi đánh giá"
+        error instanceof Error ? error.message : "Lỗi khi gửi đánh giá",
       );
     } finally {
       setIsSubmittingReview(false);
@@ -484,7 +506,7 @@ const ProductDetail = () => {
 
   const totalQuantity = availableSizes.reduce(
     (acc, size) => acc + size.soluong,
-    0
+    0,
   );
 
   return (
@@ -531,7 +553,35 @@ const ProductDetail = () => {
             </div>
 
             <div className="space-y-6">
-              <h1 className="text-3xl font-bold">{product.tensanpham}</h1>
+              <div>
+                <h1 className="text-3xl font-bold">{product.tensanpham}</h1>
+                {/* Lượt xem realtime */}
+                <div className="flex items-center gap-1.5 mt-1.5 text-sm text-gray-500">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                    />
+                  </svg>
+                  <span>
+                    {(product.totalViews ?? 0).toLocaleString("vi-VN")} lượt xem
+                  </span>
+                </div>
+              </div>
 
               <div className="space-y-2">
                 <div className="flex items-baseline gap-2">
@@ -654,8 +704,8 @@ const ProductDetail = () => {
                         selectedSize === size.idSize
                           ? "border-blue-500 bg-blue-50 text-blue-600"
                           : size.soluong === 0
-                          ? "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
-                          : "border-gray-200 hover:border-blue-300"
+                            ? "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
+                            : "border-gray-200 hover:border-blue-300"
                       }`}
                     >
                       {size.tenSize} ({size.soluong})
@@ -717,9 +767,156 @@ const ProductDetail = () => {
               <div className="space-y-3">
                 <h2 className="text-xl font-semibold">Mô tả sản phẩm</h2>
                 <p className="text-gray-600 whitespace-pre-line">
-                  {product.mota}
+                  {product.noiDungShopee || product.mota}
                 </p>
               </div>
+
+              {/* ✨ AI Marketing Content */}
+              {(product.tenSanPhamHapDan ||
+                product.seoTitle ||
+                product.hashtag ||
+                product.captionTiktok ||
+                product.captionFacebook ||
+                product.seoKeywords ||
+                product.traLoiKhachHang) && (
+                <div className="border-t pt-4 space-y-4">
+                  <h2 className="text-lg font-semibold flex items-center gap-2">
+                    <span className="text-purple-600">✨</span> Nội dung
+                    Marketing AI
+                  </h2>
+
+                  {/* Tên hấp dẫn + SEO title */}
+                  {(product.tenSanPhamHapDan || product.seoTitle) && (
+                    <div className="grid grid-cols-1 gap-3">
+                      {product.tenSanPhamHapDan && (
+                        <div className="bg-purple-50 rounded-lg p-3">
+                          <p className="text-xs font-semibold text-purple-600 mb-1">
+                            🏷️ Tên hấp dẫn
+                          </p>
+                          <p className="text-sm font-medium text-gray-800">
+                            {product.tenSanPhamHapDan}
+                          </p>
+                        </div>
+                      )}
+                      {product.seoTitle && (
+                        <div className="bg-green-50 rounded-lg p-3">
+                          <p className="text-xs font-semibold text-green-600 mb-1">
+                            🔍 SEO Title
+                          </p>
+                          <p className="text-sm text-gray-700">
+                            {product.seoTitle}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* SEO Keywords */}
+                  {product.seoKeywords && (
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <p className="text-xs font-semibold text-gray-500 mb-2">
+                        🔑 Từ khóa SEO
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {product.seoKeywords.split(",").map((kw, i) => (
+                          <span
+                            key={i}
+                            className="text-xs bg-white border border-gray-200 text-gray-600 px-2 py-0.5 rounded-full"
+                          >
+                            {kw.trim()}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Hashtag */}
+                  {product.hashtag && (
+                    <div className="bg-blue-50 rounded-lg p-3">
+                      <p className="text-xs font-semibold text-blue-600 mb-2">
+                        #️⃣ Hashtag
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {product.hashtag
+                          .split(" ")
+                          .filter((t) => t.startsWith("#"))
+                          .map((tag, i) => (
+                            <span
+                              key={i}
+                              className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-medium"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Caption TikTok & Facebook */}
+                  {(product.captionTiktok || product.captionFacebook) && (
+                    <div className="grid grid-cols-1 gap-3">
+                      {product.captionTiktok && (
+                        <div className="bg-pink-50 rounded-lg p-3">
+                          <p className="text-xs font-semibold text-pink-600 mb-1">
+                            📱 Caption TikTok
+                          </p>
+                          <p className="text-sm text-gray-700 whitespace-pre-line">
+                            {product.captionTiktok}
+                          </p>
+                        </div>
+                      )}
+                      {product.captionFacebook && (
+                        <div className="bg-indigo-50 rounded-lg p-3">
+                          <p className="text-xs font-semibold text-indigo-600 mb-1">
+                            📸 Caption Facebook
+                          </p>
+                          <p className="text-sm text-gray-700 whitespace-pre-line">
+                            {product.captionFacebook}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Q&A */}
+                  {product.traLoiKhachHang && (
+                    <div className="bg-yellow-50 rounded-lg p-3">
+                      <p className="text-xs font-semibold text-yellow-700 mb-2">
+                        💬 Câu hỏi thường gặp
+                      </p>
+                      <div className="space-y-2">
+                        {product.traLoiKhachHang
+                          .split("\n\n")
+                          .filter(Boolean)
+                          .map((qa, i) => {
+                            const lines = qa.split("\n");
+                            const q = lines
+                              .find((l) => l.startsWith("Q:"))
+                              ?.replace("Q:", "")
+                              .trim();
+                            const a = lines
+                              .find((l) => l.startsWith("A:"))
+                              ?.replace("A:", "")
+                              .trim();
+                            if (!q) return null;
+                            return (
+                              <div key={i} className="text-sm">
+                                <p className="font-medium text-gray-800">
+                                  ❓ {q}
+                                </p>
+                                {a && (
+                                  <p className="text-gray-600 ml-4 mt-0.5">
+                                    💡 {a}
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

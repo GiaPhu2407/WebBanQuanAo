@@ -45,6 +45,12 @@ interface Product {
   releaseDate: string | null;
   popularity: number;
   totalViews: number;
+  // AI content fields
+  tenSanPhamHapDan?: string;
+  seoKeywords?: string;
+  hashtag?: string;
+  captionFacebook?: string;
+  noiDungShopee?: string;
   ProductColors?: {
     idmausac: number;
     hinhanh: string;
@@ -105,7 +111,7 @@ const CardContainer = ({
           onMouseLeave={handleMouseLeave}
           className={cn(
             "flex items-center justify-center relative transition-all duration-200 ease-linear w-full",
-            className
+            className,
           )}
           style={{
             transformStyle: "preserve-3d",
@@ -230,86 +236,96 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const isPopular = product.popularity >= 50;
 
   return (
-    <CardContainer containerClassName="py-4">
+    <CardContainer containerClassName="py-2">
       <div
         ref={itemRef}
         style={{ opacity: isDragging ? 0.5 : 1 }}
-        className="group relative bg-gray-50 rounded-lg overflow-hidden cursor-move shadow-sm hover:shadow-md transition-shadow duration-200 w-full h-full"
+        className="group relative bg-white rounded-2xl overflow-hidden cursor-move shadow hover:shadow-lg transition-all duration-300 w-full flex flex-col"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        {/* Popular Product Indicator */}
-        <CardItem translateZ={20} className="absolute top-2 left-12 z-20">
-          {isPopular && (
-            <div className="flex items-center gap-1 bg-red-500 text-white px-2 py-1 rounded-full animate-pulse">
-              <Flame className="w-4 h-4" />
-              <span className="text-xs font-medium">Hot</span>
+        {/* Badge Hot */}
+        {isPopular && (
+          <CardItem translateZ={20} className="absolute top-3 left-12 z-20">
+            <div className="flex items-center gap-1 bg-red-500 text-white px-2.5 py-1 rounded-full text-xs font-semibold shadow">
+              <Flame className="w-3 h-3" /> Hot
             </div>
-          )}
-        </CardItem>
+          </CardItem>
+        )}
 
         {/* Drag handle */}
-        <CardItem translateZ={20} className="absolute top-2 left-2 z-10">
-          <div className="cursor-grab active:cursor-grabbing p-2 rounded-full bg-white/80 hover:bg-white">
-            <GripVertical className="w-5 h-5 text-gray-500" />
+        <CardItem translateZ={20} className="absolute top-3 left-3 z-10">
+          <div className="cursor-grab active:cursor-grabbing p-1.5 rounded-full bg-white/80 hover:bg-white shadow-sm">
+            <GripVertical className="w-4 h-4 text-gray-400" />
           </div>
         </CardItem>
 
+        {/* Discount badge */}
+        {product.giamgia > 0 && (
+          <CardItem translateZ={30} className="absolute top-3 right-12 z-20">
+            <div className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow">
+              -{product.giamgia}%
+            </div>
+          </CardItem>
+        )}
+
         {/* Favorite Button */}
-        <CardItem translateZ={20} className="absolute top-2 right-2 z-20">
+        <CardItem translateZ={20} className="absolute top-3 right-3 z-20">
           <FavoriteButton productId={product.idsanpham} />
         </CardItem>
 
         <Link
           href={`/component/Category?id=${product.idsanpham}`}
-          className="block"
+          className="flex flex-col flex-1"
           onClick={handleProductView}
         >
+          {/* Ảnh sản phẩm */}
           <CardItem
             translateZ={10}
-            className="aspect-square overflow-hidden w-full"
+            className="relative overflow-hidden w-full"
+            style={{ height: "220px" }}
           >
             {product.hinhanh.startsWith("http") ? (
               <img
                 src={product.hinhanh}
                 alt={product.tensanpham}
-                className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+                className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
               />
             ) : (
               <Image
                 src={product.hinhanh}
                 alt={product.tensanpham}
-                width={300}
-                height={300}
-                className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+                width={400}
+                height={220}
+                className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
               />
             )}
-
-            <CardItem translateZ={30} className="absolute top-2 right-12">
-              {product.giamgia > 0 && (
-                <div className="bg-red-500 text-white text-xs font-medium px-2 py-1 rounded">
-                  -{product.giamgia}%
-                </div>
-              )}
-            </CardItem>
           </CardItem>
 
-          <div className="p-4">
-            <CardItem translateZ={15}>
-              <h3 className="text-2xl font-medium text-gray-900 mb-2 line-clamp-2">
-                {product.tensanpham}
+          {/* Nội dung card */}
+          <div className="p-4 flex flex-col gap-2 flex-1">
+            {/* Tên sản phẩm */}
+            <CardItem translateZ={15} className="w-full">
+              <h3 className="text-sm font-bold text-gray-900 line-clamp-2 leading-tight">
+                {product.tenSanPhamHapDan || product.tensanpham}
               </h3>
+              {product.tenSanPhamHapDan && (
+                <p className="text-[11px] text-gray-400 mt-0.5 line-clamp-1">
+                  {product.tensanpham}
+                </p>
+              )}
             </CardItem>
 
-            <CardItem translateZ={15} className="flex items-center gap-2 mb-3">
-              <span className="text-xl font-semibold text-red-600">
+            {/* Giá */}
+            <CardItem translateZ={15} className="flex items-baseline gap-2">
+              <span className="text-base font-extrabold text-red-600">
                 {new Intl.NumberFormat("vi-VN", {
                   style: "currency",
                   currency: "VND",
                 }).format(discountedPrice)}
               </span>
               {product.giamgia > 0 && (
-                <span className="text-sm text-gray-500 line-through">
+                <span className="text-xs text-gray-400 line-through">
                   {new Intl.NumberFormat("vi-VN", {
                     style: "currency",
                     currency: "VND",
@@ -317,28 +333,49 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 </span>
               )}
             </CardItem>
-            <CardItem translateZ={15}>
-              <h3 className="text-sm  mb-2 line-clamp-2">
-                {product.mota}
-              </h3>
+
+            {/* Mô tả ngắn */}
+            <CardItem translateZ={15} className="w-full">
+              <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">
+                {product.noiDungShopee || product.mota}
+              </p>
             </CardItem>
 
+            {/* Hashtag */}
+            {product.hashtag && (
+              <CardItem translateZ={15} className="w-full">
+                <div className="flex flex-wrap gap-1">
+                  {product.hashtag
+                    .split(" ")
+                    .filter((t: string) => t.startsWith("#"))
+                    .slice(0, 3)
+                    .map((tag: string, i: number) => (
+                      <span
+                        key={i}
+                        className="text-[10px] bg-violet-50 text-violet-500 border border-violet-200 px-2 py-0.5 rounded-full font-medium"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                </div>
+              </CardItem>
+            )}
+
+            {/* Màu sắc */}
             {product.ProductColors && product.ProductColors.length > 0 && (
-              <CardItem translateZ={20} className="flex gap-2 mb-4">
+              <CardItem translateZ={20} className="flex gap-1.5 mt-auto">
                 {product.ProductColors.map((productColor) => {
                   const color = colors.find(
-                    (c) => c.idmausac === productColor.idmausac
+                    (c) => c.idmausac === productColor.idmausac,
                   );
                   if (!color) return null;
-
                   return (
                     <div
                       key={productColor.idmausac}
-                      className="group/color relative w-5 h-5 rounded-full cursor-pointer hover:scale-110 transition-transform border border-gray-200"
+                      className="group/color relative w-5 h-5 rounded-full border-2 border-white shadow cursor-pointer hover:scale-125 transition-transform"
                       style={{ backgroundColor: color.mamau }}
                     >
-                      {/* Tooltip */}
-                      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-xs bg-gray-900 text-white rounded opacity-0 group-hover/color:opacity-100 transition-opacity whitespace-nowrap">
+                      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-0.5 text-[10px] bg-gray-800 text-white rounded-full opacity-0 group-hover/color:opacity-100 transition-opacity whitespace-nowrap z-10">
                         {color.tenmau}
                       </span>
                     </div>
@@ -347,29 +384,13 @@ const ProductCard: React.FC<ProductCardProps> = ({
               </CardItem>
             )}
 
-            {/* <CardItem
-              translateZ={25}
-              className="flex flex-row gap-1 w-full mt-4"
+            {/* Lượt xem */}
+            <CardItem
+              translateZ={15}
+              className="flex items-center gap-1 text-[11px] text-gray-400 mt-auto pt-2 border-t border-gray-100"
             >
-              <button
-                onClick={handleAddToCart}
-                className="flex items-center justify-center gap-1 bg-blue-500 hover:bg-blue-600 flex-1 text-white text-xs px-2 py-1.5 rounded-md transition-colors duration-200"
-              >
-                <CartIcon className="w-3 h-3" />
-                Thêm
-              </button>
-              <Link
-                href={`/component/Category?id=${product.idsanpham}`}
-                className="flex items-center justify-center border border-gray-300 hover:border-gray-400 flex-1 text-xs px-2 py-1.5 rounded-md transition-colors duration-200"
-                onClick={handleProductView}
-              >
-                Chi Tiết
-              </Link>
-            </CardItem> */}
-
-            {/* Views counter */}
-            <CardItem translateZ={15} className="mt-3 text-xs text-gray-500">
-              {product.totalViews} lượt xem
+              <span>👁</span>
+              <span>{product.totalViews} lượt xem</span>
             </CardItem>
           </div>
         </Link>
@@ -384,7 +405,7 @@ const ProductGrid: React.FC<{
   onAddToCart: (product: Product) => void;
 }> = ({ products, userId, onAddToCart }) => {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 p-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
       {products.map((product) => (
         <ProductCard
           key={product.idsanpham}
@@ -463,7 +484,7 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
                         }).format(
                           item.giamgia > 0
                             ? item.gia * (1 - item.giamgia / 100)
-                            : item.gia
+                            : item.gia,
                         )}
                       </p>
                     </div>
@@ -474,7 +495,7 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
                         onClick={() =>
                           onUpdateQuantity(
                             item.idsanpham,
-                            Math.max(1, item.quantity - 1)
+                            Math.max(1, item.quantity - 1),
                           )
                         }
                         className="px-2 py-1 border rounded-l-md hover:bg-gray-50"
@@ -565,7 +586,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ products, userId }) => {
         return prev.map((i) =>
           i.idsanpham === item.idsanpham
             ? { ...i, quantity: i.quantity + 1 }
-            : i
+            : i,
         );
       } else {
         return [...prev, { ...item, quantity: 1 }];
@@ -584,13 +605,15 @@ const ShopPage: React.FC<ShopPageProps> = ({ products, userId }) => {
 
   const handleUpdateQuantity = (id: number, quantity: number) => {
     setCartItems((prev) =>
-      prev.map((item) => (item.idsanpham === id ? { ...item, quantity } : item))
+      prev.map((item) =>
+        item.idsanpham === id ? { ...item, quantity } : item,
+      ),
     );
   };
 
   const handleCheckout = async () => {
     await Promise.all(
-      cartItems.map((item) => trackBehavior(item.idsanpham, "purchase"))
+      cartItems.map((item) => trackBehavior(item.idsanpham, "purchase")),
     );
 
     setCartItems([]);

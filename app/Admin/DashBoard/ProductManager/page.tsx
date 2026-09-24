@@ -53,6 +53,15 @@ export default function ProductManagementPage() {
     mausac: "",
     gioitinh: true,
     productSizes: {},
+    // AI content fields
+    tenSanPhamHapDan: "",
+    seoTitle: "",
+    seoKeywords: "",
+    captionTiktok: "",
+    captionFacebook: "",
+    noiDungShopee: "",
+    hashtag: "",
+    traLoiKhachHang: "",
   });
   const [imageUrl, setImageUrl] = useState("");
 
@@ -69,12 +78,12 @@ export default function ProductManagementPage() {
 
     window.addEventListener(
       "sidebarToggle",
-      handleSidebarEvent as EventListener
+      handleSidebarEvent as EventListener,
     );
     return () => {
       window.removeEventListener(
         "sidebarToggle",
-        handleSidebarEvent as EventListener
+        handleSidebarEvent as EventListener,
       );
     };
   }, []);
@@ -193,10 +202,22 @@ export default function ProductManagementPage() {
       mausac: product.mausac || "",
       gioitinh: product.gioitinh,
       productSizes:
-        product.ProductSizes?.reduce((acc, size) => {
-          acc[size.idSize] = size.soluong;
-          return acc;
-        }, {} as { [key: number]: number }) || {},
+        product.ProductSizes?.reduce(
+          (acc, size) => {
+            acc[size.idSize] = size.soluong;
+            return acc;
+          },
+          {} as { [key: number]: number },
+        ) || {},
+      // AI content fields
+      tenSanPhamHapDan: (product as any).tenSanPhamHapDan || "",
+      seoTitle: (product as any).seoTitle || "",
+      seoKeywords: (product as any).seoKeywords || "",
+      captionTiktok: (product as any).captionTiktok || "",
+      captionFacebook: (product as any).captionFacebook || "",
+      noiDungShopee: (product as any).noiDungShopee || "",
+      hashtag: (product as any).hashtag || "",
+      traLoiKhachHang: (product as any).traLoiKhachHang || "",
     });
     setImageUrl(product.hinhanh || "");
     setReleaseDate(product.releaseDate ? new Date(product.releaseDate) : null);
@@ -241,6 +262,15 @@ export default function ProductManagementPage() {
       mausac: "",
       gioitinh: true,
       productSizes: {},
+      // AI content fields
+      tenSanPhamHapDan: "",
+      seoTitle: "",
+      seoKeywords: "",
+      captionTiktok: "",
+      captionFacebook: "",
+      noiDungShopee: "",
+      hashtag: "",
+      traLoiKhachHang: "",
     });
     setImageUrl("");
     setSelectedProduct(undefined);
@@ -260,7 +290,7 @@ export default function ProductManagementPage() {
 
     setAllSelectedItems(newSelectedItems);
     setSelectedItems((prev) =>
-      checked ? [...prev, id] : prev.filter((itemId) => itemId !== id)
+      checked ? [...prev, id] : prev.filter((itemId) => itemId !== id),
     );
   };
 
@@ -351,7 +381,7 @@ export default function ProductManagementPage() {
             allSelected={
               products.length > 0 &&
               products.every((product) =>
-                selectedItems.includes(product.idsanpham)
+                selectedItems.includes(product.idsanpham),
               )
             }
           />
