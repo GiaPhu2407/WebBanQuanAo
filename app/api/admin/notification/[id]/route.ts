@@ -3,9 +3,11 @@ import prisma from "@/prisma/client";
 import { pusherServer } from "@/lib/pusher";
 import { getSession } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } },
 ) {
   try {
     const session = await getSession(request);
@@ -16,7 +18,8 @@ export async function PUT(
     // Assuming admin ID is 1, adjust as needed
     const adminId = 1;
 
-    const id = Number.parseInt(params.id);
+    const resolvedParams = await params;
+    const id = Number.parseInt(resolvedParams.id);
     const body = await request.json();
 
     const notification = await prisma.notification.findUnique({
@@ -26,14 +29,14 @@ export async function PUT(
     if (!notification) {
       return NextResponse.json(
         { error: "Thông báo không tồn tại" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     if (notification.idUsers !== adminId) {
       return NextResponse.json(
         { error: "Bạn không có quyền cập nhật thông báo này" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -47,14 +50,14 @@ export async function PUT(
     console.error("Error updating admin notification:", error);
     return NextResponse.json(
       { error: "Không thể cập nhật thông báo" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } },
 ) {
   try {
     const session = await getSession(request);
@@ -65,7 +68,8 @@ export async function DELETE(
     // Assuming admin ID is 1, adjust as needed
     const adminId = 1;
 
-    const id = Number.parseInt(params.id);
+    const resolvedParams = await params;
+    const id = Number.parseInt(resolvedParams.id);
 
     const notification = await prisma.notification.findUnique({
       where: { idNotification: id },
@@ -74,14 +78,14 @@ export async function DELETE(
     if (!notification) {
       return NextResponse.json(
         { error: "Thông báo không tồn tại" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     if (notification.idUsers !== adminId) {
       return NextResponse.json(
         { error: "Bạn không có quyền xóa thông báo này" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -99,7 +103,7 @@ export async function DELETE(
     console.error("Error deleting admin notification:", error);
     return NextResponse.json(
       { error: "Không thể xóa thông báo" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

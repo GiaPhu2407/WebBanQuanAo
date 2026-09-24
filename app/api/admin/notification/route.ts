@@ -3,6 +3,8 @@ import prisma from "@/prisma/client";
 import { pusherServer } from "@/lib/pusher";
 import { getSession } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getSession(request);
@@ -32,7 +34,7 @@ export async function GET(request: NextRequest) {
     console.error("Error fetching admin notifications:", error);
     return NextResponse.json(
       { error: "Failed to fetch admin notifications" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -62,7 +64,7 @@ export async function POST(request: NextRequest) {
     await pusherServer.trigger(
       "admin-notifications",
       "new-notification",
-      notification
+      notification,
     );
 
     return NextResponse.json(notification);
@@ -70,7 +72,7 @@ export async function POST(request: NextRequest) {
     console.error("Error creating admin notification:", error);
     return NextResponse.json(
       { error: "Failed to create admin notification" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -100,7 +102,7 @@ export async function DELETE(request: NextRequest) {
       "clear-all-notifications",
       {
         idUsers: adminId,
-      }
+      },
     );
 
     return NextResponse.json({
@@ -110,7 +112,7 @@ export async function DELETE(request: NextRequest) {
     console.error("Error deleting all admin notifications:", error);
     return NextResponse.json(
       { error: "Failed to delete admin notifications" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -3,12 +3,15 @@ import prisma from "@/prisma/client";
 import { pusherServer } from "@/lib/pusher";
 import { getSession } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } },
 ) {
   try {
-    const id = parseInt(params.id);
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id);
     const body = await request.json();
 
     const notification = await prisma.notification.update({
@@ -21,14 +24,14 @@ export async function PUT(
     console.error("Error updating notification:", error);
     return NextResponse.json(
       { error: "Failed to update notification" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } },
 ) {
   try {
     const session = await getSession(request);
@@ -36,7 +39,8 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const id = parseInt(params.id);
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id);
 
     const notification = await prisma.notification.delete({
       where: {
@@ -56,7 +60,7 @@ export async function DELETE(
     console.error("Error deleting notification:", error);
     return NextResponse.json(
       { error: "Failed to delete notification" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
