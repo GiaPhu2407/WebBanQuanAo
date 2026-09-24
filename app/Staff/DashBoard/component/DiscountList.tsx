@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import { PlusCircle, Pencil, Trash2 } from "lucide-react";
 import DiscountForm from "./DiscountForm";
-DiscountForm 
 
 interface Discount {
   idDiscount: number;

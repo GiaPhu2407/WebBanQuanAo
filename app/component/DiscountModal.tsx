@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Dialog } from "@radix-ui/react-dialog";
 import { Label } from "@radix-ui/react-label";
- formatCurrency 
 import { X } from "lucide-react";
 import { formatCurrency } from "./utils/currency";
 

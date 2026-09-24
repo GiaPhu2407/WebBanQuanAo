@@ -1,10 +1,9 @@
 import React, { useState } from "react";
 
- 
 // import ProductGrid from "../product/ProductGrid";
-  
+
 import { FilterState } from "../../component/type/filter";
-  
+
 import { filterProducts } from "../utils/productfilters";
 import { useProducts } from "../hook/useProducts";
 import FilterButton from "../filterbutton/filterdesktop";
@@ -12,8 +11,6 @@ import LoadingSpinner from "../common/LoadingSpinner";
 import ProductGrid from "../ProductList";
 import MobileFilter from "../filterbutton/filtermobile";
 import Filter from "../Filter";
-FilterButton
- 
 
 const FilterPage: React.FC = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -44,9 +41,9 @@ const FilterPage: React.FC = () => {
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Sản phẩm</h1>
-        <FilterButton 
-          isOpen={isFilterOpen} 
-          onClick={() => setIsFilterOpen(!isFilterOpen)} 
+        <FilterButton
+          isOpen={isFilterOpen}
+          onClick={() => setIsFilterOpen(!isFilterOpen)}
         />
       </div>
 

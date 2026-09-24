@@ -5,7 +5,7 @@ import { z } from "zod";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   const idloaisanpham = parseInt(params.id);
 
@@ -21,9 +21,10 @@ export async function GET(
 
     return NextResponse.json(xe);
   } catch (error) {
+    console.error("Lỗi khi lấy danh sách sản phẩm:", error);
     return NextResponse.json(
       { error: "Lỗi khi lấy danh sách sản phẩm" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -36,7 +37,7 @@ const UserSchema = z.object({
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     console.log("Received PUT request with params:", params);
@@ -75,7 +76,7 @@ export async function PUT(
     ) {
       return NextResponse.json(
         { error: "Tên loại sản phẩm đã tồn tại" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -91,19 +92,19 @@ export async function PUT(
 
     return NextResponse.json(
       { message: `Cập nhật loại sản phẩm ID ${params.id} thành công` },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("PUT request error:", error);
     return NextResponse.json(
       { error: "Lỗi cập nhật loại sản phẩm" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     // Convert id to integer
@@ -113,7 +114,7 @@ export async function DELETE(
     if (isNaN(idloaisanpham)) {
       return NextResponse.json(
         { error: "Invalid product category ID" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -125,7 +126,7 @@ export async function DELETE(
     if (!categoryExists) {
       return NextResponse.json(
         { error: "Product category not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -146,14 +147,14 @@ export async function DELETE(
         message: "Category and related products deleted successfully",
         deletedProductCount: deletedProducts.count,
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Error deleting product category:", error);
 
     return NextResponse.json(
       { error: "Error deleting product category" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

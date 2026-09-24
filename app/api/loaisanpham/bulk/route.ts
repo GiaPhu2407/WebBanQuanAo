@@ -11,14 +11,17 @@ export async function POST(request: NextRequest) {
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
         { error: "Dữ liệu không hợp lệ" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Khởi tạo biến để theo dõi
     let successCount = 0;
-    let failedItems: Array<{ tenloai: string; mota: string; reason: string }> =
-      [];
+    const failedItems: Array<{
+      tenloai: string;
+      mota: string;
+      reason: string;
+    }> = [];
 
     // Sử dụng transaction để đảm bảo tính toàn vẹn dữ liệu
     const result = await prisma.$transaction(async (tx) => {
@@ -81,7 +84,7 @@ export async function POST(request: NextRequest) {
         error: "Đã xảy ra lỗi khi nhập dữ liệu loại sản phẩm",
         message: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

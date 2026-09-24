@@ -12,8 +12,8 @@ declare global {
 export default function TawkMessenger() {
   useEffect(() => {
     // Thay thế YOUR_PROPERTY_ID và YOUR_WIDGET_ID bằng ID từ tài khoản Tawk của bạn
-    var s1 = document.createElement("script");
-    var s0 = document.getElementsByTagName("script")[0];
+    const s1 = document.createElement("script");
+    const s0 = document.getElementsByTagName("script")[0];
     s1.async = true;
     s1.src = "https://embed.tawk.to/67ebc56fada1c61917d77a48/1inofmeuk";
     s1.charset = "UTF-8";

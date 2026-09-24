@@ -4,7 +4,7 @@ import { pusherServer } from "@/lib/pusher";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   const { id } = params;
   const lichLamViecId = Number(id);
@@ -12,7 +12,7 @@ export async function GET(
   if (isNaN(lichLamViecId)) {
     return NextResponse.json(
       { error: "ID lịch làm việc không hợp lệ" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -30,22 +30,23 @@ export async function GET(
     if (!lichLamViec) {
       return NextResponse.json(
         { message: "Không tìm thấy lịch làm việc" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     return NextResponse.json(
       { data: lichLamViec, message: "Lấy lịch làm việc thành công" },
-      { status: 200 }
+      { status: 200 },
     );
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Đã xảy ra lỗi";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   const { id } = params;
   const lichLamViecId = Number(id);
@@ -53,7 +54,7 @@ export async function PUT(
   if (isNaN(lichLamViecId)) {
     return NextResponse.json(
       { error: "ID lịch làm việc không hợp lệ" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -64,7 +65,7 @@ export async function PUT(
     if (!idUsers || !NgayLamViec || !GioBatDau || !GioKetThuc) {
       return NextResponse.json(
         { message: "Vui lòng nhập đầy đủ thông tin" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -84,7 +85,7 @@ export async function PUT(
     ) {
       return NextResponse.json(
         { message: "Ngày tháng không hợp lệ" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -97,7 +98,7 @@ export async function PUT(
     if (!currentLichLamViec) {
       return NextResponse.json(
         { error: "Không tìm thấy lịch làm việc" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -153,7 +154,7 @@ export async function PUT(
         idUsers: Number(idUsers),
         title: "Cập nhật lịch làm việc",
         message: `Lịch làm việc của bạn đã được cập nhật: Ngày ${ngayLamViecDate.toLocaleDateString(
-          "vi-VN"
+          "vi-VN",
         )} từ ${GioBatDau} đến ${GioKetThuc}${
           DiaDiem ? ` tại ${DiaDiem}` : ""
         }`,
@@ -166,7 +167,7 @@ export async function PUT(
     await pusherServer.trigger(
       "notifications",
       "new-notification",
-      notification
+      notification,
     );
 
     return NextResponse.json(
@@ -174,17 +175,18 @@ export async function PUT(
         data: updatedLichLamViec,
         message: "Cập nhật lịch làm việc thành công",
       },
-      { status: 200 }
+      { status: 200 },
     );
-  } catch (error: any) {
-    console.error("Lỗi khi cập nhật lịch làm việc:", error.message);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Đã xảy ra lỗi";
+    console.error("Lỗi khi cập nhật lịch làm việc:", message);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   const { id } = params;
   const lichLamViecId = Number(id);
@@ -192,7 +194,7 @@ export async function DELETE(
   if (isNaN(lichLamViecId)) {
     return NextResponse.json(
       { error: "ID lịch làm việc không hợp lệ" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -205,7 +207,7 @@ export async function DELETE(
     if (!lichLamViec) {
       return NextResponse.json(
         { error: "Không tìm thấy lịch làm việc" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -231,7 +233,7 @@ export async function DELETE(
         idUsers: lichLamViec.idUsers,
         title: "Hủy lịch làm việc",
         message: `Lịch làm việc ngày ${lichLamViec.NgayLamViec.toLocaleDateString(
-          "vi-VN"
+          "vi-VN",
         )} đã bị hủy`,
         type: "work_schedule_cancel",
         isRead: false,
@@ -242,14 +244,15 @@ export async function DELETE(
     await pusherServer.trigger(
       "notifications",
       "new-notification",
-      notification
+      notification,
     );
 
     return NextResponse.json(
       { message: "Xoá lịch làm việc thành công" },
-      { status: 200 }
+      { status: 200 },
     );
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Đã xảy ra lỗi";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -26,11 +26,11 @@ export async function GET() {
       data: lichLamViec,
       message: "Lấy danh sách lịch làm việc thành công",
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Lỗi khi lấy danh sách lịch làm việc:", error);
     return NextResponse.json(
       { error: "Lỗi khi lấy danh sách lịch làm việc" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     if (!idUsers || !NgayLamViec || !GioBatDau || !GioKetThuc) {
       return NextResponse.json(
         { error: "Vui lòng nhập đầy đủ thông tin" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
           error:
             "Không tìm thấy nhân viên hoặc người dùng không phải là nhân viên",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
         idUsers: Number(idUsers),
         title: "Lịch làm việc mới",
         message: `Bạn có lịch làm việc mới vào ngày ${formattedNgayLamViec.toLocaleDateString(
-          "vi-VN"
+          "vi-VN",
         )} từ ${GioBatDau} đến ${GioKetThuc}${
           DiaDiem ? ` tại ${DiaDiem}` : ""
         }`,
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
     await pusherServer.trigger(
       "notifications",
       "new-notification",
-      notification
+      notification,
     );
 
     console.log("Created lichLamViec:", newLichLamViec);
@@ -135,11 +135,12 @@ export async function POST(request: NextRequest) {
       data: newLichLamViec,
       message: "Thêm lịch làm việc thành công",
     });
-  } catch (error: any) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Đã xảy ra lỗi";
     console.error("Lỗi khi thêm lịch làm việc:", error);
     return NextResponse.json(
-      { error: `Lỗi khi thêm lịch làm việc: ${error.message}` },
-      { status: 500 }
+      { error: `Lỗi khi thêm lịch làm việc: ${message}` },
+      { status: 500 },
     );
   }
 }
@@ -154,11 +155,12 @@ export async function DELETE() {
     return NextResponse.json({
       message: "Xoá tất cả lịch làm việc thành công",
     });
-  } catch (error: any) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Đã xảy ra lỗi";
     console.error("Lỗi khi xoá lịch làm việc:", error);
     return NextResponse.json(
-      { error: `Lỗi khi xoá lịch làm việc: ${error.message}` },
-      { status: 500 }
+      { error: `Lỗi khi xoá lịch làm việc: ${message}` },
+      { status: 500 },
     );
   }
 }

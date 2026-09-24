@@ -3,7 +3,7 @@ import prisma from "@/prisma/client";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   const { id } = params;
   const userId = Number(id);
@@ -11,7 +11,7 @@ export async function GET(
   if (isNaN(userId)) {
     return NextResponse.json(
       { error: "ID người dùng không hợp lệ" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -32,10 +32,11 @@ export async function GET(
 
     return NextResponse.json(
       { data: lichLamViec, message: "Lấy lịch làm việc thành công" },
-      { status: 200 }
+      { status: 200 },
     );
-  } catch (error: any) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Đã xảy ra lỗi";
     console.error("Lỗi khi lấy lịch làm việc:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
