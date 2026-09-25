@@ -1,4 +1,4 @@
-import { type NextRequest, NextResponse } from "next/server";
+﻿import { type NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import prisma from "@/prisma/client";
 import Stripe from "stripe";
@@ -6,10 +6,13 @@ import { Prisma } from "@prisma/client";
 import { pusherServer } from "@/lib/pusher";
 import { sendOrderConfirmationEmail } from "@/lib/emailOrder";
 
-// Initialize Stripe with the latest API version
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-01-27.acacia",
-});
+export const dynamic = "force-dynamic";
+
+function getStripe(): Stripe {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) throw new Error("STRIPE_SECRET_KEY is not configured");
+  return new Stripe(key, { apiVersion: "2025-01-27.acacia" });
+}
 
 // Constants
 const USD_TO_VND_RATE = 24000; // Conversion rate
@@ -141,7 +144,7 @@ export async function POST(req: NextRequest) {
         );
 
         // Create Stripe payment intent
-        const paymentIntent = await stripe.paymentIntents.create({
+        const paymentIntent = await getStripe().paymentIntents.create({
           amount: cappedAmountInUSD,
           currency: "usd",
           automatic_payment_methods: {
@@ -183,7 +186,7 @@ export async function POST(req: NextRequest) {
     if (stripeSessionId) {
       try {
         // Retrieve the payment intent from Stripe
-        const paymentIntent = await stripe.paymentIntents.retrieve(
+        const paymentIntent = await getStripe().paymentIntents.retrieve(
           stripeSessionId
         );
 
@@ -258,7 +261,7 @@ export async function POST(req: NextRequest) {
         let customerName = "";
         if (paymentIntent.customer) {
           try {
-            const customer = await stripe.customers.retrieve(
+            const customer = await getStripe().customers.retrieve(
               paymentIntent.customer as string
             );
             customerName =
