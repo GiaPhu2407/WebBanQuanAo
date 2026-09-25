@@ -3,19 +3,9 @@ import { getSession } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 
-// force-dynamic: tránh Next.js cố gắng render static lúc build
-export const dynamic = "force-dynamic";
-
-// Lazy init — KHÔNG khởi tạo ở module level để tránh crash khi Vercel build thiếu env
-function getStripe(): Stripe {
-  const key = process.env.STRIPE_SECRET_KEY;
-  if (!key) {
-    throw new Error("STRIPE_SECRET_KEY is not configured");
-  }
-  return new Stripe(key, {
-    apiVersion: "2025-01-27.acacia",
-  });
-}
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: "2025-01-27.acacia",
+});
 
 const MAX_VND_AMOUNT = 200000000; // 200 million VND
 const MIN_VND_AMOUNT = 12000; // Minimum amount in VND (equivalent to $0.50 USD)
@@ -86,14 +76,12 @@ export async function POST(req: Request) {
 
     try {
       validateAmount(totalAmount);
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Invalid amount";
-      return NextResponse.json({ error: message }, { status: 400 });
+    } catch (error: any) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
     const amountInUSD = convertVNDtoUSD(totalAmount);
 
-    const stripe = getStripe();
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountInUSD,
       currency: "usd",
@@ -119,20 +107,19 @@ export async function POST(req: Request) {
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
       amount: totalAmount,
-      amountUSD: amountInUSD / 100,
+      amountUSD: amountInUSD / 100, // Convert back to dollars for display
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error("Stripe payment error:", error);
 
-    const stripeError = error as { type?: string; message?: string; statusCode?: number };
     const errorMessage =
-      stripeError.type === "StripeInvalidRequestError"
+      error.type === "StripeInvalidRequestError"
         ? "Invalid payment request. Please check your payment details."
-        : stripeError.message || "An error occurred while processing your payment";
+        : error.message || "An error occurred while processing your payment";
 
     return NextResponse.json(
       { error: errorMessage },
-      { status: stripeError.statusCode || 500 }
+      { status: error.statusCode || 500 }
     );
   }
 }

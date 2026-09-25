@@ -2,23 +2,16 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { PaymentDetails } from '@/app/types/types';
 
-export const dynamic = "force-dynamic";
-
-function getStripe(): Stripe {
-  const key = process.env.STRIPE_SECRET_KEY;
-  if (!key) throw new Error("STRIPE_SECRET_KEY is not configured");
-  return new Stripe(key, {
-    timeout: 10000,
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    timeout: 10000, // timeout in ms
     maxNetworkRetries: 3,
-    telemetry: false,
-  } as ConstructorParameters<typeof Stripe>[1]);
-}
-
+    telemetry: false // disable telemetry
+  });
 export async function POST(request: Request) {
   try {
     const { orderId, amount, currency, description }: PaymentDetails = await request.json();
 
-    const session = await getStripe().checkout.sessions.create({
+    const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
         {
